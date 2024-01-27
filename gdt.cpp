@@ -1,7 +1,7 @@
 //View GlobalDescritorTable https://wiki.osdev.org/Global_Descriptor_Table
 
 
-#include "gdt.h"
+#include "gdt.hpp"
 
 GlobalDescriptorTable::GlobalDescriptorTable()
     :nullSegmentSelector(0,0,0),
