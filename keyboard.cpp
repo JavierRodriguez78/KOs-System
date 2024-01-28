@@ -1,3 +1,5 @@
+//View https://wiki.osdev.org/PS/2_Keyboard
+
 #include "keyboard.hpp"
 
 KeyboardDriver::KeyboardDriver(InterruptManager* manager)

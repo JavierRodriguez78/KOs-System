@@ -57,8 +57,8 @@ HandleInterruptRequest 0x08
 HandleInterruptRequest 0x09
 HandleInterruptRequest 0x0A
 HandleInterruptRequest 0x0B
-HandleInterruptRequest 0x0C
-HandleInterruptRequest 0x0D
+HandleInterruptRequest 0x0C #Mouse Interruptor
+HandleInterruptRequest 0x0D 
 HandleInterruptRequest 0x0E
 HandleInterruptRequest 0x0F
 HandleInterruptRequest 0x31
