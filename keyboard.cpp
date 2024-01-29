@@ -2,19 +2,31 @@
 
 #include "keyboard.hpp"
 
-KeyboardDriver::KeyboardDriver(InterruptManager* manager)
+
+KeyboardEventHandler::KeyboardEventHandler()
+{
+
+};
+
+void KeyboardEventHandler::OnKeyDown(char)
+{
+
+};
+void KeyboardEventHandler::OnKeyUp(char)
+{
+
+};
+
+
+
+
+KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
 :InterruptHandler(manager, 0x21),
 dataport(0x60),
 commandport(0x64)
 {
-    while(commandport.Read() & 0x1)
-        dataport.Read();
-    commandport.Write(0xAE); //activate interrupts
-    commandport.Write(0x20); //get current state -> command 0x20 = read controller command byte
-    uint8_t status = (dataport.Read() | 1) & ~0x10;
-    commandport.Write(0x60); //set state -> command 0x60 = set controller command byte
-    dataport.Write(status);
-    dataport.Write(0xF4); //Activate keyboard
+   
+   this->handler = handler;
 
 };
 KeyboardDriver::~KeyboardDriver()
@@ -23,77 +35,85 @@ KeyboardDriver::~KeyboardDriver()
 };
 
 void printf(char*);
+void printfHex(uint8_t);
+
+void KeyboardDriver::Activate()
+{
+     while(commandport.Read() & 0x1)
+      dataport.Read();
+    commandport.Write(0xae); //activate interrupts
+    commandport.Write(0x20); //get current state -> command 0x20 = read controller command byte
+    uint8_t status = (dataport.Read() | 1) & ~0x10;
+    commandport.Write(0x60); //set state -> command 0x60 = set controller command byte
+    dataport.Write(status);
+    dataport.Write(0xf4); //Activate keyboard
+};
   
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 {
     uint8_t key = dataport.Read();
-    static bool Shift = false;
+   
+    if(handler == 0)
+        return esp;
+
     if(key < 0x80)
     {
         switch(key)
         {
             // Numeric Keys
-            case 0x02: if(Shift) {printf ("!"); Shift=false;}  else printf("1"); break;
-            case 0x03: if(Shift) {printf ("\""); Shift=false;} else printf("2"); break;
-            case 0x04: if(Shift) {printf ("·"); Shift=false;}  else printf("3"); break;
-            case 0x05: if(Shift) {printf ("$"); Shift=false;}  else printf("4"); break;
-            case 0x06: if(Shift) {printf ("%"); Shift=false;}  else printf("5"); break;
-            case 0x07: if(Shift) {printf ("&"); Shift=false;}  else printf("6"); break;
-            case 0x08: if(Shift) {printf ("/"); Shift=false;}  else printf("7"); break;
-            case 0x09: if(Shift) {printf ("("); Shift=false;}  else printf("8"); break;
-            case 0x0A: if(Shift) {printf (")"); Shift=false;}  else printf("9"); break;
-            case 0x0B: if(Shift) {printf ("="); Shift=false;}  else printf("0"); break;
+            case 0x02: handler->OnKeyDown('1'); break;
+            case 0x03: handler->OnKeyDown('2'); break;
+            case 0x04: handler->OnKeyDown('3'); break;
+            case 0x05: handler->OnKeyDown('4'); break;
+            case 0x06: handler->OnKeyDown('5'); break;
+            case 0x07: handler->OnKeyDown('6'); break;
+            case 0x08: handler->OnKeyDown('7'); break;
+            case 0x09: handler->OnKeyDown('8'); break;
+            case 0x0A: handler->OnKeyDown('9'); break;
+            case 0x0B: handler->OnKeyDown('0'); break;
 
-            case 0x10: if(Shift) {printf ("Q"); Shift=false;}  else printf("q"); break;
-            case 0x11: if(Shift) {printf ("W"); Shift=false;}  else printf("w"); break;
-            case 0x12: if(Shift) {printf ("E"); Shift=false;}  else printf("e"); break;
-            case 0x13: if(Shift) {printf ("R"); Shift=false;}  else printf("r"); break;
-            case 0x14: if(Shift) {printf ("T"); Shift=false;}  else printf("t"); break;
-            case 0x15: if(Shift) {printf ("Z"); Shift=false;}  else printf("z"); break;
-            case 0x16: if(Shift) {printf ("U"); Shift=false;}  else printf("u"); break;
-            case 0x17: if(Shift) {printf ("I"); Shift=false;}  else printf("i"); break;
-            case 0x18: if(Shift) {printf ("O"); Shift=false;}  else printf("o"); break;
-            case 0x19: if(Shift) {printf ("P"); Shift=false;}  else printf("p"); break;
+            case 0x10: handler->OnKeyDown('q'); break;
+            case 0x11: handler->OnKeyDown('w'); break;
+            case 0x12: handler->OnKeyDown('e'); break;
+            case 0x13: handler->OnKeyDown('r'); break;
+            case 0x14: handler->OnKeyDown('t'); break;
+            case 0x15: handler->OnKeyDown('z'); break;
+            case 0x16: handler->OnKeyDown('u'); break;
+            case 0x17: handler->OnKeyDown('i'); break;
+            case 0x18: handler->OnKeyDown('o'); break;
+            case 0x19: handler->OnKeyDown('p'); break;
 
-            case 0x1E: if(Shift) {printf ("A"); Shift=false;}  else printf("a"); break;
-            case 0x1F: if(Shift) {printf ("S"); Shift=false;}  else printf("s"); break;
-            case 0x20: if(Shift) {printf ("D"); Shift=false;}  else printf("d"); break;
-            case 0x21: if(Shift) {printf ("F"); Shift=false;}  else printf("f"); break;
-            case 0x22: if(Shift) {printf ("G"); Shift=false;}  else printf("g"); break;
-            case 0x23: if(Shift) {printf ("H"); Shift=false;}  else printf("h"); break;
-            case 0x24: if(Shift) {printf ("J"); Shift=false;}  else printf("j"); break;
-            case 0x25: if(Shift) {printf ("K"); Shift=false;}  else printf("k"); break;
-            case 0x26: if(Shift) {printf ("L"); Shift=false;}  else printf("l"); break;
+            case 0x1E: handler->OnKeyDown('a'); break;
+            case 0x1F: handler->OnKeyDown('s'); break;
+            case 0x20: handler->OnKeyDown('d'); break;
+            case 0x21: handler->OnKeyDown('f'); break;
+            case 0x22: handler->OnKeyDown('g'); break;
+            case 0x23: handler->OnKeyDown('h'); break;
+            case 0x24: handler->OnKeyDown('j'); break;
+            case 0x25: handler->OnKeyDown('k'); break;
+            case 0x26: handler->OnKeyDown('l'); break;
 
-            case 0x2C: if(Shift) {printf ("Y"); Shift=false;}  else printf("y"); break;
-            case 0x2D: if(Shift) {printf ("X"); Shift=false;}  else printf("x"); break;
-            case 0x2E: if(Shift) {printf ("C"); Shift=false;}  else printf("c"); break;
-            case 0x2F: if(Shift) {printf ("V"); Shift=false;}  else printf("v"); break;
-            case 0x30: if(Shift) {printf ("B"); Shift=false;}  else printf("b"); break;
-            case 0x31: if(Shift) {printf ("N"); Shift=false;}  else printf("n"); break;
-            case 0x32: if(Shift) {printf ("M"); Shift=false;}  else printf("m"); break;
-            case 0x33: if(Shift) {printf (";"); Shift=false;}  else printf(","); break;
-            case 0x34: if(Shift) {printf (":"); Shift=false;}  else printf("."); break;
-            case 0x35: if(Shift) {printf ("_"); Shift=false;}  else printf("-"); break;
+            case 0x2C: handler->OnKeyDown('y'); break;
+            case 0x2D: handler->OnKeyDown('x'); break;
+            case 0x2E: handler->OnKeyDown('c'); break;
+            case 0x2F: handler->OnKeyDown('v'); break;
+            case 0x30: handler->OnKeyDown('b'); break;
+            case 0x31: handler->OnKeyDown('n'); break;
+            case 0x32: handler->OnKeyDown('m'); break;
+            case 0x33: handler->OnKeyDown(','); break;
+            case 0x34: handler->OnKeyDown('.'); break;
+            case 0x35: handler->OnKeyDown('_'); break;
 
-            case 0x1C: printf("\n"); break;
-            case 0x39: printf(" "); break;
-            case 0x2A: case 0x36 : Shift = true; break;
-
-            //ignored
-            case 0x45: //NumLock
-                break;
-            
+            case 0x1C: handler->OnKeyDown('\n'); break;
+            case 0x39: handler->OnKeyDown(' '); break;
+           
+                      
             default:
-                if(key<0x80)
-                {
-                    char* foo = "KEYBOARD 0x00";
-                    char* hex = "0123456789ABCDEF";
-                    foo[11] = hex[(key >> 4) & 0xF];
-                    foo[12] = hex[key & 0xF];
-                    printf(foo);
-                }
+            { 
+                printf("KEYBOARD 0X");
+                printfHex(key);
                 break;
+            }
         }
     }
       

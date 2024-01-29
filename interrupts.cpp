@@ -5,7 +5,7 @@
 
 
 void printf(char* str);
-
+void printfHex(uint8_t);
 
 InterruptHandler::InterruptHandler(InterruptManager* interruptManager, uint8_t InterruptNumber)
 {
@@ -171,11 +171,8 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
     }
     else if(interrupt != hardwareInterruptOffset)
     {
-        char* foo = "UNHANDLER INTERRUPT 0x00";
-        char* hex = "0123456789ABCDEF";
-        foo[12] = hex[(interrupt >> 4) & 0xF];
-        foo[13] = hex[interrupt & 0xF];
-        printf(foo);
+        printf("UNHANDLER INTERRUPT 0x");
+        printfHex(interrupt);
     }
 
     // hardarware interrupts must be acknowleged

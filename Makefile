@@ -2,7 +2,7 @@ GPPARAMS = -m32 -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-except
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
-objects = ./bin/loader.o ./bin/interruptstubs.o ./bin/gdt.o ./bin/port.o ./bin/kernel.o ./bin/interrupts.o ./bin/keyboard.o ./bin/mouse.o
+objects = ./bin/loader.o ./bin/driver.o ./bin/interruptstubs.o ./bin/gdt.o ./bin/port.o ./bin/kernel.o ./bin/interrupts.o ./bin/keyboard.o ./bin/mouse.o
 
 
 %.o: %.cpp
