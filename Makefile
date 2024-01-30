@@ -10,7 +10,8 @@ objects = ./obj/loader.o  \
 		  ./obj/kernel.o \
 		  ./obj/hardware/interrupts.o \
 		  ./obj/drivers/keyboard.o \
-		  ./obj/drivers/mouse.o
+		  ./obj/drivers/mouse.o \
+		  ./obj/hardware/pci.o
 
 
 obj/%.o: src/%.cpp
