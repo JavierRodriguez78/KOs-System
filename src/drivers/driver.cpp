@@ -1,4 +1,7 @@
-#include "driver.hpp"
+#include <drivers/driver.hpp>
+
+using namespace kos::drivers;
+
 
  Driver::Driver()
  {

@@ -1,9 +1,14 @@
-#include "types.hpp"
-#include "gdt.hpp"
-#include "interrupts.hpp"
-#include "driver.hpp"
-#include "keyboard.hpp"
-#include "mouse.hpp"
+#include <common/types.hpp>
+#include <gdt.hpp>
+#include <hardware/interrupts.hpp>
+#include <drivers/driver.hpp>
+#include <drivers/keyboard.hpp>
+#include <drivers/mouse.hpp>
+
+using namespace kos;
+using namespace kos::common;
+using namespace kos::drivers;
+using namespace kos::hardware;
 
 void printf(char* str)
 {

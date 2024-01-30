@@ -1,6 +1,9 @@
 //View https://wiki.osdev.org/PS/2_Keyboard
 
-#include "keyboard.hpp"
+#include <drivers/keyboard.hpp>
+using namespace kos::common;
+using namespace kos::drivers;
+using namespace kos::hardware;
 
 
 KeyboardEventHandler::KeyboardEventHandler()

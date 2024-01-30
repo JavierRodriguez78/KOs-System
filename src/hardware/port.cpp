@@ -1,6 +1,7 @@
 
-#include "port.hpp"
-
+#include <hardware/port.hpp>
+using namespace kos::common;
+using namespace kos::hardware;
 
 Port::Port(uint16_t portnumber)
 {

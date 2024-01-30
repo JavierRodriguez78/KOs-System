@@ -1,8 +1,9 @@
 
 //VER https://wiki.osdev.org/Interrupts
 
-#include "interrupts.hpp"
-
+#include <hardware/interrupts.hpp>
+using namespace kos::common;
+using namespace kos::hardware;
 
 void printf(char* str);
 void printfHex(uint8_t);

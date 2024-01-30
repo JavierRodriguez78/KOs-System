@@ -1,15 +1,25 @@
-GPPARAMS = -m32 -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
+GPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
-objects = ./bin/loader.o ./bin/driver.o ./bin/interruptstubs.o ./bin/gdt.o ./bin/port.o ./bin/kernel.o ./bin/interrupts.o ./bin/keyboard.o ./bin/mouse.o
+objects = ./obj/loader.o  \
+          ./obj/drivers/driver.o \
+		  ./obj/hardware/interruptstubs.o \
+		  ./obj/gdt.o \
+		  ./obj/hardware/port.o \
+		  ./obj/kernel.o \
+		  ./obj/hardware/interrupts.o \
+		  ./obj/drivers/keyboard.o \
+		  ./obj/drivers/mouse.o
 
 
-%.o: %.cpp
-	gcc $(GPPARAMS) -o ./bin/$@ -c $<
+obj/%.o: src/%.cpp
+	mkdir -p $(@D)
+	gcc $(GPPARAMS) -o $@ -c $<
 
-%.o: %.s
-	as $(ASPARAMS) -o ./bin/$@ $<
+obj/%.o: src/%.s
+	mkdir -p $(@D)
+	as $(ASPARAMS) -o  $@ $<
 
 mykernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
@@ -34,4 +44,4 @@ qemu: mykernel.iso
 
 .PHONY: clean
 clean:
-	rm -f $(objects) mykernel.bin mykernel.iso
+	rm -rf obj mykernel.bin mykernel.iso

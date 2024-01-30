@@ -1,6 +1,10 @@
 //View https://wiki.osdev.org/Mouse_Input
 
-#include "mouse.hpp"
+#include <drivers/mouse.hpp>
+
+using namespace kos::common;
+using namespace kos::drivers;
+using namespace kos::hardware;
 
     MouseEventHandler::MouseEventHandler()
     {

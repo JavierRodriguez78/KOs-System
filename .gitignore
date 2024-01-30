@@ -30,7 +30,7 @@
 *.app
 
 # Folders
-./bin
+./obj
 
 #iso
 *.iso
