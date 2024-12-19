@@ -1,28 +1,6 @@
-//Se require
-Make
-build-essential
-gdb
-qemu-system-i386
-nasm
-grub-common
-grub-pc-bin
-xorriso
-
-// Creación de los OBJ:
-make kernel.o
-make loader.o
-
-//Creación del BIN:
-make mykernel.bin
-
-//Ejecución en QEMU
-make qemu
-
-
 # Kos-system
 
 KOs-system is a hobby operating system developed for the 64-bit platform using C++ and assembler. The project is currently in a very early stage of development and is not yet ready for use. The project is being developed as a learning experience and is not intended to be used as a production operating system.
-
 
 ## Screenshots
 
@@ -30,7 +8,7 @@ KOs-system is a hobby operating system developed for the 64-bit platform using C
 
 ## Getting Started 🚀
 
-Estas instrucciones te guiarán para obtener una copia de este proyecto en funcionamiento en tu máquina local para propósitos de desarrollo y pruebas.
+This is how to build KO operating system from source. 
 
 ### Prerequisites 📋
 
