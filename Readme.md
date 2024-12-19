@@ -4,6 +4,7 @@ KOs-system is a hobby operating system developed for the 64-bit platform using C
 
 ## Screenshots
 
+<img width="400" alt="400" src="https://github.com/JavierRodriguez78/KOs-System/blob/main/docs/media/kos-system.png">
 
 
 ## Getting Started 🚀
