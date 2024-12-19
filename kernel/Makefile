@@ -2,23 +2,23 @@ GPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
-objects = ./obj/loader.o  \
-          ./obj/drivers/driver.o \
-		  ./obj/hardware/interruptstubs.o \
-		  ./obj/gdt.o \
-		  ./obj/hardware/port.o \
-		  ./obj/kernel.o \
-		  ./obj/hardware/interrupts.o \
-		  ./obj/drivers/keyboard.o \
-		  ./obj/drivers/mouse.o \
-		  ./obj/hardware/pci.o
+objects = ../obj/loader.o  \
+          ../obj/drivers/driver.o \
+		  ../obj/hardware/interruptstubs.o \
+		  ../obj/gdt.o \
+		  ../obj/hardware/port.o \
+		  ../obj/kernel.o \
+		  ../obj/hardware/interrupts.o \
+		  ../obj/drivers/keyboard.o \
+		  ../obj/drivers/mouse.o \
+		  ../obj/hardware/pci.o
 
 
-obj/%.o: src/%.cpp
+../obj/%.o: src/%.cpp
 	mkdir -p $(@D)
 	gcc $(GPPARAMS) -o $@ -c $<
 
-obj/%.o: src/%.s
+../obj/%.o: src/%.s
 	mkdir -p $(@D)
 	as $(ASPARAMS) -o  $@ $<
 
@@ -39,10 +39,12 @@ mykernel.iso: mykernel.bin
 	echo '}' >> ./iso/boot/grub/grub.cfg
 	grub-mkrescue --output=mykernel.iso ./iso
 	rm -rf ./iso
+	mkdir ../output
+	mv ./mykernel.iso ../output/mykernel.iso
 
-qemu: mykernel.iso
+qemu: ../output/mykernel.iso
 	qemu-system-i386 -boot d -cdrom $< -m 512
 
 .PHONY: clean
 clean:
-	rm -rf obj mykernel.bin mykernel.iso
+	rm -rf ../obj mykernel.bin mykernel.iso ../output
