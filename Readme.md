@@ -75,13 +75,6 @@ Commit your Changes (git commit -m 'Add some AmazingFeature')
 Push to the Branch (git push origin feature/AmazingFeature)
 Open a Pull Request
 
-## Wiki 📖
-
-Puedes encontrar mucho más sobre cómo usar este proyecto en nuestra [Wiki](https://github.com/your/project/wiki)
-
-## Soporte
-
-Si tienes algún problema o sugerencia, por favor abre un problema [aquí](https://github.com/your/project/issues).
 
 ## Roadmap
 
