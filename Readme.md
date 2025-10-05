@@ -55,9 +55,12 @@ make mykernel.iso
 make qemu
 ```
 
-## Build with 🛠️
+5. Execute Debug Qemu
+```bash
+make gdb
+``` 
 
-Explica qué tecnologías usaste para construir este proyecto. Aquí algunos ejemplos:
+## Build with 🛠️
 
 - [c++ ](https://isocpp.org/) - c17
 - [nasm](https://nasm.us/) - Assembler
