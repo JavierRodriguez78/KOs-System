@@ -15,6 +15,7 @@ objects = ../obj/loader.o  \
 		  ../obj/hardware/pci.o \
 		  ../obj/console/tty.o  \
 		  ../obj/console/shell.o \
+		  ../obj/console/shellKeyboardHandler.o \
 		  ../obj/lib/libc.o
 
 

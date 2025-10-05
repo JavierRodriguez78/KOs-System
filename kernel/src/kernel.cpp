@@ -7,6 +7,8 @@
 #include <drivers/mouse.hpp>
 #include <drivers/vga.hpp>
 #include <console/tty.hpp>
+#include <console/shell.hpp>
+
 
 using namespace kos;
 using namespace kos::common;
@@ -16,14 +18,17 @@ using namespace kos::console;
 
 
 
+
 class PrintfKeyboardEventHandler : public KeyboardEventHandler
 {
      kos::console::TTY* tty;
 public:
+    PrintfKeyboardEventHandler(kos::console::TTY* t): tty{t}{}
     void OnKeyDown(char c)
     {
         char foo[] = " ";
         foo[0] = c;
+        tty->Write(foo);
     }
 };
 
@@ -100,13 +105,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     DriverManager drvManager;
 
     tty.Write("--- LOAD DEVICES ---\n");
-    PrintfKeyboardEventHandler kbhandler;
-    KeyboardDriver keyboard(&interrupts, &kbhandler);
+    ShellKeyboardHandler skbhandler;
+    KeyboardDriver keyboard(&interrupts, &skbhandler);
     drvManager.AddDriver(&keyboard);
 
-    MouseToConsole mhandler;
-    MouseDriver mouse(&interrupts, &mhandler);
-    drvManager.AddDriver(&mouse);
+   // MouseToConsole mhandler;
+   // MouseDriver mouse(&interrupts, &mhandler);
+   // drvManager.AddDriver(&mouse);
 
     PeripheralComponentIntercontroller PCIController;
     PCIController.SelectDrivers(&drvManager);

@@ -4,6 +4,7 @@
 #include<common/types.hpp>
 #include<lib/libc.hpp>
 #include<console/tty.hpp>
+#include<drivers/keyboard.hpp>
 
 namespace kos{
     namespace console{
@@ -16,6 +17,19 @@ namespace kos{
             private:
                 kos::lib::LibC LIBC;
                 kos::console::TTY TTY;
+        };
+
+        class ShellKeyboardHandler : public kos::drivers::KeyboardEventHandler{
+            
+            public:
+
+                ShellKeyboardHandler();
+                ~ShellKeyboardHandler();
+                virtual void OnKeyDown(char c);
+
+            private:
+            kos::console::TTY tty;
+
         };
     }
 }
