@@ -4,6 +4,7 @@ KOs-system is a hobby operating system developed for the 64-bit platform using C
 
 ## Screenshots
 
+<img width="400" alt="400" src="https://github.com/JavierRodriguez78/KOs-System/blob/main/docs/media/kos-system.png">
 
 
 ## Getting Started 🚀
@@ -74,13 +75,6 @@ Commit your Changes (git commit -m 'Add some AmazingFeature')
 Push to the Branch (git push origin feature/AmazingFeature)
 Open a Pull Request
 
-## Wiki 📖
-
-Puedes encontrar mucho más sobre cómo usar este proyecto en nuestra [Wiki](https://github.com/your/project/wiki)
-
-## Soporte
-
-Si tienes algún problema o sugerencia, por favor abre un problema [aquí](https://github.com/your/project/issues).
 
 ## Roadmap
 
