@@ -32,5 +32,8 @@
 # Folders
 ./obj
 
-#iso
+# iso
 *.iso
+
+# bin
+*.bin

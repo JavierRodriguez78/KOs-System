@@ -15,6 +15,7 @@ void KeyboardEventHandler::OnKeyDown(char)
 {
 
 };
+
 void KeyboardEventHandler::OnKeyUp(char)
 {
 
@@ -121,3 +122,4 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
       
     return esp;
 };
+

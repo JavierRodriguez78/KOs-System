@@ -18,13 +18,12 @@ using namespace kos::console;
 
 class PrintfKeyboardEventHandler : public KeyboardEventHandler
 {
+     kos::console::TTY* tty;
 public:
     void OnKeyDown(char c)
     {
         char foo[] = " ";
         foo[0] = c;
-        static kos::console::TTY tty;
-        tty.Write(foo);
     }
 };
 
@@ -101,9 +100,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     DriverManager drvManager;
 
     tty.Write("--- LOAD DEVICES ---\n");
-   // PrintfKeyboardEventHandler kbhandler;
-   // KeyboardDriver keyboard(&interrupts, &kbhandler);
-   // drvManager.AddDriver(&keyboard);
+    PrintfKeyboardEventHandler kbhandler;
+    KeyboardDriver keyboard(&interrupts, &kbhandler);
+    drvManager.AddDriver(&keyboard);
 
     MouseToConsole mhandler;
     MouseDriver mouse(&interrupts, &mhandler);

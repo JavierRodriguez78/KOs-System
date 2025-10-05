@@ -34,7 +34,18 @@ namespace kos
             KeyboardEventHandler* handler;
             kos::console::TTY tty;
         };
+    
+        class Keyboard{
+            public:
+                void WaitKey();
+        };
+
+        
+    
+    
     }
+
+
 }
 
 

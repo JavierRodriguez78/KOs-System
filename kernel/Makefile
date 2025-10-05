@@ -13,7 +13,9 @@ objects = ../obj/loader.o  \
 		  ../obj/drivers/mouse.o \
 		  ../obj/drivers/vga.o \
 		  ../obj/hardware/pci.o \
-		  ../obj/console/tty.o
+		  ../obj/console/tty.o  \
+		  ../obj/console/shell.o \
+		  ../obj/lib/libc.o
 
 
 ../obj/%.o: src/%.cpp
@@ -46,6 +48,15 @@ mykernel.iso: mykernel.bin
 
 qemu: ../output/mykernel.iso
 	qemu-system-i386 -boot d -cdrom $< -m 512
+
+debug: ../output/mykernel.iso
+	qemu-system-i386 -boot d -cdrom $< -s -S -m 512
+
+gdb: ../output/mykernel.iso
+	@echo ">>> Start Qemu in Debug && GDB mode..."
+	@qemu-system-i386 -boot d -cdrom $< -s -S & 
+	sleep 1
+	gdb -x .gdbinit
 
 .PHONY: clean
 clean:
