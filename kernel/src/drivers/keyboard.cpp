@@ -37,8 +37,7 @@ KeyboardDriver::~KeyboardDriver()
 
 };
 
-void printf(char*);
-void printfHex(uint8_t);
+
 
 void KeyboardDriver::Activate()
 {
@@ -113,8 +112,8 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                       
             default:
             { 
-                printf("KEYBOARD 0X");
-                printfHex(key);
+                tty.Write("KEYBOARD 0X");
+                tty.WriteHex(key);
                 break;
             }
         }

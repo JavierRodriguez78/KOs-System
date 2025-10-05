@@ -5,6 +5,7 @@
 #include <hardware/interrupts.hpp>
 #include <hardware/port.hpp>
 #include <drivers/driver.hpp>
+#include <console/tty.hpp>
 
 namespace kos
 {
@@ -21,14 +22,17 @@ namespace kos
 
         class KeyboardDriver:public kos::hardware::InterruptHandler, public Driver
         {
-            kos::hardware::Port8Bit dataport;
-            kos::hardware::Port8Bit commandport;
-            KeyboardEventHandler* handler;
+          
         public:
             KeyboardDriver(kos::hardware::InterruptManager* manager, KeyboardEventHandler *handler);
             ~KeyboardDriver();
             virtual kos::common::uint32_t HandleInterrupt(kos::common::uint32_t esp);
             virtual void Activate();
+        private:
+            kos::hardware::Port8Bit dataport;
+            kos::hardware::Port8Bit commandport;
+            KeyboardEventHandler* handler;
+            kos::console::TTY tty;
         };
     }
 }

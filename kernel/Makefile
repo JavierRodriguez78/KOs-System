@@ -11,7 +11,9 @@ objects = ../obj/loader.o  \
 		  ../obj/hardware/interrupts.o \
 		  ../obj/drivers/keyboard.o \
 		  ../obj/drivers/mouse.o \
-		  ../obj/hardware/pci.o
+		  ../obj/drivers/vga.o \
+		  ../obj/hardware/pci.o \
+		  ../obj/console/tty.o
 
 
 ../obj/%.o: src/%.cpp

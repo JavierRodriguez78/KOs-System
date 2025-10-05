@@ -172,8 +172,8 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
     }
     else if(interrupt != hardwareInterruptOffset)
     {
-        printf("UNHANDLER INTERRUPT 0x");
-        printfHex(interrupt);
+        tty.Write("UNHANDLER INTERRUPT 0x");
+        tty.WriteHex(interrupt);
     }
 
     // hardarware interrupts must be acknowleged

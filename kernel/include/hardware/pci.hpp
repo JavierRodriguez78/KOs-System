@@ -2,9 +2,12 @@
 #define __KOS__HARDWARE__PCI_H
 
 #include <hardware/interrupts.hpp>
+#include <hardware/port.hpp>
 #include <drivers/driver.hpp>
 #include <common/types.hpp>
-#include <hardware/port.hpp>
+#include <console/tty.hpp>
+
+
 
 namespace kos
 {
@@ -47,6 +50,8 @@ namespace kos
 
                 void SelectDrivers(kos::drivers::DriverManager* driveManager);
                 kos::hardware::PeripheralComponentInterConnectDeviceDescriptor GetDeviceDescriptor(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function);
+            private:
+                kos::console::TTY tty;
         };
     }
 }

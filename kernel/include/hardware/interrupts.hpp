@@ -6,6 +6,7 @@
 #include <gdt.hpp>
 #include <common/types.hpp>
 #include <hardware/port.hpp>
+#include <console/tty.hpp>
 
 
 namespace kos
@@ -113,6 +114,8 @@ namespace kos
                 kos::common::uint16_t HardwareInterruptOffset();
                 void Activate();
                 void Deactivate();
+            private:
+                    kos::console::TTY tty;
         };
     }
 }

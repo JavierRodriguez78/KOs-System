@@ -1,7 +1,10 @@
 #include <hardware/pci.hpp>
+#include <console/tty.hpp>
+
 using namespace kos::common;
 using namespace kos::hardware;
 using namespace kos::drivers;
+
 
 
 
@@ -69,31 +72,30 @@ void PeripheralComponentIntercontroller::SelectDrivers(kos::drivers::DriverManag
         for(int device=0; device < 32; device ++)
         {
             int numFunctions = DeviceHasFunctions(bus, device) ? 8 :1;
+
             for(int function=0; function< numFunctions; function++)
             {
                 PeripheralComponentInterConnectDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
                 if(dev.vendor_id==0x0000 ||dev.vendor_id==0xFFFF )
                     break;
-                
-                printf("PCI BUS ");
-                printfHex(bus & 0xFF);
 
-                printf(", DEVICE ");
-                printfHex(device & 0xFF);
+                tty.Write("PCI BUS ");
+                tty.WriteHex(bus & 0xFF);
 
-                printf(", FUNCTION ");
-                printfHex(function & 0xFF);
+                tty.Write(", DEVICE ");
+                tty.WriteHex(device & 0xFF);
 
-                printf(" = VENDOR ");
-                printfHex((dev.vendor_id & 0xFF00) >>8);
-                printfHex(dev.vendor_id & 0xFF);
+                tty.Write(", FUNCTION ");
+                tty.WriteHex(function & 0xFF);
 
-                printf(", DEVICE ");
-                printfHex((dev.device_id & 0xFF00)>>8);
-                printfHex(dev.device_id & 0xFF);
-                printf("\n");
+                tty.Write(" = VENDOR ");
+                tty.WriteHex((dev.vendor_id & 0xFF00) >>8);
+                tty.WriteHex(dev.vendor_id & 0xFF);
 
-
+                tty.Write(", DEVICE ");
+                tty.WriteHex((dev.device_id & 0xFF00)>>8);
+                tty.WriteHex(dev.device_id & 0xFF);
+                tty.Write("\n");
             }
         }
     }
