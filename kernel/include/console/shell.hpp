@@ -16,7 +16,7 @@ namespace kos{
                 void Run();
             private:
                 kos::lib::LibC LIBC;
-                kos::console::TTY TTY;
+                static kos::console::TTY TTY;
         };
 
         class ShellKeyboardHandler : public kos::drivers::KeyboardEventHandler{
@@ -28,7 +28,7 @@ namespace kos{
                 virtual void OnKeyDown(char c);
 
             private:
-            kos::console::TTY tty;
+            static kos::console::TTY tty;
 
         };
     }

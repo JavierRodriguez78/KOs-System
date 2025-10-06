@@ -115,7 +115,7 @@ namespace kos
                 void Activate();
                 void Deactivate();
             private:
-                    kos::console::TTY tty;
+                static kos::console::TTY tty;
         };
     }
 }

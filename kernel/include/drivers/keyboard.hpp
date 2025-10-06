@@ -32,7 +32,7 @@ namespace kos
             kos::hardware::Port8Bit dataport;
             kos::hardware::Port8Bit commandport;
             KeyboardEventHandler* handler;
-            kos::console::TTY tty;
+            static kos::console::TTY tty;
         };
     
         class Keyboard{

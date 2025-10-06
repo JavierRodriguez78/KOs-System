@@ -4,19 +4,8 @@
 using namespace kos::drivers;
 using namespace kos::console;
 
-
-    TTY::TTY(){
-    }
-
     
-    TTY::~TTY(){
-    }
-
-    
-    void TTY::Init(){
-        vga.Init();
-        
-    }
+    kos::drivers::VGA TTY::vga;
 
     void TTY::Clear(){
         vga.Clear();

@@ -7,15 +7,14 @@ namespace kos {
     namespace console {
         class TTY{
             public:
-                TTY();
-                ~TTY();
-                void Init();
-                void Clear();
-                void Write(const kos::common::int8_t* s);
-                void PutChar(const kos::common::int8_t c);
-                void WriteHex(kos::common::uint8_t key);
+                TTY() = default;
+                ~TTY() = default;
+                static void Clear();
+                static void Write(const kos::common::int8_t* s);
+                static void PutChar(const kos::common::int8_t c);
+                static void WriteHex(kos::common::uint8_t key);
             private:
-                kos::drivers::VGA vga;
+                static kos::drivers::VGA vga;
         };
     }
 }

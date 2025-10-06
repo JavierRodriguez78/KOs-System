@@ -8,7 +8,6 @@ using namespace kos::drivers;
 
 
 ShellKeyboardHandler::ShellKeyboardHandler(){
-    tty.Init();
 };
 
 ShellKeyboardHandler::~ShellKeyboardHandler(){

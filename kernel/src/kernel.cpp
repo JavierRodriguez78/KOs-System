@@ -17,21 +17,6 @@ using namespace kos::hardware;
 using namespace kos::console;
 
 
-
-
-class PrintfKeyboardEventHandler : public KeyboardEventHandler
-{
-     kos::console::TTY* tty;
-public:
-    PrintfKeyboardEventHandler(kos::console::TTY* t): tty{t}{}
-    void OnKeyDown(char c)
-    {
-        char foo[] = " ";
-        foo[0] = c;
-        tty->Write(foo);
-    }
-};
-
 class MouseToConsole: public MouseEventHandler
 {
     int8_t x,y;
@@ -94,7 +79,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     callConstructors();
 
     kos::console::TTY tty;
-    tty.Init();
+    tty.Clear();
     tty.Write((kos::common::int8_t*)"---- KOS Kernel 64-bit ---- \n");
     tty.Write((kos::common::int8_t*)"--- Operating System ---\n");
 

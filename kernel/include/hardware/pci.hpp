@@ -51,7 +51,7 @@ namespace kos
                 void SelectDrivers(kos::drivers::DriverManager* driveManager);
                 kos::hardware::PeripheralComponentInterConnectDeviceDescriptor GetDeviceDescriptor(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function);
             private:
-                kos::console::TTY tty;
+                static kos::console::TTY tty;
         };
     }
 }
