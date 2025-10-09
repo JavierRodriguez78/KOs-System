@@ -37,3 +37,7 @@
 
 # bin
 *.bin
+
+# elf
+*.elf
+/disk/bin/*.elf

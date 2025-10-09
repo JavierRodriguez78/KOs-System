@@ -1,10 +1,12 @@
 #include <fs/fat32.hpp>
 #include <console/tty.hpp>
+#include <lib/libc.hpp>
 
 using namespace kos::fs;
 using namespace kos::drivers;
 using namespace kos::common;
 using namespace kos::console;
+using namespace kos::lib;
 
 static TTY tty;
 
@@ -32,6 +34,10 @@ kos::fs::FAT32::~FAT32() {}
 
 bool FAT32::ReadSector(uint32_t lba, uint8_t* buf) {
     return dev->ReadSectors(lba, 1, buf);
+}
+
+bool FAT32::ReadSectors(uint32_t lba, uint32_t count, uint8_t* buf) {
+    return dev->ReadSectors(lba, count, buf);
 }
 
 uint32_t FAT32::DetectFAT32PartitionStart() {
@@ -219,6 +225,26 @@ uint32_t FAT32::ClusterToLBA(uint32_t cluster) {
     return dataStartLBA + (cluster - 2) * bpb.sectorsPerCluster;
 }
 
+bool FAT32::ReadCluster(uint32_t cluster, uint8_t* buf) {
+    return ReadSectors(ClusterToLBA(cluster), bpb.sectorsPerCluster, buf);
+}
+
+// Read next cluster from FAT (FAT32). Very minimal and unoptimized.
+uint32_t FAT32::NextCluster(uint32_t cluster) {
+    // FAT entries are 32-bit, but upper 4 bits reserved. Need to read from FAT region.
+    // Compute FAT sector and offset
+    uint32_t fatOffset = cluster * 4;
+    uint32_t fatSector = fatStartLBA + (fatOffset / 512);
+    uint32_t entOffset = fatOffset % 512;
+    uint8_t sec[512];
+    if (!ReadSector(fatSector, sec)) return 0x0FFFFFFF; // EOC on error
+    uint32_t val = (uint32_t)sec[entOffset] |
+                   ((uint32_t)sec[entOffset + 1] << 8) |
+                   ((uint32_t)sec[entOffset + 2] << 16) |
+                   ((uint32_t)sec[entOffset + 3] << 24);
+    return val & 0x0FFFFFFF;
+}
+
 void FAT32::ListRoot() {
     if (bpb.bytesPerSector == 0) {
         tty.Write("FAT32 not mounted\n");
@@ -273,6 +299,96 @@ void FAT32::ListRoot() {
             tty.PutChar('\n');
         }
     }
+}
+
+// Find short 8.3 name in a single directory cluster (no subdir traversal beyond one hop)
+bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize) {
+    uint8_t* clusterBuf = (uint8_t*)0x20000; // scratch area
+    if (!ReadCluster(dirCluster, clusterBuf)) return false;
+    for (uint32_t i = 0; i < bpb.sectorsPerCluster * 512; i += 32) {
+        uint8_t firstByte = clusterBuf[i];
+        if (firstByte == 0x00) break;
+        if (firstByte == 0xE5) continue;
+        uint8_t attr = clusterBuf[i + 11];
+        if (attr == 0x0F) continue;
+        // Build short name into buffer name[12]
+        int8_t name[13];
+        int32_t idx = 0;
+        for (int j = 0; j < 8; ++j) {
+            int8_t c = (int8_t)clusterBuf[i + j];
+            if (c == ' ') break; name[idx++] = c;
+        }
+        int8_t ext[4]; int e = 0;
+        for (int j = 0; j < 3; ++j) {
+            int8_t c = (int8_t)clusterBuf[i + 8 + j];
+            if (c == ' ') break; ext[e++] = c;
+        }
+        name[idx] = 0;
+        int8_t merged[13];
+        int m = 0;
+        for (int k = 0; k < idx; ++k) merged[m++] = name[k];
+        if (e > 0) { merged[m++] = '.'; for (int k = 0; k < e; ++k) merged[m++] = ext[k]; }
+        merged[m] = 0;
+        // Compare case-sensitive as written
+        if (kos::lib::LibC::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+            uint16_t clusterLo = (uint16_t)clusterBuf[i + 26] | ((uint16_t)clusterBuf[i + 27] << 8);
+            uint16_t clusterHi = (uint16_t)clusterBuf[i + 20] | ((uint16_t)clusterBuf[i + 21] << 8);
+            outStartCluster = ((uint32_t)clusterHi << 16) | clusterLo;
+            outFileSize = (uint32_t)clusterBuf[i + 28] |
+                          ((uint32_t)clusterBuf[i + 29] << 8) |
+                          ((uint32_t)clusterBuf[i + 30] << 16) |
+                          ((uint32_t)clusterBuf[i + 31] << 24);
+            return true;
+        }
+    }
+    return false;
+}
+
+int32_t FAT32::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
+    if (!mountedFlag) return -1;
+    if (!path || path[0] != '/') return -1;
+    // Support /<NAME>.<EXT> and /bin/<NAME>.<EXT>
+    const int8_t* p = path + 1;
+    uint32_t dirCluster = bpb.rootCluster;
+    // Check optional "bin/" prefix
+    if (p[0] && p[0] != 0) {
+        if (p[0]=='b' && p[1]=='i' && p[2]=='n' && p[3]=='/') {
+            // For now treat /bin as root too (no real subdir traversal)
+            p += 4;
+        }
+    }
+    // p now points to short name like HELLO.ELF or hello.elf
+    // FAT short names are uppercase; normalize p to uppercase for comparison
+    int8_t name83[13];
+    uint32_t ni = 0;
+    while (p[ni] && ni < sizeof(name83) - 1) {
+        int8_t c = p[ni];
+        if (c >= 'a' && c <= 'z') c = c - ('a' - 'A');
+        name83[ni] = c;
+        ++ni;
+    }
+    name83[ni] = 0;
+    uint32_t startCluster = 0, fileSize = 0;
+    if (!FindShortNameInDirCluster(dirCluster, name83, startCluster, fileSize)) return -1;
+    // Read FAT chain
+    uint32_t toRead = (fileSize < maxLen) ? fileSize : maxLen;
+    uint32_t bytesRead = 0;
+    uint8_t* dst = outBuf;
+    uint32_t cluster = startCluster;
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    uint8_t* clBuf = (uint8_t*)0x30000; // scratch
+    while (cluster >= 2 && cluster < 0x0FFFFFF8 && bytesRead < toRead) {
+        if (!ReadCluster(cluster, clBuf)) break;
+        uint32_t chunk = bytesPerCluster;
+        if (bytesRead + chunk > toRead) chunk = toRead - bytesRead;
+        for (uint32_t i = 0; i < chunk; ++i) dst[bytesRead + i] = clBuf[i];
+        bytesRead += chunk;
+        uint32_t next = NextCluster(cluster);
+        if (next >= 0x0FFFFFF8) break;
+        if (next == 0) break; // safety
+        cluster = next;
+    }
+    return (int32_t)bytesRead;
 }
 
 void FAT32::DebugInfo() {

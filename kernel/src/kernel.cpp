@@ -199,6 +199,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         tty.Write("FAT32 mount failed on all IDE positions\n");
     }
 
+    // Register built-in commands so /Bin/<cmd> can resolve via CommandRegistry
+    CommandRegistry::Init();
+
     // Create and start the shell
     g_shell = &g_shell_instance;
     g_shell_instance.Run();

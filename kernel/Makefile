@@ -13,14 +13,24 @@ objects = ../obj/loader.o  \
 		  ../obj/drivers/mouse.o \
 		  ../obj/drivers/vga.o \
 		  ../obj/drivers/ata.o \
+		  ../obj/fs/filesystem.o \
 		  ../obj/fs/fat16.o \
 		  ../obj/fs/fat32.o \
 		  ../obj/hardware/pci.o \
 		  ../obj/console/tty.o  \
 		  ../obj/console/shell.o \
 		  ../obj/console/shellKeyboardHandler.o \
+		  ../obj/console/registry.o \
 		  ../obj/lib/libc.o \
+		  ../obj/lib/elfloader.o \
 		  ../obj/lib/newdelete.o
+
+	# Applications to build into disk/bin
+	APPS = hello echo
+	APP_OBJDIR = ../obj/application
+	APP_BINDIR = disk/bin
+	APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))
+	APP_BINS = $(patsubst %, $(APP_BINDIR)/%.elf, $(APPS))
 
 
 ../obj/%.o: src/%.cpp
@@ -33,6 +43,23 @@ objects = ../obj/loader.o  \
 
 mykernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
+
+# Build application objects from application/*.cpp
+$(APP_OBJDIR)/%.o: application/%.cpp
+	mkdir -p $(@D)
+	gcc $(GPPARAMS) -o $@ -c $<
+
+# Link applications as simple ELF32 with entry at symbol 'main'
+$(APP_BINDIR)/%.elf: $(APP_OBJDIR)/%.o ../obj/console/tty.o ../obj/lib/libc.o ../obj/lib/newdelete.o ../obj/drivers/vga.o
+	mkdir -p $(APP_BINDIR)
+	ld -melf_i386 -e main -Ttext 0x01000000 -o $@ $^
+	@echo "Built app $@"
+
+.PHONY: apps
+apps: $(APP_BINS)
+
+# Ensure apps are built when building the kernel binary
+mykernel.bin: apps
 
 mykernel.iso: mykernel.bin
 	mkdir ./iso
@@ -72,3 +99,4 @@ gdb: ../output/mykernel.iso
 .PHONY: clean
 clean:
 	rm -rf ../obj mykernel.bin mykernel.iso ../output
+	rm -rf $(APP_BINDIR)/*.elf
