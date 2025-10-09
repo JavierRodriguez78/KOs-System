@@ -23,6 +23,7 @@ objects = ../obj/loader.o  \
 		  ../obj/console/registry.o \
 		  ../obj/lib/libc.o \
 		  ../obj/lib/elfloader.o \
+		  ../obj/lib/sysapi.o \
 		  ../obj/lib/newdelete.o
 
 	# Applications to build into disk/bin

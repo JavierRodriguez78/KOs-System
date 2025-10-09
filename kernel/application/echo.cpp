@@ -1,13 +1,11 @@
-#include <console/tty.hpp>
+#include <sys/api.hpp>
 #include <common/types.hpp>
+using namespace kos::common;
+using namespace kos::sys;
 #include "app.hpp"
 
-using namespace kos::console;
-using namespace kos::common;
-
 extern "C" void app_echo() {
-    TTY tty;
-    tty.Write((int8_t*)"Echo app says hi.\n");
+    puts((int8_t*)"Echo app says hi.\n");
 }
 
 // Standalone entry for the .elf binary build

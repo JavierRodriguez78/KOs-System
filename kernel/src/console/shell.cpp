@@ -59,26 +59,7 @@ void Shell::InputChar(int8_t c) {
 
 void Shell::ExecuteCommand() {
     if (bufferIndex == 0) return;
-    if (LibC::strcmp(reinterpret_cast<const uint8_t*>(buffer), (const uint8_t*)"help") == 0) {
-        tty.Write("Commands: help, clear, ls, fatinfo\n");
-    } else if (LibC::strcmp(reinterpret_cast<const uint8_t*>(buffer), (const uint8_t*)"clear") == 0) {
-        //tty.Clear();
-    } else if (LibC::strcmp(reinterpret_cast<const uint8_t*>(buffer), (const uint8_t*)"ls") == 0) {
-        if (g_fs_ptr) {
-            g_fs_ptr->ListRoot();
-        } else {
-            tty.Write("No filesystem mounted\n");
-        }
-    } else if (LibC::strcmp(reinterpret_cast<const uint8_t*>(buffer), (const uint8_t*)"fatinfo") == 0) {
-        if (g_fs_ptr) {
-            g_fs_ptr->DebugInfo();
-        } else {
-            tty.Write("No filesystem mounted\n");
-        }
-    } else {
-        // Delegate other commands to the new path-based executor
-        ExecuteCommand(buffer);
-    }
+    ExecuteCommand(buffer);
 }
 
 void Shell::ExecuteCommand(const int8_t* command) {
@@ -99,16 +80,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
         path[5 + i] = command[i];
     }
     path[5 + cmdLen] = 0;
-   
-    if (fs::Filesystem::Exists(path)) {
-        void (*cmdEntry)() = (void (*)())fs::Filesystem::GetCommandEntry(path);
-        if (cmdEntry) {
-            cmdEntry();
-        } else {
-            tty.Write("Error: Command entry not found\n");
-        }
-    } else {
-        // Try to execute /bin/<cmd>.elf as ELF32
+    // Try to execute /bin/<cmd>.elf as ELF32
         int8_t elfPath[80];
         int32_t baseLen = LibC::strlen(path);
         if (baseLen + 4 < (int32_t)sizeof(elfPath)) {
@@ -122,17 +94,19 @@ void Shell::ExecuteCommand(const int8_t* command) {
                 static uint8_t elfBuf[64*1024]; // 64 KB buffer for small apps
                 int32_t n = g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
                 if (n > 0) {
+                    tty.Write((int8_t*)"Loading ELF...\n");
                     if (!kos::lib::ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) {
                         tty.Write("ELF load failed\n");
                     }
                     return;
+                } else {
+                    tty.Write((int8_t*)"ReadFile failed or empty\n");
                 }
             }
         }
-        tty.Write("Command not found: ");
-        tty.Write(command);
-        tty.PutChar('\n');
-    }
+    tty.Write("Command not found: ");
+    tty.Write(command);
+    tty.PutChar('\n');
     
        
 }

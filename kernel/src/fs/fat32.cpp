@@ -350,12 +350,15 @@ int32_t FAT32::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
     // Support /<NAME>.<EXT> and /bin/<NAME>.<EXT>
     const int8_t* p = path + 1;
     uint32_t dirCluster = bpb.rootCluster;
-    // Check optional "bin/" prefix
-    if (p[0] && p[0] != 0) {
-        if (p[0]=='b' && p[1]=='i' && p[2]=='n' && p[3]=='/') {
-            // For now treat /bin as root too (no real subdir traversal)
-            p += 4;
+    // Check optional "bin/" prefix and traverse into BIN directory
+    if (p[0]=='b' && p[1]=='i' && p[2]=='n' && p[3]=='/') {
+        // Locate BIN directory entry in root and use its start cluster
+        uint32_t binCl = 0, binSize = 0;
+        const int8_t binName[4] = {'B','I','N',0};
+        if (FindShortNameInDirCluster(bpb.rootCluster, binName, binCl, binSize)) {
+            if (binCl >= 2) dirCluster = binCl;
         }
+        p += 4;
     }
     // p now points to short name like HELLO.ELF or hello.elf
     // FAT short names are uppercase; normalize p to uppercase for comparison

@@ -12,6 +12,8 @@
 #include <fs/fat16.hpp>
 #include <fs/fat32.hpp>
 #include <fs/filesystem.hpp>
+#include <sys/api.hpp>
+#include <lib/sysapi.hpp>
 
 
 using namespace kos;
@@ -124,6 +126,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     tty.Write((kos::common::int8_t*)"--- Operating System ---\n");
 
     GlobalDescriptorTable gdt;
+    // Initialize system API table for apps
+    InitSysApi();
     InterruptManager interrupts(0x20, &gdt);
     // Register a noop handler for IRQ14 (IDE primary) to avoid log spam if device still raises IRQs
     IDEIRQHandler ideIrq14(&interrupts, interrupts.HardwareInterruptOffset() + 14);
@@ -199,8 +203,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         tty.Write("FAT32 mount failed on all IDE positions\n");
     }
 
-    // Register built-in commands so /Bin/<cmd> can resolve via CommandRegistry
-    CommandRegistry::Init();
+    // Built-in commands removed; rely on /bin/<cmd>.elf execution
 
     // Create and start the shell
     g_shell = &g_shell_instance;
