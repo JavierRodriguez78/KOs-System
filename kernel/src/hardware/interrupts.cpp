@@ -5,7 +5,7 @@
 using namespace kos::common;
 using namespace kos::hardware;
 
-void printf(char* str);
+void printf(int8_t* str);
 void printfHex(uint8_t);
 
 InterruptHandler::InterruptHandler(InterruptManager* interruptManager, uint8_t InterruptNumber)

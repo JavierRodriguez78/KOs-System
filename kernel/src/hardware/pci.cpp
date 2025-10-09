@@ -30,7 +30,7 @@ PeripheralComponentIntercontroller::~PeripheralComponentIntercontroller()
 };
 
 
-uint32_t PeripheralComponentIntercontroller::Read(common::uint16_t bus, common::uint16_t device, common::uint16_t function, common::uint32_t registeroffset)
+uint32_t PeripheralComponentIntercontroller::Read(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset)
 {
     uint32_t id=
         0x1 << 31
@@ -45,7 +45,7 @@ uint32_t PeripheralComponentIntercontroller::Read(common::uint16_t bus, common::
 
 };
                 
-void PeripheralComponentIntercontroller::Write(common::uint16_t bus, common::uint16_t device, common::uint16_t function, common::uint32_t registeroffset, common::uint32_t value)
+void PeripheralComponentIntercontroller::Write(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset, uint32_t value)
 {
     uint32_t id=
         0x1 << 31
@@ -57,23 +57,23 @@ void PeripheralComponentIntercontroller::Write(common::uint16_t bus, common::uin
     dataPort.Write(value);
 };
 
-bool PeripheralComponentIntercontroller::DeviceHasFunctions(common::uint16_t bus, common::uint16_t device)
+bool PeripheralComponentIntercontroller::DeviceHasFunctions(uint16_t bus, uint16_t device)
 {
     return Read(bus, device, 0, 0x0E) & (1<<7);
 };
 
-void printf(char* str);
+void printf(int8_t* str);
 void printfHex(uint8_t);
 
-void PeripheralComponentIntercontroller::SelectDrivers(kos::drivers::DriverManager* driveManager)
+void PeripheralComponentIntercontroller::SelectDrivers(DriverManager* driveManager)
 {
-    for(int bus= 0 ; bus < 8; bus++)
+    for(int32_t bus= 0 ; bus < 8; bus++)
     {
-        for(int device=0; device < 32; device ++)
+        for(int32_t device=0; device < 32; device ++)
         {
-            int numFunctions = DeviceHasFunctions(bus, device) ? 8 :1;
+            int32_t numFunctions = DeviceHasFunctions(bus, device) ? 8 :1;
 
-            for(int function=0; function< numFunctions; function++)
+            for(int32_t function=0; function< numFunctions; function++)
             {
                 PeripheralComponentInterConnectDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
                 if(dev.vendor_id==0x0000 ||dev.vendor_id==0xFFFF )
@@ -101,7 +101,7 @@ void PeripheralComponentIntercontroller::SelectDrivers(kos::drivers::DriverManag
     }
 };
 
-PeripheralComponentInterConnectDeviceDescriptor PeripheralComponentIntercontroller::GetDeviceDescriptor(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function)
+PeripheralComponentInterConnectDeviceDescriptor PeripheralComponentIntercontroller::GetDeviceDescriptor(uint16_t bus, uint16_t device, uint16_t function)
 {
     PeripheralComponentInterConnectDeviceDescriptor result;
     result.bus = bus;
@@ -109,7 +109,7 @@ PeripheralComponentInterConnectDeviceDescriptor PeripheralComponentIntercontroll
     result.function = function;
 
     result.vendor_id = Read(bus, device, function, 0x00);
-    result.device = Read(bus, device, function, 0x02);
+    result.device_id = Read(bus, device, function, 0x02);
 
     result.class_id = Read(bus, device, function, 0x0b);
     result.subclass_id = Read(bus, device, function, 0x0a);

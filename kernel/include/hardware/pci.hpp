@@ -7,7 +7,10 @@
 #include <common/types.hpp>
 #include <console/tty.hpp>
 
-
+using namespace kos::common;
+using namespace kos::drivers;
+using namespace kos::hardware;
+using namespace kos::console;
 
 namespace kos
 {
@@ -16,21 +19,21 @@ namespace kos
         class PeripheralComponentInterConnectDeviceDescriptor
         {
             public:
-                kos::common::uint32_t portBase;
-                kos::common::uint32_t interrupt;
+                uint32_t portBase;
+                uint32_t interrupt;
 
-                kos::common::uint16_t bus;
-                kos::common::uint16_t device;
-                kos::common::uint16_t function;
+                uint16_t bus;
+                uint16_t device;
+                uint16_t function;
 
-                kos::common::uint16_t vendor_id;
-                kos::common::uint16_t device_id;
+                uint16_t vendor_id;
+                uint16_t device_id;
                 
-                kos::common::uint8_t class_id;
-                kos::common::uint8_t subclass_id;
-                kos::common::uint8_t interface_id;
+                uint8_t class_id;
+                uint8_t subclass_id;
+                uint8_t interface_id;
                 
-                kos::common::uint8_t revision;
+                uint8_t revision;
 
                 PeripheralComponentInterConnectDeviceDescriptor();
                 ~PeripheralComponentInterConnectDeviceDescriptor();
@@ -38,20 +41,20 @@ namespace kos
 
         class PeripheralComponentIntercontroller
         {
-            kos::hardware::Port32Bit dataPort;
-            kos::hardware::Port32Bit commandPort;
+            Port32Bit dataPort;
+            Port32Bit commandPort;
 
             public:
                 PeripheralComponentIntercontroller();
                 ~PeripheralComponentIntercontroller();
-                kos::common::uint32_t Read(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function, kos::common::uint32_t registeroffset);
-                void Write(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function, kos::common::uint32_t registeroffset, kos::common::uint32_t value);
-                bool DeviceHasFunctions(kos::common::uint16_t bus, kos::common::uint16_t device);
+                uint32_t Read(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset);
+                void Write(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset, uint32_t value);
+                bool DeviceHasFunctions(uint16_t bus, uint16_t device);
 
-                void SelectDrivers(kos::drivers::DriverManager* driveManager);
-                kos::hardware::PeripheralComponentInterConnectDeviceDescriptor GetDeviceDescriptor(kos::common::uint16_t bus, kos::common::uint16_t device, kos::common::uint16_t function);
+                void SelectDrivers(DriverManager* driveManager);
+                PeripheralComponentInterConnectDeviceDescriptor GetDeviceDescriptor(uint16_t bus, uint16_t device, uint16_t function);
             private:
-                static kos::console::TTY tty;
+                static TTY tty;
         };
     }
 }

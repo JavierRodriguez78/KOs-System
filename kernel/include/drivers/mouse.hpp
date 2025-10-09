@@ -6,6 +6,9 @@
 #include <hardware/port.hpp>
 #include <drivers/driver.hpp>
 
+using namespace kos::common;
+using namespace kos::hardware;
+
 namespace kos{
     namespace drivers{
         class MouseEventHandler
@@ -15,26 +18,26 @@ namespace kos{
                 MouseEventHandler();
 
                 virtual void OnActivate();
-                virtual void OnMouseDown(kos::common::uint8_t button);
-                virtual void OnMouseUp(kos::common::uint8_t button);
-                virtual void OnMouseMove(int x, int y);
+                virtual void OnMouseDown(uint8_t button);
+                virtual void OnMouseUp(uint8_t button);
+                virtual void OnMouseMove(int32_t x, int32_t y);
         };
 
 
-        class MouseDriver:public kos::hardware::InterruptHandler, public Driver
+        class MouseDriver:public InterruptHandler, public Driver
         {
-            kos::hardware::Port8Bit dataport;
-            kos::hardware::Port8Bit commandport;
+            Port8Bit dataport;
+            Port8Bit commandport;
 
-            kos::common::uint8_t buffer[3];
-            kos::common::uint8_t offset;
-            kos::common::uint8_t buttons;
+            uint8_t buffer[3];
+            uint8_t offset;
+            uint8_t buttons;
             MouseEventHandler* handler;
         
         public:
-            MouseDriver(kos::hardware::InterruptManager* manager, MouseEventHandler* handler);
+            MouseDriver(InterruptManager* manager, MouseEventHandler* handler);
             ~MouseDriver();
-            virtual kos::common::uint32_t HandleInterrupt(kos::common::uint32_t esp);
+            virtual uint32_t HandleInterrupt(uint32_t esp);
             virtual void Activate();
         };
     }

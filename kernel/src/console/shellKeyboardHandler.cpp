@@ -3,8 +3,9 @@
 #include <drivers/keyboard.hpp>
 
 
+using namespace kos::common;    
 using namespace kos::console;
-using namespace kos::drivers;
+
 
 
 ShellKeyboardHandler::ShellKeyboardHandler(){
@@ -14,8 +15,11 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 
 };
 
-void ShellKeyboardHandler::OnKeyDown(char c){
-    char foo[] = " ";
-    foo[0] = c;
-    tty.Write(foo);
+// Reference to the shell instance
+extern Shell* g_shell;
+
+void ShellKeyboardHandler::OnKeyDown(int8_t c){
+    if (g_shell) {
+        g_shell->InputChar(c);
+    }
 }

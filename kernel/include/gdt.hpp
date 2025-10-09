@@ -3,7 +3,10 @@
 
 #include <common/types.hpp>
 
+using namespace kos::common;
+
 namespace kos{
+
     class GlobalDescriptorTable
     {
         public:
@@ -11,17 +14,17 @@ namespace kos{
             class SegmentDescriptor
             {
                 private:
-                    kos::common::uint16_t limit_lo;
-                    kos::common::uint16_t base_lo;
-                    kos::common::uint8_t base_hi;
-                    kos::common::uint8_t type;
-                    kos::common::uint8_t limit_hi;
-                    kos::common::uint8_t base_vhi;
+                    uint16_t limit_lo;
+                    uint16_t base_lo;
+                    uint8_t base_hi;
+                    uint8_t type;
+                    uint8_t limit_hi;
+                    uint8_t base_vhi;
 
                 public:
-                    SegmentDescriptor(kos::common::uint32_t base, kos::common::uint32_t limit, kos::common::uint8_t type);
-                    kos::common::uint32_t Base();
-                    kos::common::uint32_t Limit();
+                    SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t type);
+                    uint32_t Base();
+                    uint32_t Limit();
             } __attribute__((packed));
 
         private:
@@ -35,8 +38,8 @@ namespace kos{
             GlobalDescriptorTable();
             ~GlobalDescriptorTable();
 
-            kos::common::uint16_t CodeSegmentSelector();
-            kos::common::uint16_t DataSegmentSelector();
+            uint16_t CodeSegmentSelector();
+            uint16_t DataSegmentSelector();
     };
 }
 #endif

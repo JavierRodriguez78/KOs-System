@@ -1,22 +1,29 @@
 #ifndef  __KOS__CONSOLE__SHELL_H
 #define  __KOS__CONSOLE__SHELL_H
 
-#include<common/types.hpp>
-#include<lib/libc.hpp>
-#include<console/tty.hpp>
-#include<drivers/keyboard.hpp>
+#include <common/types.hpp>
+#include <lib/libc.hpp>
+#include <console/tty.hpp>
+#include <drivers/keyboard.hpp>
+
+using namespace kos::common;
+using namespace kos::console;
+using namespace kos::lib;
 
 namespace kos{
     namespace console{
-        class Shell{
-            public:
-                Shell();
-                ~Shell();
-                void Exec(const kos::common::uint8_t* cmd);
-                void Run();
-            private:
-                kos::lib::LibC LIBC;
-                static kos::console::TTY TTY;
+        class Shell {
+        public:
+            Shell();
+            void Run(); // Main shell loop
+            void InputChar(int8_t c); // Handle input from keyboard
+
+        private:
+            static const int32_t BUFFER_SIZE = 128;
+            int8_t buffer[BUFFER_SIZE];
+            int32_t bufferIndex;
+            void PrintPrompt();
+            void ExecuteCommand();
         };
 
         class ShellKeyboardHandler : public kos::drivers::KeyboardEventHandler{
@@ -25,10 +32,11 @@ namespace kos{
 
                 ShellKeyboardHandler();
                 ~ShellKeyboardHandler();
-                virtual void OnKeyDown(char c);
+                virtual void OnKeyDown(int8_t c);
 
             private:
-            static kos::console::TTY tty;
+            static TTY tty;
+            static LibC LIBC;
 
         };
     }

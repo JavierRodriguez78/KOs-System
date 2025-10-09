@@ -8,6 +8,9 @@
 #include <hardware/port.hpp>
 #include <console/tty.hpp>
 
+using namespace kos::common;
+using namespace kos::console;
+
 
 namespace kos
 {
@@ -19,12 +22,12 @@ namespace kos
         class InterruptHandler
         {
         protected:
-            kos::common::uint8_t InterruptNumber;
+            uint8_t InterruptNumber;
             InterruptManager* interruptManager;
-            InterruptHandler(InterruptManager* interruptManager, kos::common::uint8_t InterruptNumber);
+            InterruptHandler(InterruptManager* interruptManager, uint8_t InterruptNumber);
             ~InterruptHandler();
         public:
-            virtual kos::common::uint32_t HandleInterrupt(kos::common::uint32_t esp);
+            virtual uint32_t HandleInterrupt(uint32_t esp);
         };
 
 
@@ -38,25 +41,26 @@ namespace kos
 
                 struct GateDescriptor
                 {
-                    kos::common::uint16_t handlerAddressLowBits;
-                    kos::common::uint16_t gdt_codeSegmentSelector;
-                    kos::common::uint8_t reserved;
-                    kos::common::uint8_t access;
-                    kos::common::uint16_t handlerAddressHighBits;
+                    uint16_t handlerAddressLowBits;
+                    uint16_t gdt_codeSegmentSelector;
+                    uint8_t reserved;
+                    uint8_t access;
+                    uint16_t handlerAddressHighBits;
                 } __attribute__((packed));
 
                 static GateDescriptor interruptDescriptorTable[256];
 
                 struct InterruptDescriptorTablePointer
                 {
-                    kos::common::uint16_t size;
-                    kos::common::uint32_t base;
+                    uint16_t size;
+                    uint32_t base;
                 } __attribute__((packed));
 
-                kos::common::uint16_t hardwareInterruptOffset;
-                static void SetInterruptDescriptorTableEntry(kos::common::uint8_t interrupt,
-                    kos::common::uint16_t codeSegmentSelectorOffset, void (*handler)(),
-                    kos::common::uint8_t DescriptorPrivilegeLevel, kos::common::uint8_t DescriptorType);
+                uint16_t hardwareInterruptOffset;
+
+                static void SetInterruptDescriptorTableEntry(uint8_t interrupt,
+                    uint16_t codeSegmentSelectorOffset, void (*handler)(),
+                    uint8_t DescriptorPrivilegeLevel, uint8_t DescriptorType);
 
 
                 static void InterruptIgnore();
@@ -100,8 +104,8 @@ namespace kos
                 static void HandleException0x12();
                 static void HandleException0x13();
 
-                static kos::common::uint32_t HandleInterrupt(kos::common::uint8_t interrupt, kos::common::uint32_t esp);
-                kos::common::uint32_t DoHandleInterrupt(kos::common::uint8_t interrupt, kos::common::uint32_t esp);
+                static uint32_t HandleInterrupt(uint8_t interrupt, uint32_t esp);
+                uint32_t DoHandleInterrupt(uint8_t interrupt, uint32_t esp);
 
                 Port8BitSlow programmableInterruptControllerMasterCommandPort;
                 Port8BitSlow programmableInterruptControllerMasterDataPort;
@@ -109,13 +113,13 @@ namespace kos
                 Port8BitSlow programmableInterruptControllerSlaveDataPort;
 
             public:
-                InterruptManager(kos::common::uint16_t hardwareInterruptOffset, kos::GlobalDescriptorTable* globalDescriptorTable);
+                InterruptManager(uint16_t hardwareInterruptOffset, kos::GlobalDescriptorTable* globalDescriptorTable);
                 ~InterruptManager();
-                kos::common::uint16_t HardwareInterruptOffset();
+                uint16_t HardwareInterruptOffset();
                 void Activate();
                 void Deactivate();
             private:
-                static kos::console::TTY tty;
+                static TTY tty;
         };
     }
 }

@@ -1,24 +1,24 @@
 #include <console/tty.hpp>
 #include <drivers/vga.hpp>
 
-using namespace kos::drivers;
+using namespace kos::common;
 using namespace kos::console;
 
     
-    kos::drivers::VGA TTY::vga;
+    VGA TTY::vga;
 
     void TTY::Clear(){
         vga.Clear();
     }
 
-    void TTY::PutChar(kos::common::int8_t c){
+    void TTY::PutChar(int8_t c){
         vga.PutChar(c);
     }
 
-    void TTY::Write(const kos::common::int8_t* str){
+    void TTY::Write(const int8_t* str){
         vga.Write(str);
     }
 
-    void TTY::WriteHex(kos::common::uint8_t key){
+    void TTY::WriteHex(uint8_t key){
         vga.WriteHex(key);
     }

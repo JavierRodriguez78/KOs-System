@@ -12,11 +12,15 @@ objects = ../obj/loader.o  \
 		  ../obj/drivers/keyboard.o \
 		  ../obj/drivers/mouse.o \
 		  ../obj/drivers/vga.o \
+		  ../obj/drivers/ata.o \
+		  ../obj/fs/fat16.o \
+		  ../obj/fs/fat32.o \
 		  ../obj/hardware/pci.o \
 		  ../obj/console/tty.o  \
 		  ../obj/console/shell.o \
 		  ../obj/console/shellKeyboardHandler.o \
-		  ../obj/lib/libc.o
+		  ../obj/lib/libc.o \
+		  ../obj/lib/newdelete.o
 
 
 ../obj/%.o: src/%.cpp
@@ -48,7 +52,13 @@ mykernel.iso: mykernel.bin
 	mv ./mykernel.iso ../output/mykernel.iso
 
 qemu: ../output/mykernel.iso
-	qemu-system-i386 -boot d -cdrom $< -m 512
+	# Runs kernel from CD-ROM and attaches a primary master HDD image at ./disk.img
+	# Create and format ./disk.img as FAT32 before running this target
+	qemu-system-i386 -boot d -cdrom $< -hda ./disk.img -m 512
+
+qemu-vvfat: ../output/mykernel.iso
+	# Maps ./disk directory as a FAT drive (vvfat) on primary master. Create ./disk and put files there.
+	qemu-system-i386 -boot d -cdrom $< -drive file=fat:rw:./disk,format=raw,if=ide,index=0 -m 512
 
 debug: ../output/mykernel.iso
 	qemu-system-i386 -boot d -cdrom $< -s -S -m 512

@@ -1,6 +1,8 @@
 #include <drivers/driver.hpp>
+#include <common/types.hpp>
 
 using namespace kos::drivers;
+using namespace kos::common;
 
 
  Driver::Driver()
@@ -40,7 +42,7 @@ void DriverManager::AddDriver(Driver* drv)
 
 void DriverManager::ActivateAll()
 {
-    for (int i=0; i<numDrivers; i++)
+    for (int32_t i=0; i<numDrivers; i++)
         drivers[i]->Activate();
 
 }

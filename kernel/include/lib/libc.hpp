@@ -1,18 +1,17 @@
 #ifndef  __KOS__LIB__LIBC_H
 #define  __KOS__LIB__LIBC_H
 
-
 #include <common/types.hpp>
+
+using namespace kos::common;
 
 namespace kos{
     namespace lib{
         class LibC{
             public:
-                LibC();
-                ~LibC();
-                kos::common::int32_t strcmp(const kos::common::uint8_t* a, const kos::common::uint8_t* b);
-                kos::common::int32_t strcmp(kos::common::int8_t* a, const kos::common::int8_t* b, kos::common::uint32_t len);
-                kos::common::uint32_t strlen(const kos::common::int8_t* s);
+                static int32_t strcmp(const uint8_t* a, const uint8_t* b);
+                static int32_t strcmp(int8_t* a, const int8_t* b, uint32_t len);
+                uint32_t strlen(const int8_t* s);
         };
     }
 }

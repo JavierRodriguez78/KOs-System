@@ -7,6 +7,10 @@
 #include <drivers/driver.hpp>
 #include <console/tty.hpp>
 
+using namespace kos::common;
+using namespace kos::hardware;
+using namespace kos::console;
+
 namespace kos
 {
     namespace drivers
@@ -16,23 +20,23 @@ namespace kos
             public:
                 KeyboardEventHandler();
 
-                virtual void OnKeyDown(char);
-                virtual void OnKeyUp(char);
+                virtual void OnKeyDown(int8_t);
+                virtual void OnKeyUp(int8_t);
         };
 
-        class KeyboardDriver:public kos::hardware::InterruptHandler, public Driver
+        class KeyboardDriver:public InterruptHandler, public Driver
         {
           
         public:
-            KeyboardDriver(kos::hardware::InterruptManager* manager, KeyboardEventHandler *handler);
+            KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler);
             ~KeyboardDriver();
-            virtual kos::common::uint32_t HandleInterrupt(kos::common::uint32_t esp);
+            virtual uint32_t HandleInterrupt(uint32_t esp);
             virtual void Activate();
         private:
-            kos::hardware::Port8Bit dataport;
-            kos::hardware::Port8Bit commandport;
+            Port8Bit dataport;
+            Port8Bit commandport;
             KeyboardEventHandler* handler;
-            static kos::console::TTY tty;
+            TTY tty;
         };
     
         class Keyboard{
