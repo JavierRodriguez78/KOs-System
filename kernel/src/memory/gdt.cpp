@@ -1,7 +1,7 @@
 //View GlobalDescritorTable https://wiki.osdev.org/Global_Descriptor_Table
 
-#include <gdt.hpp>
-#include <hardware/interrupts.hpp>
+#include "memory/gdt.hpp"
+
 
 using namespace kos;
 using namespace kos::common;

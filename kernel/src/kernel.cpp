@@ -1,5 +1,5 @@
 #include <common/types.hpp>
-#include <gdt.hpp>
+#include <memory/gdt.hpp>
 #include <hardware/interrupts.hpp>
 #include <hardware/pci.hpp>
 #include <drivers/driver.hpp>

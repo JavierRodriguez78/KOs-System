@@ -3,7 +3,7 @@
 #ifndef __KOS__HARDWARE__INTERRUPTMANAGER_H
 #define __KOS__HARDWARE__INTERRUPTMANAGER_H
 
-#include <gdt.hpp>
+#include <memory/gdt.hpp>
 #include <common/types.hpp>
 #include <hardware/port.hpp>
 #include <console/tty.hpp>
