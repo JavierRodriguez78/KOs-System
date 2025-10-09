@@ -7,6 +7,7 @@
 #include <drivers/mouse.hpp>
 #include <drivers/vga.hpp>
 #include <console/tty.hpp>
+#include <console/logger.hpp>
 #include <console/shell.hpp>
 #include <drivers/ata.hpp>
 #include <fs/fat16.hpp>
@@ -106,10 +107,10 @@ static FAT32 g_fs32_p1m(&g_ata_p1m);
 static FAT32 g_fs32_p1s(&g_ata_p1s);
 
 // Simple FAT16 instances with no pre-known startLBA (they will assume 0; our FAT16 mount handles volumeStartLBA passed in ctor)
-static kos::fs::FAT16 g_fs16_p0m(&g_ata_p0m);
-static kos::fs::FAT16 g_fs16_p0s(&g_ata_p0s);
-static kos::fs::FAT16 g_fs16_p1m(&g_ata_p1m);
-static kos::fs::FAT16 g_fs16_p1s(&g_ata_p1s);
+static FAT16 g_fs16_p0m(&g_ata_p0m);
+static FAT16 g_fs16_p0s(&g_ata_p0s);
+static FAT16 g_fs16_p1m(&g_ata_p1m);
+static FAT16 g_fs16_p1s(&g_ata_p1s);
 
 Filesystem* g_fs_ptr = 0;
 // Global shell instance
@@ -121,9 +122,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     callConstructors();
 
     static kos::console::TTY tty;
-    //tty.Clear();
-    tty.Write((kos::common::int8_t*)"---- KOS Kernel 64-bit ---- \n");
-    tty.Write((kos::common::int8_t*)"--- Operating System ---\n");
+    tty.Clear();
+    Logger::Log("KOS Kernel starting...");
+    Logger::LogStatus("Initializing core subsystems", true);
 
     GlobalDescriptorTable gdt;
     // Initialize system API table for apps
@@ -131,11 +132,11 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     InterruptManager interrupts(0x20, &gdt);
     // Register a noop handler for IRQ14 (IDE primary) to avoid log spam if device still raises IRQs
     IDEIRQHandler ideIrq14(&interrupts, interrupts.HardwareInterruptOffset() + 14);
-
-    tty.Write("--- Initializing Hardware, Stage 1 ---\n");
+    Logger::LogStatus("IDT/GDT configured", true);
+    Logger::Log("Initializing Hardware, Stage 1");
     DriverManager drvManager;
 
-    tty.Write("--- LOAD DEVICES ---\n");
+    Logger::Log("Loading device drivers");
     ShellKeyboardHandler skbhandler;
     KeyboardDriver keyboard(&interrupts, &skbhandler);
     drvManager.AddDriver(&keyboard);
@@ -146,12 +147,11 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
 
     PeripheralComponentIntercontroller PCIController;
     PCIController.SelectDrivers(&drvManager);
-
-    tty.Write ("--- Initializing Hardware, Stage 2 ---\n");
+    Logger::Log("Initializing Hardware, Stage 2");
     drvManager.ActivateAll();
-
-    tty.Write ("--- Initializing Hardware, Stage 3 ---\n");
+    Logger::Log("Initializing Hardware, Stage 3");
     interrupts.Activate();
+    Logger::LogStatus("Interrupts enabled", true);
 
     // Try to mount FAT32 on any IDE position (Primary/Secondary x Master/Slave)
     struct Candidate { ATADriver* ata; FAT32* fs32; FAT16* fs16; const char* name; };
@@ -162,51 +162,42 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         { &g_ata_p1s, &g_fs32_p1s, &g_fs16_p1s, "Secondary Slave" }
     };
 
-    tty.Write("--- Scanning ATA devices for FAT32 ---\n");
+    Logger::Log("Scanning ATA devices for filesystems");
     for (unsigned i = 0; i < sizeof(cands)/sizeof(cands[0]); ++i) {
         cands[i].ata->Activate();
-        tty.Write("Probe: "); 
-        tty.Write((int8_t*)cands[i].name); 
-        tty.PutChar('\n');
+        Logger::LogKV("Probe", cands[i].name);
         if (!cands[i].ata->Identify()) {
-            tty.Write("No ATA device detected at "); 
-            tty.Write((int8_t*)cands[i].name); 
-            tty.PutChar('\n');
+            Logger::LogKV("No ATA device detected at", cands[i].name);
             continue;
         }
         if (cands[i].fs32->Mount()) {
-            tty.Write("FAT32 mounted on "); 
-            tty.Write((int8_t*)cands[i].name); 
-            tty.PutChar('\n');
+            Logger::LogKV("FAT32 mounted on", cands[i].name);
+            Logger::LogStatus("Filesystem ready", true);
             g_fs_ptr = cands[i].fs32;
-            tty.Write("Root entries:\n");
+            Logger::Log("Root entries:");
             g_fs_ptr->ListRoot();
             break;
         } else {
-            tty.Write("Not FAT32 at "); 
-            tty.Write((int8_t*)cands[i].name); 
-            tty.PutChar('\n');
+            Logger::LogKV("Not FAT32 at", cands[i].name);
             
             // Try FAT16 mount as fallback (common on old images)
             if (cands[i].fs16->Mount()) {
-                tty.Write("FAT16 mounted on "); 
-                tty.Write((int8_t*)cands[i].name); 
-                tty.PutChar('\n');
+                Logger::LogKV("FAT16 mounted on", cands[i].name);
+                Logger::LogStatus("Filesystem ready", true);
                 g_fs_ptr = cands[i].fs16;
-                tty.Write("Root entries:\n");
-                g_fs_ptr->ListRoot();
                 break;
             }
         }
     }
     if (!g_fs_ptr) {
-        tty.Write("FAT32 mount failed on all IDE positions\n");
+        Logger::Log("No filesystem mounted; continuing without disk");
     }
 
     // Built-in commands removed; rely on /bin/<cmd>.elf execution
 
     // Create and start the shell
     g_shell = &g_shell_instance;
+    Logger::LogStatus("Starting shell...", true);
     g_shell_instance.Run();
 
     while(1);

@@ -22,3 +22,11 @@ using namespace kos::console;
     void TTY::WriteHex(uint8_t key){
         vga.WriteHex(key);
     }
+
+    void TTY::SetColor(uint8_t fg, uint8_t bg){
+        vga.SetColor(fg, bg);
+    }
+
+    void TTY::SetAttr(uint8_t a){
+        vga.SetAttr(a);
+    }

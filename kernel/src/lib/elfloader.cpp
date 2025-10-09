@@ -42,12 +42,7 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
     if (!(eh->e_ident[0] == 0x7F && eh->e_ident[1] == 'E' && eh->e_ident[2] == 'L' && eh->e_ident[3] == 'F')) return false;
     if (eh->e_machine != EM_386) return false;
     if (eh->e_phoff + eh->e_phnum * sizeof(Elf32_Phdr) > size) return false;
-    {
-        TTY tty;
-        tty.Write((int8_t*)"ELF: headers OK, loading...\n");
-    }
-
-    // Load PT_LOAD segments by memcpy into their p_vaddr
+    if (eh->e_phentsize != sizeof(Elf32_Phdr)) return false;    // Load PT_LOAD segments by memcpy into their p_vaddr
     const Elf32_Phdr* ph = (const Elf32_Phdr*)(image + eh->e_phoff);
     for (uint16_t i = 0; i < eh->e_phnum; ++i) {
         if (ph[i].p_type != PT_LOAD) continue;
@@ -58,17 +53,10 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
         // Zero BSS tail
         for (uint32_t j = ph[i].p_filesz; j < ph[i].p_memsz; ++j) dst[j] = 0;
     }
-
-    // Jump to entry
-    {
-        TTY tty;
-        tty.Write((int8_t*)"ELF: jumping to entry\n");
-    }
     int (*entry)() = (int (*)())(eh->e_entry);
-    (void)entry();
-    {
-        TTY tty;
-        tty.Write((int8_t*)"ELF: returned from entry\n");
+    // Transfer control to program entry and execute
+    if (entry) {
+        (void)entry();
     }
     return true;
 }

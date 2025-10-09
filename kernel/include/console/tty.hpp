@@ -16,6 +16,9 @@ namespace kos {
                 static void Write(const int8_t* s);
                 static void PutChar(const int8_t c);
                 static void WriteHex(uint8_t key);
+                // Color helpers
+                static void SetColor(uint8_t fg, uint8_t bg);
+                static void SetAttr(uint8_t a);
             private:
                 static VGA vga;
         };

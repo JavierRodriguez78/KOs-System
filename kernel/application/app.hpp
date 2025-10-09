@@ -4,5 +4,6 @@
 
 extern "C" void app_hello();
 extern "C" void app_echo();
+extern "C" void app_ls();
 
 #endif // KOS_APPLICATION_APP_HPP

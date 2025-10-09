@@ -17,7 +17,9 @@ objects = ../obj/loader.o  \
 		  ../obj/fs/fat16.o \
 		  ../obj/fs/fat32.o \
 		  ../obj/hardware/pci.o \
+		  ../obj/hardware/rtc.o \
 		  ../obj/console/tty.o  \
+		  ../obj/console/logger.o \
 		  ../obj/console/shell.o \
 		  ../obj/console/shellKeyboardHandler.o \
 		  ../obj/console/registry.o \
@@ -27,7 +29,7 @@ objects = ../obj/loader.o  \
 		  ../obj/lib/newdelete.o
 
 	# Applications to build into disk/bin
-	APPS = hello echo
+	APPS = hello echo ls
 	APP_OBJDIR = ../obj/application
 	APP_BINDIR = disk/bin
 	APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))

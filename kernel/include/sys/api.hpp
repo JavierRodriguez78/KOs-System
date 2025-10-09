@@ -12,6 +12,8 @@ namespace kos { namespace sys {
         void (*putc)(kos::common::int8_t c);
         void (*puts)(const kos::common::int8_t* s);
         void (*hex)(kos::common::uint8_t v);
+        // List directory contents (currently lists filesystem root)
+        void (*listroot)();
     };
 
     // Fixed address where kernel places the table
@@ -23,6 +25,7 @@ namespace kos { namespace sys {
     static inline void putc(kos::common::int8_t c) { if (table()->putc) table()->putc(c); }
     static inline void puts(const kos::common::int8_t* s) { if (table()->puts) table()->puts(s); }
     static inline void hex(kos::common::uint8_t v) { if (table()->hex) table()->hex(v); }
+    static inline void listroot() { if (table()->listroot) table()->listroot(); }
 
     // Minimal printf-style formatting: supports %s %c %d %i %u %x %X %p %%
     static inline void print_uint(kos::common::uint32_t v, kos::common::uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
