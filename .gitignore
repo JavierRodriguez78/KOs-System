@@ -41,3 +41,6 @@
 # elf
 *.elf
 /disk/bin/*.elf
+
+# CMake files
+build/
