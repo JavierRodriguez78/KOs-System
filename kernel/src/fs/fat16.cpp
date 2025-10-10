@@ -230,6 +230,7 @@ int32_t FAT16::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
     return (int32_t)read;
 }
 
+
 void FAT16::DebugInfo() {
     if (!mounted) { 
         tty.Write("FAT16: not mounted\n"); 

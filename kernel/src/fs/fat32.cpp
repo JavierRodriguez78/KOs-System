@@ -1,5 +1,6 @@
 #include <fs/fat32.hpp>
 #include <console/tty.hpp>
+#include <console/logger.hpp>
 #include <lib/libc.hpp>
 
 using namespace kos::fs;
@@ -47,16 +48,19 @@ uint32_t FAT32::DetectFAT32PartitionStart() {
         return 0;
     }
     // Dump primeros bytes del MBR para depurar
-    tty.Write("FAT32: Dump MBR[0..32) en LBA 0\n");
-    for (int32_t i = 0; i < 32; ++i) { 
-        tty.WriteHex(mbr[i]); tty.PutChar(' ');
-     }
-    tty.PutChar('\n');
-    tty.Write("FAT32: MBR firma (510,511): "); 
-    tty.WriteHex(mbr[510]); 
-    tty.PutChar(' '); 
-    tty.WriteHex(mbr[511]); 
-    tty.PutChar('\n');
+    if (Logger::IsDebugEnabled()) {
+        tty.Write("FAT32: Dump MBR[0..32) en LBA 0\n");
+        for (int32_t i = 0; i < 32; ++i) { 
+            tty.WriteHex(mbr[i]); 
+            tty.PutChar(' ');
+        }
+        tty.PutChar('\n');
+        tty.Write("FAT32: MBR firma (510,511): "); 
+        tty.WriteHex(mbr[510]); 
+        tty.PutChar(' '); 
+        tty.WriteHex(mbr[511]); 
+        tty.PutChar('\n');
+    }
     bool bootSig = (mbr[510] == 0x55 && mbr[511] == 0xAA);
     bool hasPartitions = false;
     // MBR partition table at 446, four entries of 16 bytes each
@@ -65,17 +69,19 @@ uint32_t FAT32::DetectFAT32PartitionStart() {
         int off = 446 + i * 16;
         uint8_t type = mbr[off + 4];
         if (type != 0x00) hasPartitions = true;
-        tty.Write("FAT32: Particion "); 
-        tty.WriteHex((uint8_t)i); 
-        tty.Write(": tipo="); 
-        tty.WriteHex(type); 
-        tty.Write(" startLBA=");
         uint32_t lbaStartDbg = (uint32_t)mbr[off + 8] |
-                                ((uint32_t)mbr[off + 9] << 8) |
-                                ((uint32_t)mbr[off + 10] << 16) |
-                                ((uint32_t)mbr[off + 11] << 24);
-        printHex32(lbaStartDbg); 
-        tty.PutChar('\n');
+                                    ((uint32_t)mbr[off + 9] << 8) |
+                                    ((uint32_t)mbr[off + 10] << 16) |
+                                    ((uint32_t)mbr[off + 11] << 24);
+        if(Logger::IsDebugEnabled()){
+            tty.Write("FAT32: Particion "); 
+            tty.WriteHex((uint8_t)i); 
+            tty.Write(": tipo="); 
+            tty.WriteHex(type); 
+            tty.Write(" startLBA=");
+            printHex32(lbaStartDbg); 
+            tty.PutChar('\n');
+        }
         // Considerar particiones FAT clásicas: 0x01,0x04,0x06,0x0E, y FAT32 0x0B,0x0C
         if (type == 0x01 || type == 0x04 || type == 0x06 || type == 0x0E || type == 0x0B || type == 0x0C) {
             uint32_t lbaStart = lbaStartDbg;
@@ -101,7 +107,9 @@ uint32_t FAT32::DetectFAT32PartitionStart() {
         }
     }
     if (bootSig && hasPartitions) {
-        tty.Write("FAT32: MBR presente pero sin particiones FAT32. (Se detectó p.ej. FAT16 tipo 0x06)\n");
+        if (Logger::IsDebugEnabled()) {
+            tty.Write("FAT32: MBR presente pero sin particiones FAT32. (Se detectó p.ej. FAT16 tipo 0x06)\n");
+        }
         return 0xFFFFFFFF; // no intentar superfloppy si hay MBR válido
     }
     tty.Write("FAT32: No hay MBR (o sin entradas), intentando superfloppy en LBA 0\n");
@@ -113,7 +121,9 @@ bool FAT32::Mount() {
     // Detect partition; if none, assume superfloppy (volume at LBA 0)
     volumeStartLBA = DetectFAT32PartitionStart();
     if (volumeStartLBA == 0xFFFFFFFF) {
-        tty.Write("FAT32: Abortando montaje: no hay particion FAT32 y MBR existe\n");
+        if (Logger::IsDebugEnabled()) {
+            tty.Write("FAT32: Abortando montaje: no hay particion FAT32 y MBR existe\n");
+        }
         return false;
     }
     if (!ReadSector(volumeStartLBA, sector)) {

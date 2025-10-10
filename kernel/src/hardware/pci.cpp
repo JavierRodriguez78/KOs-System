@@ -1,10 +1,10 @@
 #include <hardware/pci.hpp>
-#include <console/tty.hpp>
+#include <console/logger.hpp>
 
 using namespace kos::common;
 using namespace kos::hardware;
 using namespace kos::drivers;
-
+using namespace kos::console;
 
 
 
@@ -67,6 +67,7 @@ void printfHex(uint8_t);
 
 void PeripheralComponentIntercontroller::SelectDrivers(DriverManager* driveManager)
 {
+    Logger::Log("Scanning PCI bus...");
     for(int32_t bus= 0 ; bus < 8; bus++)
     {
         for(int32_t device=0; device < 32; device ++)
@@ -79,23 +80,26 @@ void PeripheralComponentIntercontroller::SelectDrivers(DriverManager* driveManag
                 if(dev.vendor_id==0x0000 ||dev.vendor_id==0xFFFF )
                     break;
 
-                tty.Write("PCI BUS ");
-                tty.WriteHex(bus & 0xFF);
-
-                tty.Write(", DEVICE ");
-                tty.WriteHex(device & 0xFF);
-
-                tty.Write(", FUNCTION ");
-                tty.WriteHex(function & 0xFF);
-
-                tty.Write(" = VENDOR ");
-                tty.WriteHex((dev.vendor_id & 0xFF00) >>8);
-                tty.WriteHex(dev.vendor_id & 0xFF);
-
-                tty.Write(", DEVICE ");
-                tty.WriteHex((dev.device_id & 0xFF00)>>8);
-                tty.WriteHex(dev.device_id & 0xFF);
-                tty.Write("\n");
+                Logger::SetDebugEnabled(false);
+                if (Logger::IsDebugEnabled()) {
+                    tty.Write("PCI BUS ");
+                    tty.WriteHex(bus & 0xFF);
+    
+                    tty.Write(", DEVICE ");
+                    tty.WriteHex(device & 0xFF);
+    
+                    tty.Write(", FUNCTION ");
+                    tty.WriteHex(function & 0xFF);
+    
+                    tty.Write(" = VENDOR ");
+                    tty.WriteHex((dev.vendor_id & 0xFF00) >>8);
+                    tty.WriteHex(dev.vendor_id & 0xFF);
+    
+                    tty.Write(", DEVICE ");
+                    tty.WriteHex((dev.device_id & 0xFF00)>>8);
+                    tty.WriteHex(dev.device_id & 0xFF);
+                    tty.Write("\n");
+                }
             }
         }
     }

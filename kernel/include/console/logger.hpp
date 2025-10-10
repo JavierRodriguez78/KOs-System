@@ -14,6 +14,12 @@ namespace console {
         // Column where the '[' of the status should appear (0-based columns)
         // On 80x25 VGA, 70 aligns near the right side while leaving room for " [ OK ]"
         static const int STATUS_COL = 70;
+        // Global debug flag
+        static bool s_debugEnabled;
+
+        // Enable/disable debug logging
+        static inline void SetDebugEnabled(bool en) { s_debugEnabled = en; }
+        static inline bool IsDebugEnabled() { return s_debugEnabled; }
         // Prints: [YYYY-MM-DD HH:MM:SS] message\n
         static void Log(const char* msg) {
             kos::hardware::DateTime dt; kos::hardware::RTC::Read(dt);
@@ -21,6 +27,20 @@ namespace console {
             TTY::Write((const int8_t*)" ");
             TTY::Write((const int8_t*)msg);
             TTY::PutChar('\n');
+        }
+
+        // Debug-level logs (printed only if s_debugEnabled)
+        static inline void Debug(const char* msg) {
+            if (!s_debugEnabled) return;
+            Log(msg);
+        }
+        static inline void DebugKV(const char* key, const char* value) {
+            if (!s_debugEnabled) return;
+            LogKV(key, value);
+        }
+        static inline void DebugRaw(const char* msg) {
+            if (!s_debugEnabled) return;
+            LogRaw(msg);
         }
 
         static void LogKV(const char* key, const char* value) {

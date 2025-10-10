@@ -116,13 +116,40 @@ Filesystem* g_fs_ptr = 0;
 // Global shell instance
 Shell g_shell_instance;
 
-extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
+extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
     // Call all constructors
     callConstructors();
 
     static kos::console::TTY tty;
     tty.Clear();
+
+    // Parse Multiboot (v1) cmdline for debug flag before most logs
+    // Minimal multiboot info structure (we only need flags and cmdline)
+    struct MultibootInfoMinimal { uint32_t flags; uint32_t mem_lower; uint32_t mem_upper; uint32_t boot_device; uint32_t cmdline; };
+    auto contains = [](const char* hay, const char* needle) -> bool {
+        if (!hay || !needle) return false;
+        uint32_t nlen = kos::lib::LibC::strlen((const int8_t*)needle);
+        for (uint32_t i = 0; hay[i]; ++i) {
+            // Compare at this position for nlen
+            if (kos::lib::LibC::strcmp((const int8_t*)(hay + i), (const int8_t*)needle, nlen) == 0) return true;
+        }
+        return false;
+    };
+    if (multiboot_magic == 0x2BADB002 && multiboot_structure) {
+        const MultibootInfoMinimal* mbi = (const MultibootInfoMinimal*)multiboot_structure;
+        // flags bit 2 (1<<2) indicates cmdline present in multiboot v1
+        if (mbi->flags & (1u << 2)) {
+            const char* cmd = (const char*)mbi->cmdline;
+            if (contains(cmd, "debug") || contains(cmd, "log=debug")) {
+                Logger::SetDebugEnabled(true);
+                // Print a one-time info message so users know it's active
+                Logger::Log("Debug mode enabled via boot param");
+            }
+        }
+    }
+
+    Logger::SetDebugEnabled(false); // Default to false; can be enabled via cmdline
     Logger::Log("KOS Kernel starting...");
     Logger::LogStatus("Initializing core subsystems", true);
 
@@ -149,9 +176,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     PCIController.SelectDrivers(&drvManager);
     Logger::Log("Initializing Hardware, Stage 2");
     drvManager.ActivateAll();
+    Logger::LogStatus("Hardware initialized Stage 2", true);
     Logger::Log("Initializing Hardware, Stage 3");
     interrupts.Activate();
-    Logger::LogStatus("Interrupts enabled", true);
+    Logger::LogStatus("Hardware initialized Stage 3", true);
 
     // Try to mount FAT32 on any IDE position (Primary/Secondary x Master/Slave)
     struct Candidate { ATADriver* ata; FAT32* fs32; FAT16* fs16; const char* name; };
@@ -174,11 +202,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
             Logger::LogKV("FAT32 mounted on", cands[i].name);
             Logger::LogStatus("Filesystem ready", true);
             g_fs_ptr = cands[i].fs32;
-            Logger::Log("Root entries:");
-            g_fs_ptr->ListRoot();
             break;
         } else {
             Logger::LogKV("Not FAT32 at", cands[i].name);
+            Logger::LogStatus("FAT32 mount failed", false);
             
             // Try FAT16 mount as fallback (common on old images)
             if (cands[i].fs16->Mount()) {
