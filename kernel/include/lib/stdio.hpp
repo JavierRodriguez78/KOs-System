@@ -14,6 +14,10 @@ namespace kos {
             void (*puts)(const int8_t* s);
             void (*hex)(uint8_t v);
             void (*listroot)();
+            // Argument passing support
+            int32_t (*get_argc)();
+            const int8_t* (*get_arg)(int32_t index);
+            const int8_t* cmdline; // pointer to full command line (null-terminated)
         };
 
         // Access to the API table (placed by the kernel at a fixed address)
@@ -25,10 +29,21 @@ namespace kos {
         void hex(uint8_t v);
         void listroot();
 
+    // Arguments API (for applications)
+    int32_t argc();
+    const int8_t* argv(int32_t index);
+    const int8_t* cmdline();
+
         // Minimal printf-like output
         void vprintf(const int8_t* fmt, va_list ap);
         void printf(const int8_t* fmt, ...);
 
+    // Kernel-side utilities exposed here for convenience so users can include a single header
+    void SetArgs(int argc, const int8_t** argv, const int8_t* cmdline);
+
     }
 }
+
+// Keep C ABI function in global namespace for compatibility
+extern "C" void InitSysApi();
 #endif

@@ -13,6 +13,9 @@ typedef struct ApiTableC {
     void (*puts)(const int8_t* s);
     void (*hex)(uint8_t v);
     void (*listroot)();
+    int32_t (*get_argc)();
+    const int8_t* (*get_arg)(int32_t index);
+    const int8_t* cmdline;
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -23,6 +26,10 @@ static inline void kos_putc(int8_t c) { if (kos_sys_table()->putc) kos_sys_table
 static inline void kos_puts(const int8_t* s) { if (kos_sys_table()->puts) kos_sys_table()->puts(s); }
 static inline void kos_hex(uint8_t v) { if (kos_sys_table()->hex) kos_sys_table()->hex(v); }
 static inline void kos_listroot(void) { if (kos_sys_table()->listroot) kos_sys_table()->listroot(); }
+
+static inline int32_t kos_argc(void) { return kos_sys_table()->get_argc ? kos_sys_table()->get_argc() : 0; }
+static inline const int8_t* kos_argv(int32_t index) { return kos_sys_table()->get_arg ? kos_sys_table()->get_arg(index) : (const int8_t*)0; }
+static inline const int8_t* kos_cmdline(void) { return kos_sys_table()->cmdline; }
 
 static inline void kos__print_uint32(unsigned int v, unsigned int base, int upper, int width, int padZero) {
     char buf[32];

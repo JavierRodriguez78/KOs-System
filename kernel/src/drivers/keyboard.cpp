@@ -105,7 +105,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             case 0x32: handler->OnKeyDown('m'); break;
             case 0x33: handler->OnKeyDown(','); break;
             case 0x34: handler->OnKeyDown('.'); break;
-            case 0x35: handler->OnKeyDown('_'); break;
+            case 0x35: handler->OnKeyDown('-'); break;
 
             case 0x1C: handler->OnKeyDown('\n'); break;
             case 0x39: handler->OnKeyDown(' '); break;

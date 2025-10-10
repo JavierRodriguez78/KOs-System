@@ -14,7 +14,6 @@
 #include <fs/fat32.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/stdio.hpp>
-#include <lib/sysapi.hpp>
 
 
 using namespace kos;

@@ -1,4 +1,5 @@
 #include <lib/stdio.hpp>
+// Forward declarations are in header; implementation lives in sysapi.cpp
 
 using namespace kos::common;
 
@@ -14,6 +15,10 @@ namespace kos { namespace sys {
     void puts(const int8_t* s) { if (table_raw()->puts) table_raw()->puts(s); }
     void hex(uint8_t v) { if (table_raw()->hex) table_raw()->hex(v); }
     void listroot() { if (table_raw()->listroot) table_raw()->listroot(); }
+
+    int32_t argc() { return (table_raw()->get_argc) ? table_raw()->get_argc() : 0; }
+    const int8_t* argv(int32_t index) { return (table_raw()->get_arg) ? table_raw()->get_arg(index) : nullptr; }
+    const int8_t* cmdline() { return table_raw()->cmdline; }
 
     static void print_uint(uint32_t v, uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
         char buf[32];
