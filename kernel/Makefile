@@ -26,14 +26,16 @@ objects = ../obj/loader.o  \
 		  ../obj/lib/libc/string.o \
 		  ../obj/lib/elfloader.o \
 		  ../obj/lib/sysapi.o \
-		  ../obj/lib/newdelete.o
+		  ../obj/lib/newdelete.o \
+		  ../obj/lib/string.o  \
+		  ../obj/lib/stdio.o
 
-	# Applications to build into disk/bin
-	APPS = hello echo ls
-	APP_OBJDIR = ../obj/application
-	APP_BINDIR = disk/bin
-	APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))
-	APP_BINS = $(patsubst %, $(APP_BINDIR)/%.elf, $(APPS))
+# Applications to build into disk/bin
+APPS = hello echo ls
+APP_OBJDIR = ../obj/application
+APP_BINDIR = disk/bin
+APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))
+APP_BINS = $(patsubst %, $(APP_BINDIR)/%.elf, $(APPS))
 
 
 ../obj/%.o: src/%.cpp
@@ -44,19 +46,35 @@ objects = ../obj/loader.o  \
 	mkdir -p $(@D)
 	as $(ASPARAMS) -o  $@ $<
 
+# Build generic C sources under src/ (for C support files like libc/api.c)
+../obj/%.o: src/%.c
+	mkdir -p $(@D)
+	gcc $(CPARAMS) -o $@ -c $<
+
+
 mykernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
 
-# Build application objects from application/*.cpp
-$(APP_OBJDIR)/%.o: application/%.cpp
+# Build application objects from application/*.c (C apps)
+CPARAMS = -m32 -Iinclude -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -fno-leading-underscore -Wno-write-strings
+$(APP_OBJDIR)/%.o: application/%.c
 	mkdir -p $(@D)
-	gcc $(GPPARAMS) -o $@ -c $<
+	gcc $(CPARAMS) -o $@ -c $<
 
 # Link applications as simple ELF32 with entry at symbol 'main'
 $(APP_BINDIR)/%.elf: $(APP_OBJDIR)/%.o ../obj/console/tty.o ../obj/lib/libc/string.o ../obj/lib/newdelete.o ../obj/drivers/vga.o
 	mkdir -p $(APP_BINDIR)
 	ld -melf_i386 -e main -Ttext 0x01000000 -o $@ $^
 	@echo "Built app $@"
+
+# Also generate explicit rules per app (robust against pattern-rule edge cases)
+define MAKE_APP
+$(APP_BINDIR)/$(1).elf: $(APP_OBJDIR)/$(1).o ../obj/console/tty.o ../obj/lib/libc/string.o ../obj/lib/newdelete.o ../obj/drivers/vga.o
+	mkdir -p $(APP_BINDIR)
+	ld -melf_i386 -e main -Ttext 0x01000000 -o $$@ $$^
+	@echo "Built app $$@ (explicit)"
+endef
+$(foreach app,$(APPS),$(eval $(call MAKE_APP,$(app))))
 
 .PHONY: apps
 apps: $(APP_BINS)

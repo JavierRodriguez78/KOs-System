@@ -74,10 +74,10 @@ target_include_directories(app_support_objs PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_options(app_support_objs PRIVATE -m32)
 
 function(add_app NAME)
-    # Build the app object
-    add_library(${NAME}_obj OBJECT ${CMAKE_SOURCE_DIR}/application/${NAME}.cpp)
+    # Build the app object (C apps)
+    add_library(${NAME}_obj OBJECT ${CMAKE_SOURCE_DIR}/application/${NAME}.c)
     target_include_directories(${NAME}_obj PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/application)
-    target_compile_options(${NAME}_obj PRIVATE -m32)
+    target_compile_options(${NAME}_obj PRIVATE -m32 -ffreestanding -fno-builtin -fno-stack-protector)
 
     # Link into disk/bin/<name>.elf using ld
     set(APP_ELF ${CMAKE_SOURCE_DIR}/disk/bin/${NAME}.elf)

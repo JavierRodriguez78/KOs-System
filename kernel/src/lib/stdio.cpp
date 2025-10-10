@@ -1,34 +1,21 @@
-// Minimal system API for apps to print to the shell/TTY.
-// Kernel fills a function table at a fixed address.
-#ifndef KOS_SYS_API_HPP
-#define KOS_SYS_API_HPP
+#include <lib/stdio.hpp>
 
-#include <common/types.hpp>
-#include <stdarg.h>
+using namespace kos::common;
 
 namespace kos { namespace sys {
 
-    struct ApiTable {
-        void (*putc)(kos::common::int8_t c);
-        void (*puts)(const kos::common::int8_t* s);
-        void (*hex)(kos::common::uint8_t v);
-        // List directory contents (currently lists filesystem root)
-        void (*listroot)();
-    };
-
-    // Fixed address where kernel places the table
-    static inline ApiTable* table() {
-        return (ApiTable*)0x0007F000; // 4 KB below 0x80000 (adjust if needed)
+    static inline ApiTable* table_raw() {
+        return (ApiTable*)0x0007F000;
     }
 
-    // Convenience inline wrappers for apps
-    static inline void putc(kos::common::int8_t c) { if (table()->putc) table()->putc(c); }
-    static inline void puts(const kos::common::int8_t* s) { if (table()->puts) table()->puts(s); }
-    static inline void hex(kos::common::uint8_t v) { if (table()->hex) table()->hex(v); }
-    static inline void listroot() { if (table()->listroot) table()->listroot(); }
+    ApiTable* table() { return table_raw(); }
 
-    // Minimal printf-style formatting: supports %s %c %d %i %u %x %X %p %%
-    static inline void print_uint(kos::common::uint32_t v, kos::common::uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
+    void putc(int8_t c) { if (table_raw()->putc) table_raw()->putc(c); }
+    void puts(const int8_t* s) { if (table_raw()->puts) table_raw()->puts(s); }
+    void hex(uint8_t v) { if (table_raw()->hex) table_raw()->hex(v); }
+    void listroot() { if (table_raw()->listroot) table_raw()->listroot(); }
+
+    static void print_uint(uint32_t v, uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
         char buf[32];
         const char* digs = upper ? "0123456789ABCDEF" : "0123456789abcdef";
         int i = 0;
@@ -41,11 +28,9 @@ namespace kos { namespace sys {
         while (i--) putc(buf[i]);
     }
 
-    static inline void vprintf(const kos::common::int8_t* fmt, va_list ap) {
-        using namespace kos::common;
+    void vprintf(const int8_t* fmt, va_list ap) {
         for (int i = 0; fmt && fmt[i]; ++i) {
             if (fmt[i] != '%') { putc(fmt[i]); continue; }
-            // parse flags/width (very minimal: 0 and width digits)
             bool padZero = false; int width = 0; ++i;
             if (fmt[i] == '0') { padZero = true; ++i; }
             while (fmt[i] >= '0' && fmt[i] <= '9') { width = width*10 + (fmt[i]-'0'); ++i; }
@@ -86,17 +71,14 @@ namespace kos { namespace sys {
                     break;
                 }
                 default:
-                    // Unknown specifier, print literally
                     putc('%'); putc(spec);
                     break;
             }
         }
     }
 
-    static inline void printf(const kos::common::int8_t* fmt, ...) {
+    void printf(const int8_t* fmt, ...) {
         va_list ap; va_start(ap, fmt); vprintf(fmt, ap); va_end(ap);
     }
 
 }}
-
-#endif

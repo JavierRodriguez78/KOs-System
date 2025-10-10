@@ -2,6 +2,9 @@
     "files.associations": {
         "cstdint": "cpp",
         "string": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "app.h": "c",
+        "stdint.h": "c",
+        "api.h": "c"
     }
 }
