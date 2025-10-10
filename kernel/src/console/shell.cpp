@@ -1,7 +1,7 @@
 
 #include <console/shell.hpp>
 #include <console/tty.hpp>
-#include <lib/libc.hpp>
+#include <lib/string.hpp>
 #include <drivers/keyboard.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/elfloader.hpp>
@@ -68,7 +68,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
 
     // Check if command exists in /bin/
     int8_t path[64];
-    int32_t cmdLen = LibC::strlen(command);
+    int32_t cmdLen = String::strlen(command);
     // "/bin/" (5 chars) + command + null terminator must fit
     if (cmdLen + 5 + 1 > (int32_t)sizeof(path)) {
         tty.Write("Command too long\n");
@@ -82,7 +82,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
     path[5 + cmdLen] = 0;
     // Try to execute /bin/<cmd>.elf as ELF32
         int8_t elfPath[80];
-        int32_t baseLen = LibC::strlen(path);
+        int32_t baseLen = String::strlen(path);
         if (baseLen + 4 < (int32_t)sizeof(elfPath)) {
             for (int32_t i = 0; i < baseLen; ++i) elfPath[i] = path[i];
             elfPath[baseLen] = '.'; 

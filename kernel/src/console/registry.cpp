@@ -1,6 +1,6 @@
 #include <console/shell.hpp>
 #include <console/tty.hpp>
-#include <lib/libc.hpp>
+#include <lib/string.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -25,7 +25,7 @@ namespace kos{
         void (*CommandRegistry::Find(const int8_t* name))() {
             for (int32_t i = 0; i < commandCount; ++i) {
             
-                if (LibC::strcmp(reinterpret_cast<const uint8_t*>(commandTable[i].name), reinterpret_cast<const uint8_t*>(name)) == 0) {
+                if (String::strcmp(reinterpret_cast<const uint8_t*>(commandTable[i].name), reinterpret_cast<const uint8_t*>(name)) == 0) {
                     return commandTable[i].entry;
                 }
             }

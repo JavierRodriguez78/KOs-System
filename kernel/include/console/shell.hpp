@@ -2,7 +2,7 @@
 #define  __KOS__CONSOLE__SHELL_H
 
 #include <common/types.hpp>
-#include <lib/libc.hpp>
+#include <lib/string.hpp>
 #include <console/tty.hpp>
 #include <drivers/keyboard.hpp>
 
@@ -37,7 +37,7 @@ namespace kos{
 
             private:
             static TTY tty;
-            static LibC LIBC;
+            static String string;
 
         };
 

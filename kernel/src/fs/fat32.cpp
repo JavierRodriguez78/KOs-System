@@ -1,7 +1,7 @@
 #include <fs/fat32.hpp>
 #include <console/tty.hpp>
 #include <console/logger.hpp>
-#include <lib/libc.hpp>
+#include <lib/string.hpp>
 
 using namespace kos::fs;
 using namespace kos::drivers;
@@ -340,7 +340,7 @@ bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
         if (e > 0) { merged[m++] = '.'; for (int k = 0; k < e; ++k) merged[m++] = ext[k]; }
         merged[m] = 0;
         // Compare case-sensitive as written
-        if (kos::lib::LibC::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+        if (kos::lib::String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
             uint16_t clusterLo = (uint16_t)clusterBuf[i + 26] | ((uint16_t)clusterBuf[i + 27] << 8);
             uint16_t clusterHi = (uint16_t)clusterBuf[i + 20] | ((uint16_t)clusterBuf[i + 21] << 8);
             outStartCluster = ((uint32_t)clusterHi << 16) | clusterLo;

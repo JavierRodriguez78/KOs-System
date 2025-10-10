@@ -1,6 +1,5 @@
 #include <sys/api.hpp>
-#include <common/types.hpp>
-using namespace kos::common;
+#include <lib/libc/stdint.h>
 using namespace kos::sys;
 #include "app.hpp"
 

@@ -129,10 +129,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     struct MultibootInfoMinimal { uint32_t flags; uint32_t mem_lower; uint32_t mem_upper; uint32_t boot_device; uint32_t cmdline; };
     auto contains = [](const char* hay, const char* needle) -> bool {
         if (!hay || !needle) return false;
-        uint32_t nlen = kos::lib::LibC::strlen((const int8_t*)needle);
+        uint32_t nlen = kos::lib::String::strlen((const int8_t*)needle);
         for (uint32_t i = 0; hay[i]; ++i) {
             // Compare at this position for nlen
-            if (kos::lib::LibC::strcmp((const int8_t*)(hay + i), (const int8_t*)needle, nlen) == 0) return true;
+            if (kos::lib::String::strcmp((const int8_t*)(hay + i), (const int8_t*)needle, nlen) == 0) return true;
         }
         return false;
     };
