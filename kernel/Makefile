@@ -23,7 +23,7 @@ objects = ../obj/loader.o  \
 		  ../obj/console/shell.o \
 		  ../obj/console/shellKeyboardHandler.o \
 		  ../obj/console/registry.o \
-		  ../obj/lib/libc.o \
+		  ../obj/lib/libc/string.o \
 		  ../obj/lib/elfloader.o \
 		  ../obj/lib/sysapi.o \
 		  ../obj/lib/newdelete.o
@@ -53,7 +53,7 @@ $(APP_OBJDIR)/%.o: application/%.cpp
 	gcc $(GPPARAMS) -o $@ -c $<
 
 # Link applications as simple ELF32 with entry at symbol 'main'
-$(APP_BINDIR)/%.elf: $(APP_OBJDIR)/%.o ../obj/console/tty.o ../obj/lib/libc.o ../obj/lib/newdelete.o ../obj/drivers/vga.o
+$(APP_BINDIR)/%.elf: $(APP_OBJDIR)/%.o ../obj/console/tty.o ../obj/lib/libc/string.o ../obj/lib/newdelete.o ../obj/drivers/vga.o
 	mkdir -p $(APP_BINDIR)
 	ld -melf_i386 -e main -Ttext 0x01000000 -o $@ $^
 	@echo "Built app $@"

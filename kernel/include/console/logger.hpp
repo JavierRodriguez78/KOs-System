@@ -4,7 +4,7 @@
 #include <common/types.hpp>
 #include <console/tty.hpp>
 #include <hardware/rtc.hpp>
-#include <lib/libc.hpp>
+#include <lib/libc/string.h>
 
 namespace kos {
 namespace console {
@@ -65,7 +65,7 @@ namespace console {
             TTY::Write((const int8_t*)" ");
             TTY::Write((const int8_t*)msg);
             // Compute current column: timestamp (21) + 1 space + msg length
-            int col = 21 + 1 + kos::lib::LibC::strlen((const int8_t*)msg);
+            int col = 21 + 1 + (int)strlen(msg);
             int pad = STATUS_COL - col;
             if (pad < 1) pad = 1;
             for (int i = 0; i < pad; ++i) TTY::PutChar(' ');
