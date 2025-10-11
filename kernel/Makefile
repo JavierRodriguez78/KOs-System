@@ -123,3 +123,15 @@ gdb: ../output/mykernel.iso
 clean:
 	rm -rf ../obj mykernel.bin mykernel.iso ../output
 	rm -rf $(APP_BINDIR)/*.elf
+
+# -----------------------
+# Documentation (Doxygen)
+# -----------------------
+.PHONY: docs docs-clean
+docs:
+	@which doxygen >/dev/null 2>&1 || { echo "Error: doxygen not found. Install it (e.g., sudo apt-get install doxygen graphviz)"; exit 1; }
+	doxygen Doxyfile
+	@echo "HTML docs generated in ./docs/html/index.html"
+
+docs-clean:
+	rm -rf docs

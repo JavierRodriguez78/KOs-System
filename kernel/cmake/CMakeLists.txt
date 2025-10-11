@@ -162,3 +162,30 @@ add_custom_target(gdb
     DEPENDS iso
     USES_TERMINAL
 )
+
+# -----------------------
+# Doxygen documentation
+# -----------------------
+find_package(Doxygen QUIET)
+if (DOXYGEN_FOUND)
+    set(DOXYGEN_IN ${KOS_ROOT_DIR}/Doxyfile)
+    set(DOXYGEN_OUT ${KOS_ROOT_DIR}/docs/html/index.html)
+
+    add_custom_command(
+        OUTPUT ${DOXYGEN_OUT}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
+        WORKING_DIRECTORY ${KOS_ROOT_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        DEPENDS ${DOXYGEN_IN}
+        VERBATIM
+    )
+
+    add_custom_target(docs DEPENDS ${DOXYGEN_OUT})
+
+    add_custom_target(docs-clean
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${KOS_ROOT_DIR}/docs
+        COMMENT "Cleaning Doxygen documentation"
+    )
+else()
+    message(STATUS "Doxygen not found. 'docs' target will be unavailable.")
+endif()

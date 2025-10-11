@@ -44,3 +44,6 @@
 
 # CMake files
 build/
+
+# Doxygen files
+/kernel/doc
