@@ -14,7 +14,7 @@ void app_echo(void) {
 
     // Options: -h/--help, -n (no trailing newline), -- (end of options)
     int32_t i = 1;
-    int no_newline = 0;
+    int32_t no_newline = 0;
     for (; i < argc; ++i) {
         const int8_t* a = kos_argv(i);
         if (!a) break;
@@ -31,7 +31,7 @@ void app_echo(void) {
     }
 
     // Print remaining args separated by single spaces
-    int first = 1;
+    int32_t first = 1;
     for (; i < argc; ++i) {
         const int8_t* s = kos_argv(i);
         if (!s) continue;
@@ -43,5 +43,7 @@ void app_echo(void) {
 }
 
 #ifndef APP_EMBED
-int main(void) { app_echo(); return 0; }
+int main(void) { 
+    app_echo(); 
+    return 0; }
 #endif

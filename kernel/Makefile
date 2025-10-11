@@ -21,8 +21,10 @@ objects = ../obj/loader.o  \
 		  ../obj/console/tty.o  \
 		  ../obj/console/logger.o \
 		  ../obj/console/shell.o \
+		  ../obj/console/logo.o \
 		  ../obj/console/shellKeyboardHandler.o \
 		  ../obj/console/registry.o \
+		  ../obj/graphics/framebuffer.o \
 		  ../obj/lib/libc/string.o \
 		  ../obj/lib/elfloader.o \
 		  ../obj/lib/sysapi.o \
@@ -31,7 +33,7 @@ objects = ../obj/loader.o  \
 		  ../obj/lib/stdio.o
 
 # Applications to build into disk/bin
-APPS = hello echo ls
+APPS = hello echo ls memtest
 APP_OBJDIR = ../obj/application
 APP_BINDIR = disk/bin
 APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))

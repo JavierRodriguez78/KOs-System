@@ -7,6 +7,9 @@
 #include <lib/elfloader.hpp>
 // sys API utilities are declared in stdio.hpp
 #include <lib/stdio.hpp>
+// Logo printer
+#include <console/logo.hpp>
+#include <graphics/framebuffer.hpp>
 
 using namespace kos::console;
 using namespace kos::lib;
@@ -24,6 +27,8 @@ namespace kos {
 
 extern kos::fs::Filesystem* g_fs_ptr;
 
+// (logo printer now lives in src/console/logo.cpp)
+
 Shell::Shell() : bufferIndex(0) {
     for (int32_t i = 0; i < BUFFER_SIZE; ++i) buffer[i] = 0;
 }
@@ -33,6 +38,12 @@ void Shell::PrintPrompt() {
 }
 
 void Shell::Run() {
+ 
+    if (kos::gfx::IsAvailable()) {
+        kos::console::PrintLogoFramebuffer32();
+    } else {
+        kos::console::PrintLogoBlockArt();
+    }
     tty.Write("Welcome to KOS Shell\n");
     PrintPrompt();
     while (true) {
@@ -89,6 +100,25 @@ void Shell::ExecuteCommand(const int8_t* command) {
     }
     if (argc == 0) return;
     const int8_t* prog = argv[0];
+
+    // Built-in: show logo (text mode)
+    if (kos::lib::String::strcmp(prog, (const int8_t*)"logo", 4) == 0 &&
+        (prog[4] == 0)) {
+        kos::console::PrintLogoBlockArt();
+        return;
+    }
+
+    // Built-in: show logo on framebuffer (32bpp)
+    if (kos::lib::String::strcmp(prog, (const int8_t*)"logo32", 6) == 0 &&
+        (prog[6] == 0)) {
+        if (kos::gfx::IsAvailable()) {
+            kos::console::PrintLogoFramebuffer32();
+        } else {
+            tty.Write("Framebuffer 32bpp not available, falling back to text logo\n");
+            kos::console::PrintLogoBlockArt();
+        }
+        return;
+    }
 
     // Build /bin/<prog>
     int8_t path[64];

@@ -3,6 +3,17 @@
 extern "C" {
 
     #include <lib/libc/stdint.h>
+    
+    void* memcpy(void* dest, const void* src, size_t n) {
+        // Standard C memcpy: behavior is undefined for overlapping regions.
+        // Perform a simple byte-wise forward copy for portability in freestanding env.
+        uint8_t*       d = (uint8_t*)dest;
+        const uint8_t* s = (const uint8_t*)src;
+        for (size_t i = 0; i < n; ++i) {
+            d[i] = s[i];
+        }
+        return dest;
+    }
 
     int strcmp(const int8_t* a, const int8_t* b) {
         const uint8_t* pa = (const uint8_t*)a;

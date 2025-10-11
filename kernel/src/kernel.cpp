@@ -14,6 +14,7 @@
 #include <fs/fat32.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/stdio.hpp>
+#include <graphics/framebuffer.hpp>
 
 
 using namespace kos;
@@ -117,6 +118,8 @@ Shell g_shell_instance;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
+    // Initialize framebuffer info (if booted via Multiboot2 with framebuffer tag)
+    kos::gfx::InitFromMultiboot(multiboot_structure, multiboot_magic);
     // Call all constructors
     callConstructors();
 
