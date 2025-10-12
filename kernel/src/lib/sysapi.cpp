@@ -12,6 +12,15 @@ extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
+extern "C" void sys_listdir(const int8_t* path) {
+    if (!g_fs_ptr || !path) return;
+    // Minimal listing via Filesystem interface: if FAT32 mounted, reuse helper; fallback to root list
+    // For now, just attempt to read entries from the target directory cluster by using GetCommandEntry/Exists or direct prints.
+    // As a simple implementation here, call ListRoot when path=="/"; otherwise print a hint.
+    if (path[0] == '/' && path[1] == 0) { g_fs_ptr->ListRoot(); return; }
+    TTY::Write((const int8_t*)"ls: listing of arbitrary dirs not yet implemented; showing root instead\n");
+    g_fs_ptr->ListRoot();
+}
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     if (g_fs_ptr) {
         // Resolve relative paths against current working directory
@@ -100,6 +109,7 @@ extern "C" void InitSysApi() {
     t->puts = &sys_puts;
     t->hex  = &sys_hex;
     t->listroot = &sys_listroot;
+    t->listdir = &sys_listdir;
     t->mkdir = &sys_mkdir;
     t->get_argc = &sys_get_argc;
     t->get_arg = &sys_get_arg;

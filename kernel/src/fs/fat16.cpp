@@ -79,6 +79,7 @@ void FAT16::ListRoot() {
 
     uint8_t sector[512];
     // Read some sectors from the root dir (up to 4 sectors for demo)
+    int col = 0; const int colWidth = 16; const int colsPerRow = 4;
     for (int32_t s = 0; s < 4; ++s) {
         if (!ReadSector(rootDirLBA + s, sector)){
             tty.Write("FAT16: Error reading root dir sector\n");
@@ -87,6 +88,7 @@ void FAT16::ListRoot() {
         for (int32_t i = 0; i < 512; i += 32) {
             uint8_t first = sector[i];
             if (first == 0x00) {
+                if (col>0) tty.PutChar('\n');
                 return; // End
             }
             if (first == 0xE5) {
@@ -113,16 +115,60 @@ void FAT16::ListRoot() {
                 ext[e++] = c; 
             }
             ext[e] = 0;
-            if (e > 0) { 
-                tty.Write(name); 
-                tty.Write("."); 
-                tty.Write(ext); 
-                tty.PutChar('\n'); 
-            }else { 
-                tty.Write(name); tty.PutChar('\n'); 
-            }
+            // Filter . and ..
+            if (e == 0 && ((n == 1 && name[0] == '.') || (n == 2 && name[0] == '.' && name[1] == '.'))) continue;
+            // Build display string
+            int8_t display[20]; int di = 0;
+            for (int k=0; k<n && di < (int)sizeof(display)-1; ++k) display[di++] = name[k];
+            if (!(attr & 0x10) && e>0) { if (di < (int)sizeof(display)-1) display[di++]='.'; for (int k=0; k<e && di < (int)sizeof(display)-1; ++k) display[di++] = ext[k]; }
+            if (attr & 0x10) { if (di < (int)sizeof(display)-1) display[di++] = '/'; }
+            display[di] = 0; int len = di;
+            if (attr & 0x10) TTY::SetColor(10,0);
+            tty.Write(display);
+            if (attr & 0x10) TTY::SetAttr(0x07);
+            for (int sps=len; sps<colWidth; ++sps) tty.PutChar(' ');
+            if (++col >= colsPerRow) { tty.PutChar('\n'); col = 0; }
         }
     }
+    if (col>0) tty.PutChar('\n');
+}
+void FAT16::ListDir(const int8_t* path) {
+    if (!mounted) { tty.Write((const int8_t*)"FAT16: not mounted\n"); return; }
+    if (!path || (path[0]=='/' && path[1]==0)) { ListRoot(); return; }
+    // Traverse path components from root and ensure each is a directory
+    const int8_t* p = (path[0] == '/') ? (path + 1) : path;
+    uint32_t dirCl = 0; bool atRoot = true;
+    int8_t comp[13];
+    while (*p) {
+        int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+        comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
+        for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+        uint32_t childCl = 0, childSz = 0; bool isDir = false; bool ok = false;
+        if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
+        else ok = FindShortNameInDirCluster(dirCl, comp, childCl, childSz, isDir);
+        if (!ok || !isDir) { tty.Write((const int8_t*)"ls: path not found\n"); return; }
+        dirCl = childCl; atRoot = false;
+    }
+    uint8_t* buf = (uint8_t*)0x24000;
+    if (!ReadCluster(dirCl, buf)) { tty.Write((const int8_t*)"ls: read dir failed\n"); return; }
+    int col = 0; const int colWidth = 16; const int colsPerRow = 4;
+    for (uint32_t i=0; i < bpb.sectorsPerCluster*512; i += 32) {
+        uint8_t first = buf[i]; if (first==0x00) break; if (first==0xE5) continue; uint8_t attr = buf[i+11]; if (attr==0x0F) continue;
+        int8_t name[13]; int ni=0; for (int j=0;j<8;++j){ int8_t c=(int8_t)buf[i+j]; if(c==' ') break; name[ni++]=c; } name[ni]=0;
+        int8_t ext[4]; int ei=0; for (int j=0;j<3;++j){ int8_t c=(int8_t)buf[i+8+j]; if(c==' ') break; ext[ei++]=c; } ext[ei]=0;
+        // Filter . and ..
+        if (ei==0 && ((ni==1 && name[0]=='.') || (ni==2 && name[0]=='.' && name[1]=='.'))) continue;
+        int8_t display[20]; int di=0; for (int k=0;k<ni && di < (int)sizeof(display)-1; ++k) display[di++]=name[k];
+        if (!(attr & 0x10) && ei>0) { if (di < (int)sizeof(display)-1) display[di++]='.'; for (int k=0;k<ei && di < (int)sizeof(display)-1; ++k) display[di++]=ext[k]; }
+        if (attr & 0x10) { if (di < (int)sizeof(display)-1) display[di++]='/'; }
+        display[di]=0; int len = di;
+        if (attr & 0x10) TTY::SetColor(10,0);
+        tty.Write(display);
+        if (attr & 0x10) TTY::SetAttr(0x07);
+        for (int sps=len; sps<colWidth; ++sps) tty.PutChar(' ');
+        if (++col >= colsPerRow) { tty.PutChar('\n'); col=0; }
+    }
+    if (col>0) tty.PutChar('\n');
 }
 
 bool FAT16::ReadSectors(uint32_t lba, uint32_t count, uint8_t* buf) {

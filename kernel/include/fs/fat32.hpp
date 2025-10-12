@@ -28,6 +28,7 @@ namespace kos {
             virtual bool Mount();
             virtual void ListRoot(); // print short names to TTY
             virtual void DebugInfo(); // print cached BPB/layout values
+            virtual void ListDir(const int8_t* path) override;
 
         private:
             BlockDevice* dev;

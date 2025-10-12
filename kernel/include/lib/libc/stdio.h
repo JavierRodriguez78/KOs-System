@@ -13,6 +13,7 @@ typedef struct ApiTableC {
     void (*puts)(const int8_t* s);
     void (*hex)(uint8_t v);
     void (*listroot)();
+    void (*listdir)(const int8_t* path);
     int32_t (*get_argc)();
     const int8_t* (*get_arg)(int32_t index);
     const int8_t* cmdline;
@@ -28,6 +29,7 @@ static inline void kos_putc(int8_t c) { if (kos_sys_table()->putc) kos_sys_table
 static inline void kos_puts(const int8_t* s) { if (kos_sys_table()->puts) kos_sys_table()->puts(s); }
 static inline void kos_hex(uint8_t v) { if (kos_sys_table()->hex) kos_sys_table()->hex(v); }
 static inline void kos_listroot(void) { if (kos_sys_table()->listroot) kos_sys_table()->listroot(); }
+static inline void kos_listdir(const int8_t* path) { if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
 
 static inline int32_t kos_mkdir(const int8_t* path, int32_t parents) {
     if (kos_sys_table()->mkdir) return kos_sys_table()->mkdir(path, parents);

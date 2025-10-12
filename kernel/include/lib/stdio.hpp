@@ -14,6 +14,7 @@ namespace kos {
             void (*puts)(const int8_t* s);
             void (*hex)(uint8_t v);
             void (*listroot)();
+            void (*listdir)(const int8_t* path);
             // Argument passing support
             int32_t (*get_argc)();
             const int8_t* (*get_arg)(int32_t index);
@@ -34,6 +35,7 @@ namespace kos {
         void puts(const int8_t* s);
         void hex(uint8_t v);
         void listroot();
+    void listdir(const int8_t* path);
 
     // Arguments API (for applications)
     int32_t argc();
