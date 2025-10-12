@@ -14,6 +14,8 @@ typedef struct ApiTableC {
     void (*hex)(uint8_t v);
     void (*listroot)();
     void (*listdir)(const int8_t* path);
+    // Extended listdir with flags (bitmask). See KOS_LS_FLAG_* below.
+    void (*listdir_ex)(const int8_t* path, uint32_t flags);
     int32_t (*get_argc)();
     const int8_t* (*get_arg)(int32_t index);
     const int8_t* cmdline;
@@ -32,6 +34,7 @@ static inline void kos_puts(const int8_t* s) { if (kos_sys_table()->puts) kos_sy
 static inline void kos_hex(uint8_t v) { if (kos_sys_table()->hex) kos_sys_table()->hex(v); }
 static inline void kos_listroot(void) { if (kos_sys_table()->listroot) kos_sys_table()->listroot(); }
 static inline void kos_listdir(const int8_t* path) { if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
+static inline void kos_listdir_ex(const int8_t* path, uint32_t flags) { if (kos_sys_table()->listdir_ex) kos_sys_table()->listdir_ex(path, flags); else if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
 
 static inline int32_t kos_mkdir(const int8_t* path, int32_t parents) {
     if (kos_sys_table()->mkdir) return kos_sys_table()->mkdir(path, parents);
@@ -47,6 +50,10 @@ static inline int32_t kos_argc(void) { return kos_sys_table()->get_argc ? kos_sy
 static inline const int8_t* kos_argv(int32_t index) { return kos_sys_table()->get_arg ? kos_sys_table()->get_arg(index) : (const int8_t*)0; }
 static inline const int8_t* kos_cmdline(void) { return kos_sys_table()->cmdline; }
 static inline const int8_t* kos_cwd(void) { return kos_sys_table()->cwd; }
+
+// Flags for kos_listdir_ex
+#define KOS_LS_FLAG_LONG  (1u << 0)  // Show long listing: attrs, size, date
+#define KOS_LS_FLAG_ALL   (1u << 1)  // Include hidden and dot entries
 
 static inline void kos__print_uint32(unsigned int v, unsigned int base, int upper, int width, int padZero) {
     char buf[32];

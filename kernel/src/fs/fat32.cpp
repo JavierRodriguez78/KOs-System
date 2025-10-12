@@ -2,6 +2,7 @@
 #include <console/tty.hpp>
 #include <console/logger.hpp>
 #include <lib/string.hpp>
+#include <lib/stdio.hpp>
 
 using namespace kos::fs;
 using namespace kos::drivers;
@@ -10,6 +11,7 @@ using namespace kos::console;
 using namespace kos::lib;
 
 static TTY tty;
+namespace kos { namespace sys { uint32_t CurrentListFlags(); } }
 
 // Debug helpers to print hex values >8 bits using TTY's 8-bit WriteHex
 static void printHex16(uint16_t v) {
@@ -411,6 +413,7 @@ void FAT32::ListRoot() {
         tty.Write("FAT32 not mounted\n");
         return;
     }
+    uint32_t flags = kos::sys::CurrentListFlags();
 
     uint8_t sector[512];
     uint32_t lba = ClusterToLBA(bpb.rootCluster);
@@ -447,8 +450,8 @@ void FAT32::ListRoot() {
             ext[e++] = c;
         }
         name[idx] = 0;
-        // Filter . and ..
-        if (e == 0 && ((idx == 1 && name[0] == '.') || (idx == 2 && name[0] == '.' && name[1] == '.'))) continue;
+    // Filter . and .. unless -a
+    if (!(flags & (1u<<1))) { if (e == 0 && ((idx == 1 && name[0] == '.') || (idx == 2 && name[0] == '.' && name[1] == '.'))) continue; }
         // Build display string
         int8_t display[20]; int di = 0;
         for (int k = 0; k < idx && di < (int)sizeof(display) - 1; ++k) display[di++] = name[k];
@@ -458,21 +461,36 @@ void FAT32::ListRoot() {
         }
         if (attr & 0x10) { if (di < (int)sizeof(display) - 1) display[di++] = '/'; }
         display[di] = 0;
-        int len = di;
-        // Color directories
-        if (attr & 0x10) TTY::SetColor(10, 0);
-        tty.Write(display);
-        if (attr & 0x10) TTY::SetAttr(0x07);
-        // Pad to column width
-        for (int s = len; s < colWidth; ++s) tty.PutChar(' ');
-        if (++col >= colsPerRow) { tty.PutChar('\n'); col = 0; }
+        if (flags & 1u) {
+            // long listing: show type, name, size, timestamp (YYYY-MM-DD HH:MM) in decimal
+            uint32_t size = (uint32_t)sector[i + 28] | ((uint32_t)sector[i + 29] << 8) | ((uint32_t)sector[i + 30] << 16) | ((uint32_t)sector[i + 31] << 24);
+            uint16_t time = (uint16_t)sector[i + 22] | ((uint16_t)sector[i + 23] << 8);
+            uint16_t date = (uint16_t)sector[i + 24] | ((uint16_t)sector[i + 25] << 8);
+            uint32_t year = 1980 + ((date >> 9) & 0x7F);
+            uint32_t month = (date >> 5) & 0x0F;
+            uint32_t day = date & 0x1F;
+            uint32_t hour = (time >> 11) & 0x1F;
+            uint32_t min = (time >> 5) & 0x3F;
+            tty.Write((const int8_t*)((attr & 0x10) ? "d " : "- "));
+            tty.Write((const int8_t*)" "); tty.Write(display);
+            tty.Write((const int8_t*)"  ");
+            kos::sys::printf((const int8_t*)"%10u  %04u-%02u-%02u %02u:%02u\n", size, year, month, day, hour, min);
+        } else {
+            int len = di;
+            if (attr & 0x10) TTY::SetColor(10, 0);
+            tty.Write(display);
+            if (attr & 0x10) TTY::SetAttr(0x07);
+            for (int s = len; s < colWidth; ++s) tty.PutChar(' ');
+            if (++col >= colsPerRow) { tty.PutChar('\n'); col = 0; }
+        }
     }
-    if (col > 0) tty.PutChar('\n');
+    if (col > 0 && !(flags & 1u)) tty.PutChar('\n');
 }
 
 void FAT32::ListDir(const int8_t* path) {
     if (!mountedFlag) { tty.Write((const int8_t*)"FAT32 not mounted\n"); return; }
     if (!path || (path[0] == '/' && path[1] == 0)) { ListRoot(); return; }
+    uint32_t flags = kos::sys::CurrentListFlags();
     // Traverse path components from root cluster
     uint32_t dirCl = bpb.rootCluster;
     const int8_t* p = (path[0] == '/') ? (path + 1) : path;
@@ -498,21 +516,36 @@ void FAT32::ListDir(const int8_t* path) {
         uint8_t fb = clusterBuf[i]; if (fb == 0x00) break; if (fb == 0xE5) continue; uint8_t attr = clusterBuf[i+11]; if (attr == 0x0F) continue;
         int8_t name[13]; int ni=0; for (int j=0;j<8;++j){ int8_t c=(int8_t)clusterBuf[i+j]; if(c==' ') break; name[ni++]=c; } name[ni]=0;
         int8_t ext[4]; int ei=0; for (int j=0;j<3;++j){ int8_t c=(int8_t)clusterBuf[i+8+j]; if(c==' ') break; ext[ei++]=c; } ext[ei]=0;
-        // Filter . and ..
-        if (ei==0 && ((ni==1 && name[0]=='.') || (ni==2 && name[0]=='.' && name[1]=='.'))) continue;
+        if (!(flags & (1u<<1))) { if (ei==0 && ((ni==1 && name[0]=='.') || (ni==2 && name[0]=='.' && name[1]=='.'))) continue; }
         // Build display
         int8_t display[20]; int di=0;
         for (int k=0; k<ni && di < (int)sizeof(display)-1; ++k) display[di++]=name[k];
         if (!(attr & 0x10) && ei>0) { if (di < (int)sizeof(display)-1) display[di++]='.'; for (int k=0;k<ei && di < (int)sizeof(display)-1; ++k) display[di++]=ext[k]; }
         if (attr & 0x10) { if (di < (int)sizeof(display)-1) display[di++] = '/'; }
-        display[di]=0; int len = di;
-        if (attr & 0x10) TTY::SetColor(10,0);
-        tty.Write(display);
-        if (attr & 0x10) TTY::SetAttr(0x07);
-        for (int s=len; s<colWidth; ++s) tty.PutChar(' ');
-        if (++col >= colsPerRow) { tty.PutChar('\n'); col=0; }
+        display[di]=0;
+        if (flags & 1u) {
+            uint32_t size = (uint32_t)clusterBuf[i + 28] | ((uint32_t)clusterBuf[i + 29] << 8) | ((uint32_t)clusterBuf[i + 30] << 16) | ((uint32_t)clusterBuf[i + 31] << 24);
+            uint16_t time = (uint16_t)clusterBuf[i + 22] | ((uint16_t)clusterBuf[i + 23] << 8);
+            uint16_t date = (uint16_t)clusterBuf[i + 24] | ((uint16_t)clusterBuf[i + 25] << 8);
+            uint32_t year = 1980 + ((date >> 9) & 0x7F);
+            uint32_t month = (date >> 5) & 0x0F;
+            uint32_t day = date & 0x1F;
+            uint32_t hour = (time >> 11) & 0x1F;
+            uint32_t min = (time >> 5) & 0x3F;
+            tty.Write((const int8_t*)((attr & 0x10) ? "d " : "- "));
+            tty.Write((const int8_t*)" "); tty.Write(display);
+            tty.Write((const int8_t*)"  ");
+            kos::sys::printf((const int8_t*)"%10u  %04u-%02u-%02u %02u:%02u\n", size, year, month, day, hour, min);
+        } else {
+            int len = di;
+            if (attr & 0x10) TTY::SetColor(10,0);
+            tty.Write(display);
+            if (attr & 0x10) TTY::SetAttr(0x07);
+            for (int s=len; s<colWidth; ++s) tty.PutChar(' ');
+            if (++col >= colsPerRow) { tty.PutChar('\n'); col=0; }
+        }
     }
-    if (col > 0) tty.PutChar('\n');
+    if (col > 0 && !(flags & 1u)) tty.PutChar('\n');
 }
 
 bool FAT32::DirExists(const int8_t* path) {

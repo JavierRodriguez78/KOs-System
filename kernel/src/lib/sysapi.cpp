@@ -7,6 +7,7 @@ using namespace kos::console;
 using namespace kos::common;
 
 extern kos::fs::Filesystem* g_fs_ptr;
+static uint32_t g_list_flags = 0; // flags used by listdir_ex
 
 // Forward declaration for path normalization used by sys_listdir and sys_chdir
 static void normalize_abs_path(const int8_t* inPath, const int8_t* cwd, int8_t* outBuf, int outSize);
@@ -32,6 +33,20 @@ extern "C" void sys_listdir(const int8_t* path) {
         return;
     }
     g_fs_ptr->ListDir(absBuf);
+}
+
+extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
+    if (!g_fs_ptr) return;
+    // Unify: -l implies -a, so include ALL when LONG is set
+    if (flags & 1u) flags |= (1u<<1);
+    g_list_flags = flags;
+    int8_t absBuf[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    const int8_t* use = path && path[0] ? path : cwd;
+    normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
+    if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
+    g_fs_ptr->ListDir(absBuf);
+    g_list_flags = 0;
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     if (g_fs_ptr) {
@@ -159,6 +174,8 @@ namespace kos { namespace sys {
         }
         table()->cwd = g_cwd_buf;
     }
+    // Provide a lightweight accessor so fs code can check listing flags
+    uint32_t CurrentListFlags() { return g_list_flags; }
 }}
 
 extern "C" void InitSysApi() {
@@ -168,6 +185,7 @@ extern "C" void InitSysApi() {
     t->hex  = &sys_hex;
     t->listroot = &sys_listroot;
     t->listdir = &sys_listdir;
+    t->listdir_ex = &sys_listdir_ex;
     t->mkdir = &sys_mkdir;
     t->chdir = &sys_chdir;
     t->get_argc = &sys_get_argc;
