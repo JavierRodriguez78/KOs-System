@@ -49,11 +49,18 @@ void Shell::Run() {
     }
     // Initialize current working directory to /home (create if missing)
     if (g_fs_ptr) {
-        // Best-effort ensure /HOME exists (8.3 uppercase).
-        // Use filesystem mkdir directly to avoid app indirection.
+        // Best-effort ensure /HOME exists (8.3 uppercase) and select a valid CWD.
+        // If creation fails or directory still absent, fall back to root.
         g_fs_ptr->Mkdir((const int8_t*)"/HOME", 1);
+        if (g_fs_ptr->DirExists((const int8_t*)"/HOME")) {
+            SetCwd((const int8_t*)"/home");
+        } else {
+            SetCwd((const int8_t*)"/");
+        }
+    } else {
+        // No filesystem mounted; use root as a neutral prompt path
+        SetCwd((const int8_t*)"/");
     }
-    SetCwd((const int8_t*)"/home");
     tty.Write("Welcome to KOS Shell\n");
     PrintPrompt();
     while (true) {

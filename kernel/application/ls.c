@@ -1,5 +1,6 @@
 #include <lib/libc/stdio.h>
 #include <lib/libc/stdint.h>
+#include <lib/libc/string.h>
 #include "app.h"
 
 static void print_usage(void) {
@@ -12,7 +13,12 @@ void app_ls(void) {
     int32_t argc = kos_argc();
     if (argc > 2) { print_usage(); return; }
     if (argc == 2) {
-        path = kos_argv(1);
+        const int8_t* a1 = kos_argv(1);
+        if (a1 && (strcmp(a1, (const int8_t*)"-h") == 0 || strcmp(a1, (const int8_t*)"--help") == 0)) {
+            print_usage();
+            return;
+        }
+        path = a1;
     } else {
         path = kos_cwd();
         if (!path || path[0] == 0) path = (const int8_t*)"/";

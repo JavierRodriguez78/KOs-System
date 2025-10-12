@@ -462,7 +462,12 @@ void FAT32::ListDir(const int8_t* path) {
         int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
         comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
         for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
-        uint32_t childCl = 0, childSz = 0; if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) { tty.Write((const int8_t*)"ls: path not found\n"); return; }
+        uint32_t childCl = 0, childSz = 0; if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) {
+            tty.Write((const int8_t*)"ls: path not found: ");
+            tty.Write(comp);
+            tty.PutChar('\n');
+            return;
+        }
         dirCl = childCl;
     }
     uint8_t* clusterBuf = (uint8_t*)0x22000;
@@ -512,42 +517,36 @@ bool FAT32::DirExists(const int8_t* path) {
 // Find short 8.3 name in a single directory cluster (no subdir traversal beyond one hop)
 bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize) {
     uint8_t* clusterBuf = (uint8_t*)0x20000; // scratch area
-    if (!ReadCluster(dirCluster, clusterBuf)) return false;
-    for (uint32_t i = 0; i < bpb.sectorsPerCluster * 512; i += 32) {
-        uint8_t firstByte = clusterBuf[i];
-        if (firstByte == 0x00) break;
-        if (firstByte == 0xE5) continue;
-        uint8_t attr = clusterBuf[i + 11];
-        if (attr == 0x0F) continue;
-        // Build short name into buffer name[12]
-        int8_t name[13];
-        int32_t idx = 0;
-        for (int j = 0; j < 8; ++j) {
-            int8_t c = (int8_t)clusterBuf[i + j];
-            if (c == ' ') break; name[idx++] = c;
+    uint32_t cl = dirCluster;
+    while (cl >= 2 && cl < 0x0FFFFFF8) {
+        if (!ReadCluster(cl, clusterBuf)) return false;
+        for (uint32_t i = 0; i < bpb.sectorsPerCluster * 512; i += 32) {
+            uint8_t firstByte = clusterBuf[i];
+            if (firstByte == 0x00) break; // end of entries in this cluster chain
+            if (firstByte == 0xE5) continue;
+            uint8_t attr = clusterBuf[i + 11];
+            if (attr == 0x0F) continue; // skip LFN
+            // Build short name
+            int8_t name[13]; int32_t idx = 0;
+            for (int j = 0; j < 8; ++j) { int8_t c = (int8_t)clusterBuf[i + j]; if (c == ' ') break; name[idx++] = c; }
+            int8_t ext[4]; int e = 0; for (int j = 0; j < 3; ++j) { int8_t c = (int8_t)clusterBuf[i + 8 + j]; if (c == ' ') break; ext[e++] = c; }
+            name[idx] = 0;
+            int8_t merged[13]; int m = 0;
+            if (idx > 0) { String::memmove(merged + m, name, (uint32_t)idx); m += idx; }
+            if (e > 0) { merged[m++] = '.'; String::memmove(merged + m, ext, (uint32_t)e); m += e; }
+            merged[m] = 0;
+            for (int t = 0; merged[t]; ++t) if (merged[t] >= 'a' && merged[t] <= 'z') merged[t] -= ('a' - 'A');
+            if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+                uint16_t lo = (uint16_t)clusterBuf[i + 26] | ((uint16_t)clusterBuf[i + 27] << 8);
+                uint16_t hi = (uint16_t)clusterBuf[i + 20] | ((uint16_t)clusterBuf[i + 21] << 8);
+                outStartCluster = ((uint32_t)hi << 16) | lo;
+                outFileSize = (uint32_t)clusterBuf[i + 28] | ((uint32_t)clusterBuf[i + 29] << 8) | ((uint32_t)clusterBuf[i + 30] << 16) | ((uint32_t)clusterBuf[i + 31] << 24);
+                return true;
+            }
         }
-        int8_t ext[4]; int e = 0;
-        for (int j = 0; j < 3; ++j) {
-            int8_t c = (int8_t)clusterBuf[i + 8 + j];
-            if (c == ' ') break; ext[e++] = c;
-        }
-        name[idx] = 0;
-    int8_t merged[13];
-    int m = 0;
-    if (idx > 0) { String::memmove(merged + m, name, (uint32_t)idx); m += idx; }
-    if (e > 0) { merged[m++] = '.'; String::memmove(merged + m, ext, (uint32_t)e); m += e; }
-    merged[m] = 0;
-        // Compare case-sensitive as written
-        if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
-            uint16_t clusterLo = (uint16_t)clusterBuf[i + 26] | ((uint16_t)clusterBuf[i + 27] << 8);
-            uint16_t clusterHi = (uint16_t)clusterBuf[i + 20] | ((uint16_t)clusterBuf[i + 21] << 8);
-            outStartCluster = ((uint32_t)clusterHi << 16) | clusterLo;
-            outFileSize = (uint32_t)clusterBuf[i + 28] |
-                          ((uint32_t)clusterBuf[i + 29] << 8) |
-                          ((uint32_t)clusterBuf[i + 30] << 16) |
-                          ((uint32_t)clusterBuf[i + 31] << 24);
-            return true;
-        }
+        uint32_t next = NextCluster(cl);
+        if (next >= 0x0FFFFFF8 || next == 0) break;
+        cl = next;
     }
     return false;
 }

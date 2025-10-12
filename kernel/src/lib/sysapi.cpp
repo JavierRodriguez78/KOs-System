@@ -27,20 +27,12 @@ extern "C" void sys_listdir(const int8_t* path) {
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     if (g_fs_ptr) {
-        // Resolve relative paths against current working directory
-        const int8_t* usePath = path;
+        // Resolve relative paths against current working directory and normalize (handle ., .., duplicate slashes)
         int8_t absBuf[160];
-        if (path && path[0] != '/') {
-            const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
-            // Build abs: cwd + '/' + path, avoiding double '/'
-            int i = 0;
-            for (; cwd[i] && i < (int)sizeof(absBuf)-1; ++i) absBuf[i] = cwd[i];
-            if (i == 0 || absBuf[i-1] != '/') { if (i < (int)sizeof(absBuf)-1) absBuf[i++] = '/'; }
-            int j = 0; while (path[j] && i < (int)sizeof(absBuf)-1) absBuf[i++] = path[j++];
-            absBuf[i] = 0;
-            usePath = absBuf;
-        }
-        return g_fs_ptr->Mkdir(usePath, parents);
+        const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+        const int8_t* in = path && path[0] ? path : (const int8_t*)"/";
+        normalize_abs_path(in, cwd, absBuf, (int)sizeof(absBuf));
+        return g_fs_ptr->Mkdir(absBuf, parents);
     }
     TTY::Write((const int8_t*)"mkdir: no filesystem mounted\n");
     return -1;

@@ -146,7 +146,12 @@ void FAT16::ListDir(const int8_t* path) {
         uint32_t childCl = 0, childSz = 0; bool isDir = false; bool ok = false;
         if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
         else ok = FindShortNameInDirCluster(dirCl, comp, childCl, childSz, isDir);
-        if (!ok || !isDir) { tty.Write((const int8_t*)"ls: path not found\n"); return; }
+        if (!ok || !isDir) {
+            tty.Write((const int8_t*)"ls: path not found: ");
+            tty.Write(comp);
+            tty.PutChar('\n');
+            return;
+        }
         dirCl = childCl; atRoot = false;
     }
     uint8_t* buf = (uint8_t*)0x24000;
@@ -374,12 +379,10 @@ bool FAT16::FindShortNameInRoot(const int8_t* shortName83, uint32_t& outStartClu
             name[ni] = 0;
             int8_t merged[13]; int m=0;
             if (ni > 0) { String::memmove(merged + m, name, (uint32_t)ni); m += ni; }
-            if (ei > 0) {
-                merged[m++]='.';
-                String::memmove(merged + m, ext, (uint32_t)ei);
-                m += ei;
-            }
+            if (ei > 0) { merged[m++]='.'; String::memmove(merged + m, ext, (uint32_t)ei); m += ei; }
             merged[m]=0;
+            // Uppercase merged for case-insensitive short-name compare
+            for (int t=0; merged[t]; ++t) if (merged[t] >= 'a' && merged[t] <= 'z') merged[t] -= ('a' - 'A');
             if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
                 uint16_t cl = (uint16_t)sec[i+26] | ((uint16_t)sec[i+27] << 8);
                 outStartCluster = cl;
@@ -394,19 +397,23 @@ bool FAT16::FindShortNameInRoot(const int8_t* shortName83, uint32_t& outStartClu
 
 bool FAT16::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize, bool& isDir) {
     uint8_t* buf = (uint8_t*)0x24000;
-    if (!ReadCluster(dirCluster, buf)) return false;
-    for (uint32_t i = 0; i < bpb.sectorsPerCluster*512; i += 32) {
-        uint8_t first = buf[i];
-        if (first == 0x00) return false;
-        if (first == 0xE5) continue;
-        uint8_t attr = buf[i + 11];
-        if (attr == 0x0F) continue;
+    uint32_t cl = dirCluster;
+    while (cl >= 2 && cl < 0xFFF8) {
+        if (!ReadCluster(cl, buf)) return false;
+        for (uint32_t i = 0; i < bpb.sectorsPerCluster*512; i += 32) {
+            uint8_t first = buf[i];
+            if (first == 0x00) break;
+            if (first == 0xE5) continue;
+            uint8_t attr = buf[i + 11];
+            if (attr == 0x0F) continue;
         int8_t name[13]; int ni=0; for (int j=0;j<8;++j){ int8_t c=(int8_t)buf[i+j]; if(c==' ') break; name[ni++]=c; } name[ni]=0;
         int8_t ext[4]; int ei=0; for (int j=0;j<3;++j){ int8_t c=(int8_t)buf[i+8+j]; if(c==' ') break; ext[ei++]=c; } ext[ei]=0;
     int8_t merged[13]; int m=0;
     if (ni > 0) { String::memmove(merged + m, name, (uint32_t)ni); m += ni; }
     if (ei > 0) { merged[m++]='.'; String::memmove(merged + m, ext, (uint32_t)ei); m += ei; }
     merged[m]=0;
+        // Uppercase merged for case-insensitive short-name compare
+        for (int t=0; merged[t]; ++t) if (merged[t] >= 'a' && merged[t] <= 'z') merged[t] -= ('a' - 'A');
         if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
             uint16_t cl = (uint16_t)buf[i+26] | ((uint16_t)buf[i+27] << 8);
             outStartCluster = cl;
@@ -414,6 +421,10 @@ bool FAT16::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
             isDir = (attr & 0x10) != 0;
             return true;
         }
+        }
+        uint32_t next = NextCluster(cl);
+        if (next >= 0xFFF8 || next == 0) break;
+        cl = next;
     }
     return false;
 }

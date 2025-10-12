@@ -33,7 +33,7 @@ objects = ../obj/loader.o  \
 		  ../obj/lib/stdio.o
 
 # Applications to build into disk/bin
-APPS = hello echo ls memtest mkdir cd
+APPS = hello echo ls memtest mkdir cd pwd
 APP_OBJDIR = ../obj/application
 APP_BINDIR = disk/bin
 APP_OBJS = $(patsubst %, $(APP_OBJDIR)/%.o, $(APPS))

@@ -74,6 +74,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             case 0x09: handler->OnKeyDown('8'); break;
             case 0x0A: handler->OnKeyDown('9'); break;
             case 0x0B: handler->OnKeyDown('0'); break;
+            case 0x0C: handler->OnKeyDown('-'); break; // '-' key
 
             case 0x10: handler->OnKeyDown('q'); break;
             case 0x11: handler->OnKeyDown('w'); break;
@@ -105,7 +106,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             case 0x32: handler->OnKeyDown('m'); break;
             case 0x33: handler->OnKeyDown(','); break;
             case 0x34: handler->OnKeyDown('.'); break;
-            case 0x35: handler->OnKeyDown('-'); break;
+            case 0x35: handler->OnKeyDown('/'); break; // '/' key
 
             case 0x1C: handler->OnKeyDown('\n'); break;
             case 0x39: handler->OnKeyDown(' '); break;
