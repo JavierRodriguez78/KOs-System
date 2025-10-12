@@ -15,6 +15,59 @@ extern "C" {
         return dest;
     }
 
+    void* memmove(void* dest, const void* src, size_t n) {
+        // Overlap-safe move: copy direction depends on relative addresses
+        uint8_t*       d = (uint8_t*)dest;
+        const uint8_t* s = (const uint8_t*)src;
+        if (d == s || n == 0) {
+            return dest;
+        }
+        if (d < s) {
+            // Non-overlapping or dest before src: forward copy
+            for (size_t i = 0; i < n; ++i) {
+                d[i] = s[i];
+            }
+        } else {
+            // Potential overlap with dest after src: backward copy
+            for (size_t i = n; i != 0; --i) {
+                d[i - 1] = s[i - 1];
+            }
+        }
+        return dest;
+    }
+
+    void* memchr(const void* s, int c, size_t n) {
+        const uint8_t* p = (const uint8_t*)s;
+        uint8_t target = (uint8_t)(c & 0xFF);
+        for (size_t i = 0; i < n; ++i) {
+            if (p[i] == target) {
+                // Cast away const in return type as per C standard memchr signature
+                return (void*)(p + i);
+            }
+        }
+        return 0; // NULL
+    }
+
+    int memcmp(const void* s1, const void* s2, size_t n) {
+        const uint8_t* a = (const uint8_t*)s1;
+        const uint8_t* b = (const uint8_t*)s2;
+        for (size_t i = 0; i < n; ++i) {
+            if (a[i] != b[i]) {
+                return (int)a[i] - (int)b[i];
+            }
+        }
+        return 0;
+    }
+
+    void* memset(void* s, int c, size_t n) {
+        uint8_t* p = (uint8_t*)s;
+        uint8_t v = (uint8_t)(c & 0xFF);
+        for (size_t i = 0; i < n; ++i) {
+            p[i] = v;
+        }
+        return s;
+    }
+
     int strcmp(const int8_t* a, const int8_t* b) {
         const uint8_t* pa = (const uint8_t*)a;
         const uint8_t* pb = (const uint8_t*)b;

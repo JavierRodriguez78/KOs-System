@@ -30,6 +30,15 @@ cmake --build . --target qemu      # requires ./disk.img (real HDD image)
 cmake --build . --target qemu-vvfat  # maps ./disk folder as drive
 ```
 
+## Execute Docs
+* Ubuntu/Debina packages:
+sudo apt-get update
+sudo apt-get install doxygen graphviz
+Execute:
+```
+cmake --build build --target docs
+```
+
 ## Notes
 - Linking is done directly with `ld` to respect the custom script `linker.ld`.
 - ASM files are assembled in 32-bit mode.
