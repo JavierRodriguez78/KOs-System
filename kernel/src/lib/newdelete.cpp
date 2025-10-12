@@ -1,14 +1,13 @@
 // Minimal global new/delete operators for freestanding kernel
-// Avoid dynamic allocation; these are stubs to satisfy the linker.
+// This version is for user apps and early builds; returns null/no-op.
 
 #include <common/types.hpp>
 
 using namespace kos::common;
+// No kernel heap here (apps are freestanding C); keep stubs.
 
 // Regular new/delete
-void* operator new(uint32_t) {
-    return 0; // no heap; return null
-}
+void* operator new(uint32_t) noexcept { return 0; }
 
 void operator delete(void* ) noexcept {
     // no-op
@@ -20,9 +19,7 @@ void operator delete(void* , uint32_t) noexcept {
 }
 
 // Array new/delete
-void* operator new[](uint32_t) {
-    return 0;
-}
+void* operator new[](uint32_t) noexcept { return 0; }
 
 void operator delete[](void*) noexcept {
     // no-op

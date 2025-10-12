@@ -1,4 +1,4 @@
-GPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
+GPPARAMS = -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
@@ -25,10 +25,13 @@ objects = ../obj/loader.o  \
 		  ../obj/console/shellKeyboardHandler.o \
 		  ../obj/console/registry.o \
 		  ../obj/graphics/framebuffer.o \
+		  ../obj/memory/pmm.o \
+		  ../obj/memory/paging.o \
+		  ../obj/memory/heap.o \
 		  ../obj/lib/libc/string.o \
 		  ../obj/lib/elfloader.o \
 		  ../obj/lib/sysapi.o \
-		  ../obj/lib/newdelete.o \
+		  ../obj/lib/newdelete_kernel.o \
 		  ../obj/lib/string.o  \
 		  ../obj/lib/stdio.o
 
@@ -58,7 +61,7 @@ mykernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
 
 # Build application objects from application/*.c (C apps)
-CPARAMS = -m32 -Iinclude -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -fno-leading-underscore -Wno-write-strings
+CPARAMS = -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2 -Iinclude -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -fno-leading-underscore -Wno-write-strings
 $(APP_OBJDIR)/%.o: application/%.c
 	mkdir -p $(@D)
 	gcc $(CPARAMS) -o $@ -c $<

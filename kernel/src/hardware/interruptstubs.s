@@ -82,7 +82,7 @@ int_bottom:
     pushl %esp
     push (interruptnumber)
     call _ZN3kos8hardware16InterruptManager15HandleInterruptEhj
-    add %esp, 6
+    add $8, %esp
     mov %eax, %esp # den stack wechseln
 
     # register laden
@@ -100,3 +100,6 @@ _ZN3kos8hardware16InterruptManager15InterruptIgnoreEv:
 
 .data
     interruptnumber: .byte 0
+    
+    # Mark stack as non-executable for the assembler/linker
+    .section .note.GNU-stack,"",@progbits

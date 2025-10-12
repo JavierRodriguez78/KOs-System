@@ -1,4 +1,8 @@
-# Basic language standards
+# Basic language standards and project
+cmake_minimum_required(VERSION 3.16)
+project(KOSKernel C CXX ASM)
+ 
+# Language standards
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -6,8 +10,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 enable_language(ASM)
 
-# Set source directory variables
-set (KOS_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+# Set source directory variables (kernel root)
+set (KOS_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set (KOS_SRC_DIR "${KOS_ROOT_DIR}/src")
 set (KOS_INCLUDE_DIR "${KOS_ROOT_DIR}/include")
 
@@ -24,7 +28,7 @@ set(CXX_NO_CXXRTTI_EXC "-fno-rtti -fno-exceptions -fno-use-cxa-atexit -fno-leadi
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_32_FLAGS} ${COMMON_NOSTDLIB_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_32_FLAGS} ${COMMON_NOSTDLIB_FLAGS} ${CXX_NO_CXXRTTI_EXC}")
 # Use -m32 (not --32) so gcc/cc assembles 32-bit
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -m32")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${COMMON_32_FLAGS}")
 
 # Kernel sources
 set(KERNEL_ASM_SOURCES

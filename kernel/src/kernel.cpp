@@ -15,6 +15,10 @@
 #include <fs/filesystem.hpp>
 #include <lib/stdio.hpp>
 #include <graphics/framebuffer.hpp>
+#include <memory/memory.hpp>
+#include <memory/pmm.hpp>
+#include <memory/paging.hpp>
+#include <memory/heap.hpp>
 
 
 using namespace kos;
@@ -23,6 +27,8 @@ using namespace kos::drivers;
 using namespace kos::hardware;
 using namespace kos::console;
 using namespace kos::fs;
+using namespace kos::memory;
+using namespace kos::gfx;
 
 
 class MouseToConsole: public MouseEventHandler
@@ -119,11 +125,11 @@ Shell g_shell_instance;
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
     // Initialize framebuffer info (if booted via Multiboot2 with framebuffer tag)
-    kos::gfx::InitFromMultiboot(multiboot_structure, multiboot_magic);
+    InitFromMultiboot(multiboot_structure, multiboot_magic);
     // Call all constructors
     callConstructors();
 
-    static kos::console::TTY tty;
+    static TTY tty;
     tty.Clear();
 
     // Parse Multiboot (v1) cmdline for debug flag before most logs
@@ -131,10 +137,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     struct MultibootInfoMinimal { uint32_t flags; uint32_t mem_lower; uint32_t mem_upper; uint32_t boot_device; uint32_t cmdline; };
     auto contains = [](const char* hay, const char* needle) -> bool {
         if (!hay || !needle) return false;
-        uint32_t nlen = kos::lib::String::strlen((const int8_t*)needle);
+        uint32_t nlen = String::strlen((const int8_t*)needle);
         for (uint32_t i = 0; hay[i]; ++i) {
             // Compare at this position for nlen
-            if (kos::lib::String::strcmp((const int8_t*)(hay + i), (const int8_t*)needle, nlen) == 0) return true;
+            if (String::strcmp((const int8_t*)(hay + i), (const int8_t*)needle, nlen) == 0) return true;
         }
         return false;
     };
@@ -162,6 +168,25 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     // Register a noop handler for IRQ14 (IDE primary) to avoid log spam if device still raises IRQs
     IDEIRQHandler ideIrq14(&interrupts, interrupts.HardwareInterruptOffset() + 14);
     Logger::LogStatus("IDT/GDT configured", true);
+    // Initialize Physical Memory Manager (using Multiboot v1 basic fields if available)
+    extern uint8_t kernel_start; extern uint8_t kernel_end;
+    uint32_t memLowerKB = 0, memUpperKB = 0;
+    if (multiboot_magic == 0x2BADB002 && multiboot_structure) {
+        const MultibootInfoMinimal* mbi = (const MultibootInfoMinimal*)multiboot_structure;
+        if (mbi->flags & 1) { memLowerKB = mbi->mem_lower; memUpperKB = mbi->mem_upper; }
+    }
+    PMM::Init(memLowerKB, memUpperKB, (phys_addr_t)&kernel_start, (phys_addr_t)&kernel_end, multiboot_structure);
+    Logger::LogStatus("PMM initialized", true);
+
+    // Enable paging
+    Paging::Init((phys_addr_t)&kernel_start, (phys_addr_t)&kernel_end);
+    Logger::LogStatus("Paging enabled", true);
+
+    // Initialize a tiny kernel heap away from app load base (apps link at 0x01000000)
+    // Use 0x02000000 (32 MiB) with a couple of pages; still inside 64 MiB identity window
+    Heap::Init((virt_addr_t)0x02000000, 2);
+    Logger::LogStatus("Kernel heap initialized", true);
+
     Logger::Log("Initializing Hardware, Stage 1");
     DriverManager drvManager;
 

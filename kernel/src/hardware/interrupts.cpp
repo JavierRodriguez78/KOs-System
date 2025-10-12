@@ -163,6 +163,14 @@ uint32_t InterruptManager::HandleInterrupt(uint8_t interrupt, uint32_t esp)
     return esp;
 }
 
+static inline void print_hex32(uint32_t v) {
+    TTY::Write((int8_t*)"0x");
+    for (int i = 7; i >= 0; --i) {
+        uint8_t nyb = (v >> (i*4)) & 0xF;
+        TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
+    }
+}
+
 uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
 {
 
@@ -172,8 +180,40 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
     }
     else if(interrupt != hardwareInterruptOffset)
     {
-        tty.Write("UNHANDLER INTERRUPT 0x");
-        tty.WriteHex(interrupt);
+        // Exception handling diagnostics for #UD (0x06)
+        if (interrupt == 0x06) {
+            // Stack layout at entry of our stub (top -> bottom):
+            // [gs][fs][es][ds] (16 bytes)
+            // [edi][esi][ebp][esp_dump][ebx][edx][ecx][eax] (pusha: 32 bytes)
+            // [EIP][CS][EFLAGS] (CPU-pushed for exceptions without error code)
+            // For exceptions with error code, there's an extra [ERRCODE] before EIP.
+            // For #UD (0x06), no error code.
+            uint32_t* s = (uint32_t*)esp;
+            const bool hasErrCode = false; // for 0x06
+            const uint32_t baseWords = 4 /*segs*/ + 8 /*pusha*/;
+            const uint32_t errAdj = hasErrCode ? 1u : 0u;
+            uint32_t eip = s[baseWords + errAdj];      // 16+32=48 bytes -> index 12
+            uint32_t cs  = s[baseWords + errAdj + 1];
+            uint32_t fl  = s[baseWords + errAdj + 2];
+
+            TTY::Write((int8_t*)"#UD Invalid Opcode at ");
+            print_hex32(eip);
+            TTY::Write((int8_t*)" CS=");
+            print_hex32(cs);
+            TTY::Write((int8_t*)" EFLAGS=");
+            print_hex32(fl);
+            TTY::Write((int8_t*)" bytes:");
+            uint8_t* p = (uint8_t*)eip;
+            for (int i = 0; i < 8; ++i) {
+                TTY::PutChar(' ');
+                TTY::PutChar("0123456789ABCDEF"[(p[i]>>4)&0xF]);
+                TTY::PutChar("0123456789ABCDEF"[p[i]&0xF]);
+            }
+            TTY::PutChar('\n');
+        } else {
+            tty.Write("UNHANDLER INTERRUPT 0x");
+            tty.WriteHex(interrupt);
+        }
     }
 
     // hardarware interrupts must be acknowleged

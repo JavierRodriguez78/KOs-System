@@ -163,7 +163,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
             elfPath[baseLen+3] = 'f'; 
             elfPath[baseLen+4] = 0;
             if (g_fs_ptr) {
-                static uint8_t elfBuf[64*1024]; // 64 KB buffer for small apps
+                static uint8_t elfBuf[256*1024]; // 256 KB buffer for apps
                 int32_t n = g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
                 if (n > 0) {
                     tty.Write((int8_t*)"Loading ELF...\n");
