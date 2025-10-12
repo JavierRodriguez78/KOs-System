@@ -5,6 +5,7 @@
         "random": "cpp",
         "app.h": "c",
         "stdint.h": "c",
-        "api.h": "c"
+        "api.h": "c",
+        "compare": "cpp"
     }
 }

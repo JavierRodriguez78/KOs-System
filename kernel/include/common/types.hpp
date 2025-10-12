@@ -13,6 +13,14 @@ namespace kos
         typedef unsigned                uint32_t;
         typedef long long int           int64_t;
         typedef unsigned long long int  uint64_t;
+
+      // Pointer-sized unsigned integer
+      // Select width based on common architecture macros (defaults to 32-bit)
+      #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__ppc64__) || defined(__mips64)
+         typedef uint64_t            uintptr_t;
+      #else
+         typedef uint32_t            uintptr_t;
+      #endif
    }
 }
 

@@ -21,6 +21,16 @@ typedef unsigned long size_t; // Works for i386; adjust if needed
         typedef long long int           int64_t;
         typedef unsigned long long int  uint64_t;
 
+// uintptr_t for C code (pointer-sized unsigned integer)
+#if !defined(__uintptr_t_defined)
+#  if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__ppc64__) || defined(__mips64)
+typedef uint64_t uintptr_t;
+#  else
+typedef uint32_t uintptr_t;
+#  endif
+#define __uintptr_t_defined
+#endif
+
         #ifdef __cplusplus
 }
 #endif
