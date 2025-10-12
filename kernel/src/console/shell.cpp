@@ -40,9 +40,9 @@ void Shell::PrintPrompt() {
 void Shell::Run() {
  
     if (kos::gfx::IsAvailable()) {
-        kos::console::PrintLogoFramebuffer32();
+        PrintLogoFramebuffer32();
     } else {
-        kos::console::PrintLogoBlockArt();
+        PrintLogoBlockArt();
     }
     tty.Write("Welcome to KOS Shell\n");
     PrintPrompt();
@@ -102,20 +102,20 @@ void Shell::ExecuteCommand(const int8_t* command) {
     const int8_t* prog = argv[0];
 
     // Built-in: show logo (text mode)
-    if (kos::lib::String::strcmp(prog, (const int8_t*)"logo", 4) == 0 &&
+    if (String::strcmp(prog, (const int8_t*)"logo", 4) == 0 &&
         (prog[4] == 0)) {
-        kos::console::PrintLogoBlockArt();
+        PrintLogoBlockArt();
         return;
     }
 
     // Built-in: show logo on framebuffer (32bpp)
-    if (kos::lib::String::strcmp(prog, (const int8_t*)"logo32", 6) == 0 &&
+    if (String::strcmp(prog, (const int8_t*)"logo32", 6) == 0 &&
         (prog[6] == 0)) {
-        if (kos::gfx::IsAvailable()) {
-            kos::console::PrintLogoFramebuffer32();
+        if (gfx::IsAvailable()) {
+            PrintLogoFramebuffer32();
         } else {
             tty.Write("Framebuffer 32bpp not available, falling back to text logo\n");
-            kos::console::PrintLogoBlockArt();
+            PrintLogoBlockArt();
         }
         return;
     }
@@ -130,15 +130,17 @@ void Shell::ExecuteCommand(const int8_t* command) {
     }
     // Build path: "/bin/" + command
     path[0] = '/'; path[1] = 'b'; path[2] = 'i'; path[3] = 'n'; path[4] = '/';
-    for (int32_t i = 0; i < cmdLen; ++i) { path[5 + i] = prog[i]; }
+    // Safe copy of program name into path buffer
+    String::memmove(path + 5, prog, (uint32_t)cmdLen);
     path[5 + cmdLen] = 0;
     // Try to execute /bin/<cmd>.elf as ELF32
-        int8_t elfPath[80];
-        int32_t baseLen = String::strlen(path);
-        if (baseLen + 4 < (int32_t)sizeof(elfPath)) {
-            for (int32_t i = 0; i < baseLen; ++i) elfPath[i] = path[i];
-            elfPath[baseLen] = '.'; 
-            elfPath[baseLen+1] = 'e'; 
+    int8_t elfPath[80];
+    int32_t baseLen = String::strlen(path);
+    if (baseLen + 4 < (int32_t)sizeof(elfPath)) {
+        // Copy base path into elfPath
+        String::memmove(elfPath, path, (uint32_t)baseLen);
+        elfPath[baseLen] = '.';
+        elfPath[baseLen+1] = 'e';
             elfPath[baseLen+2] = 'l'; 
             elfPath[baseLen+3] = 'f'; 
             elfPath[baseLen+4] = 0;
@@ -149,7 +151,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
                     tty.Write((int8_t*)"Loading ELF...\n");
                     // Set args into system API for the app to read
                     kos::sys::SetArgs(argc, argv, command);
-                    if (!kos::lib::ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) {
+                    if (!ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) {
                         tty.Write("ELF load failed\n");
                     }
                     return;

@@ -334,13 +334,13 @@ bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
             if (c == ' ') break; ext[e++] = c;
         }
         name[idx] = 0;
-        int8_t merged[13];
-        int m = 0;
-        for (int k = 0; k < idx; ++k) merged[m++] = name[k];
-        if (e > 0) { merged[m++] = '.'; for (int k = 0; k < e; ++k) merged[m++] = ext[k]; }
-        merged[m] = 0;
+    int8_t merged[13];
+    int m = 0;
+    if (idx > 0) { String::memmove(merged + m, name, (uint32_t)idx); m += idx; }
+    if (e > 0) { merged[m++] = '.'; String::memmove(merged + m, ext, (uint32_t)e); m += e; }
+    merged[m] = 0;
         // Compare case-sensitive as written
-        if (kos::lib::String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+        if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
             uint16_t clusterLo = (uint16_t)clusterBuf[i + 26] | ((uint16_t)clusterBuf[i + 27] << 8);
             uint16_t clusterHi = (uint16_t)clusterBuf[i + 20] | ((uint16_t)clusterBuf[i + 21] << 8);
             outStartCluster = ((uint32_t)clusterHi << 16) | clusterLo;
@@ -394,7 +394,7 @@ int32_t FAT32::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
         if (!ReadCluster(cluster, clBuf)) break;
         uint32_t chunk = bytesPerCluster;
         if (bytesRead + chunk > toRead) chunk = toRead - bytesRead;
-        for (uint32_t i = 0; i < chunk; ++i) dst[bytesRead + i] = clBuf[i];
+    kos::lib::String::memmove(dst + bytesRead, clBuf, chunk);
         bytesRead += chunk;
         uint32_t next = NextCluster(cluster);
         if (next >= 0x0FFFFFF8) break;

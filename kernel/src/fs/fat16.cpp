@@ -159,8 +159,15 @@ bool FAT16::FindShortNameInRoot(const int8_t* shortName83, uint32_t& outStartClu
             for (int j = 0; j < 8; ++j) { int8_t c = (int8_t)sec[i+j]; if (c==' ') break; name[ni++] = c; }
             int8_t ext[4]; int ei = 0; for (int j = 0; j < 3; ++j) { int8_t c = (int8_t)sec[i+8+j]; if (c==' ') break; ext[ei++] = c; }
             name[ni] = 0;
-            int8_t merged[13]; int m=0; for (int k=0;k<ni;++k) merged[m++]=name[k]; if(ei>0){ merged[m++]='.'; for(int k=0;k<ei;++k) merged[m++]=ext[k]; } merged[m]=0;
-            if (kos::lib::String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+            int8_t merged[13]; int m=0;
+            if (ni > 0) { String::memmove(merged + m, name, (uint32_t)ni); m += ni; }
+            if (ei > 0) {
+                merged[m++]='.';
+                String::memmove(merged + m, ext, (uint32_t)ei);
+                m += ei;
+            }
+            merged[m]=0;
+            if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
                 uint16_t cl = (uint16_t)sec[i+26] | ((uint16_t)sec[i+27] << 8);
                 outStartCluster = cl;
                 outFileSize = (uint32_t)sec[i+28] | ((uint32_t)sec[i+29]<<8) | ((uint32_t)sec[i+30]<<16) | ((uint32_t)sec[i+31]<<24);
@@ -183,8 +190,11 @@ bool FAT16::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
         if (attr == 0x0F) continue;
         int8_t name[13]; int ni=0; for (int j=0;j<8;++j){ int8_t c=(int8_t)buf[i+j]; if(c==' ') break; name[ni++]=c; } name[ni]=0;
         int8_t ext[4]; int ei=0; for (int j=0;j<3;++j){ int8_t c=(int8_t)buf[i+8+j]; if(c==' ') break; ext[ei++]=c; } ext[ei]=0;
-        int8_t merged[13]; int m=0; for(int k=0;k<ni;++k) merged[m++]=name[k]; if(ei>0){ merged[m++]='.'; for(int k=0;k<ei;++k) merged[m++]=ext[k]; } merged[m]=0;
-        if (kos::lib::String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
+    int8_t merged[13]; int m=0;
+    if (ni > 0) { String::memmove(merged + m, name, (uint32_t)ni); m += ni; }
+    if (ei > 0) { merged[m++]='.'; String::memmove(merged + m, ext, (uint32_t)ei); m += ei; }
+    merged[m]=0;
+        if (String::strcmp((const uint8_t*)merged, (const uint8_t*)shortName83) == 0) {
             uint16_t cl = (uint16_t)buf[i+26] | ((uint16_t)buf[i+27] << 8);
             outStartCluster = cl;
             outFileSize = (uint32_t)buf[i+28] | ((uint32_t)buf[i+29]<<8) | ((uint32_t)buf[i+30]<<16) | ((uint32_t)buf[i+31]<<24);

@@ -1,5 +1,6 @@
 #include <lib/elfloader.hpp>
 #include <console/tty.hpp>
+#include <lib/string.hpp>
 
 using namespace kos::lib;
 using namespace kos::common;
@@ -49,9 +50,12 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
         if (ph[i].p_offset + ph[i].p_filesz > size) return false;
         uint8_t* dst = (uint8_t*)ph[i].p_vaddr;
         const uint8_t* src = image + ph[i].p_offset;
-        for (uint32_t j = 0; j < ph[i].p_filesz; ++j) dst[j] = src[j];
-        // Zero BSS tail
-        for (uint32_t j = ph[i].p_filesz; j < ph[i].p_memsz; ++j) dst[j] = 0;
+        // Copy file-backed segment into memory
+        String::memmove(dst, src, ph[i].p_filesz);
+        // Zero BSS tail (if any)
+        if (ph[i].p_memsz > ph[i].p_filesz) {
+            String::memset(dst + ph[i].p_filesz, 0, ph[i].p_memsz - ph[i].p_filesz);
+        }
     }
     int (*entry)() = (int (*)())(eh->e_entry);
     // Transfer control to program entry and execute
