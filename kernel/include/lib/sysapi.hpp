@@ -10,6 +10,8 @@ using namespace kos::common;
 namespace kos { 
 	namespace sys {
 		void SetArgs(int argc, const int8_t** argv, const int8_t* cmdline);
+		// Set current working directory path exposed to apps and used by syscalls for relative paths
+		void SetCwd(const int8_t* path);
 	}
 }
 

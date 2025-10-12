@@ -23,6 +23,9 @@ namespace kos {
                     (void)maxLen; 
                     return -1; 
                 }
+                // Create directory. If parents!=0, create intermediate directories.
+                // Returns 0 on success, negative on failure.
+                virtual int32_t Mkdir(const int8_t* path, int32_t parents) { (void)path; (void)parents; return -1; }
         };      
     }
 }

@@ -29,6 +29,7 @@ namespace kos {
                 virtual void ListRoot();
                 virtual void DebugInfo();
                 virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) override;
+                virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;
 
             private:
                 BlockDevice* dev;
@@ -42,11 +43,19 @@ namespace kos {
 
                 bool ReadSector(uint32_t lba, uint8_t* buf);
                 bool ReadSectors(uint32_t lba, uint32_t count, uint8_t* buf);
+                bool WriteSector(uint32_t lba, const uint8_t* buf);
+                bool WriteSectors(uint32_t lba, uint32_t count, const uint8_t* buf);
                 uint32_t ClusterToLBA(uint32_t cluster);
                 bool ReadCluster(uint32_t cluster, uint8_t* buf);
+                bool WriteCluster(uint32_t cluster, const uint8_t* buf);
                 uint32_t NextCluster(uint32_t cluster);
                 bool FindShortNameInRoot(const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize, bool& isDir);
                 bool FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize, bool& isDir);
+                bool UpdateFAT(uint32_t cluster, uint16_t value);
+                uint32_t AllocateCluster();
+                bool InitDirCluster(uint32_t newCluster, uint32_t parentCluster);
+                bool AddEntryToRoot(const uint8_t shortName11[11], uint32_t startCluster, bool isDir);
+                void PackShortName11(const int8_t* name83, uint8_t out11[11], bool& okIs83, bool upperOnly = true);
         };
     }
 }

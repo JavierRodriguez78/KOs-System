@@ -18,6 +18,12 @@ namespace kos {
             int32_t (*get_argc)();
             const int8_t* (*get_arg)(int32_t index);
             const int8_t* cmdline; // pointer to full command line (null-terminated)
+            // Filesystem (mutating) - currently stubbed in kernel (read-only FS)
+            // mkdir(path, parents): create directory; if parents!=0, create intermediate parents like `mkdir -p`.
+            // Returns 0 on success, negative on failure.
+            int32_t (*mkdir)(const int8_t* path, int32_t parents);
+            // Current working directory path (null-terminated). Set by shell/kernel.
+            const int8_t* cwd;
         };
 
         // Access to the API table (placed by the kernel at a fixed address)
@@ -40,6 +46,7 @@ namespace kos {
 
     // Kernel-side utilities exposed here for convenience so users can include a single header
     void SetArgs(int argc, const int8_t** argv, const int8_t* cmdline);
+    void SetCwd(const int8_t* path);
 
     }
 }

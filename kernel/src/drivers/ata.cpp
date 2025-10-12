@@ -131,3 +131,43 @@ bool ATADriver::ReadSectors(uint32_t lba, uint8_t sectorCount, uint8_t* buffer) 
     }
     return true;
 }
+
+bool ATADriver::WriteSectors(uint32_t lba, uint8_t sectorCount, const uint8_t* buffer) {
+    if (sectorCount == 0) return true;
+
+    SelectDrive();
+    uint8_t driveHead = 0xE0 | (driveSel == Slave ? 0x10 : 0) | ((lba >> 24) & 0x0F);
+    driveHeadPort.Write(driveHead);
+    for (int32_t i = 0; i < ATA_DELAY_400NS_READS; ++i) { (void)controlPort.Read(); }
+
+    // Presence check similar to read
+    {
+        int32_t tries = ATA_NO_DEVICE_CHECK_LIMIT; int32_t ffCount = 0; int32_t zCount = 0; bool anyOther = false;
+        while (tries--) {
+            uint8_t s = commandPort.Read();
+            if (s == 0xFF) ffCount++; else if (s == 0x00) zCount++; else { anyOther = true; break; }
+        }
+        if (!anyOther && (ffCount > ATA_NO_DEVICE_THRESHOLD || zCount > ATA_NO_DEVICE_THRESHOLD)) {
+            return false;
+        }
+    }
+
+    sectorCountPort.Write(sectorCount);
+    lbaLowPort.Write((uint8_t)(lba & 0xFF));
+    lbaMidPort.Write((uint8_t)((lba >> 8) & 0xFF));
+    lbaHighPort.Write((uint8_t)((lba >> 16) & 0xFF));
+
+    // WRITE SECTORS (0x30)
+    commandPort.Write(ATA_CMD_WRITE_SECTORS);
+
+    for (uint8_t s = 0; s < sectorCount; ++s) {
+        if (!WaitForReady()) return false;
+        // Write 256 words per sector
+        for (int32_t i = 0; i < ATA_WORDS_PER_SECTOR; ++i) {
+            uint16_t word = (uint16_t)buffer[s*ATA_SECTOR_SIZE + i*2 + 0] |
+                            (uint16_t)((uint16_t)buffer[s*ATA_SECTOR_SIZE + i*2 + 1] << 8);
+            dataPort.Write(word);
+        }
+    }
+    return true;
+}

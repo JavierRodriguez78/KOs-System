@@ -5,5 +5,6 @@
 void app_hello(void);
 void app_echo(void);
 void app_ls(void);
+void app_mkdir(void);
 
 #endif // KOS_APPLICATION_APP_H

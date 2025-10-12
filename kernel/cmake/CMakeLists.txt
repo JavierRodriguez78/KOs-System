@@ -99,10 +99,11 @@ endfunction()
 add_app(hello)
 add_app(echo)
 add_app(ls)
+add_app(mkdir)
 add_app(memtest)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf memtest.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

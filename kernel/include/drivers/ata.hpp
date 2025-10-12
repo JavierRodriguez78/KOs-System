@@ -72,6 +72,13 @@ namespace kos {
                                     uint8_t sectorCount,
                                     uint8_t* buffer);
 
+                /**
+                 * @brief Writes sectors to the disk in PIO mode (WRITE SECTORS 0x30).
+                 */
+                virtual bool WriteSectors(uint32_t lba,
+                                     uint8_t sectorCount,
+                                     const uint8_t* buffer) override;
+
             private:
                 
                 Port16Bit dataPort;     // 0x1F0 data port (16-bit)

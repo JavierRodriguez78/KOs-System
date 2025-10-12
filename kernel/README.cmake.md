@@ -30,6 +30,14 @@ cmake --build . --target qemu      # requires ./disk.img (real HDD image)
 cmake --build . --target qemu-vvfat  # maps ./disk folder as drive
 ```
 
+### vvfat notes
+- The qemu-vvfat target maps the host directory `kernel/disk/` as a writable FAT drive. Files placed in `disk/bin/` (like `mkdir.elf`) are visible inside KOS as `/bin/...` when using the FAT32 loader.
+- Changes you make inside the VM will reflect on the host folder because vvfat writes through to the host.
+
+### mkdir command
+- A `mkdir` app is provided: `mkdir [-p] [-h] <dir> [dir2 ...]`.
+- Current kernel FS is read-only; the syscall is stubbed and prints a hint message until write support is implemented.
+
 ## Execute Docs
 * Ubuntu/Debina packages:
 sudo apt-get update

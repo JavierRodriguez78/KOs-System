@@ -14,6 +14,7 @@
 using namespace kos::console;
 using namespace kos::lib;
 using namespace kos::drivers;
+using namespace kos::sys;
 
 // File-local TTY instance for output
 static TTY tty;
@@ -34,7 +35,9 @@ Shell::Shell() : bufferIndex(0) {
 }
 
 void Shell::PrintPrompt() {
-    tty.Write("$ ");
+    const int8_t* cwd = kos::sys::table()->cwd ? kos::sys::table()->cwd : (const int8_t*)"/";
+    tty.Write(cwd);
+    tty.Write((const int8_t*)"$ ");
 }
 
 void Shell::Run() {
@@ -44,6 +47,13 @@ void Shell::Run() {
     } else {
         PrintLogoBlockArt();
     }
+    // Initialize current working directory to /home (create if missing)
+    if (g_fs_ptr) {
+        // Best-effort ensure /HOME exists (8.3 uppercase).
+        // Use filesystem mkdir directly to avoid app indirection.
+        g_fs_ptr->Mkdir((const int8_t*)"/HOME", 1);
+    }
+    SetCwd((const int8_t*)"/home");
     tty.Write("Welcome to KOS Shell\n");
     PrintPrompt();
     while (true) {

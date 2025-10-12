@@ -12,6 +12,26 @@ extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
+extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
+    if (g_fs_ptr) {
+        // Resolve relative paths against current working directory
+        const int8_t* usePath = path;
+        int8_t absBuf[160];
+        if (path && path[0] != '/') {
+            const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+            // Build abs: cwd + '/' + path, avoiding double '/'
+            int i = 0;
+            for (; cwd[i] && i < (int)sizeof(absBuf)-1; ++i) absBuf[i] = cwd[i];
+            if (i == 0 || absBuf[i-1] != '/') { if (i < (int)sizeof(absBuf)-1) absBuf[i++] = '/'; }
+            int j = 0; while (path[j] && i < (int)sizeof(absBuf)-1) absBuf[i++] = path[j++];
+            absBuf[i] = 0;
+            usePath = absBuf;
+        }
+        return g_fs_ptr->Mkdir(usePath, parents);
+    }
+    TTY::Write((const int8_t*)"mkdir: no filesystem mounted\n");
+    return -1;
+}
 
 // --- Simple argument storage for current process/app ---
 static int32_t g_argc = 0;
@@ -19,6 +39,7 @@ static const int8_t* g_argv_vec[16];
 static const int8_t* g_cmdline = nullptr;
 static int8_t g_cmdline_buf[128];
 static int8_t g_argv_storage[512];
+static int8_t g_cwd_buf[128] = "/";
 
 extern "C" int32_t sys_get_argc() { return g_argc; }
 extern "C" const int8_t* sys_get_arg(int32_t index) {
@@ -61,6 +82,16 @@ namespace kos { namespace sys {
         // Update API table pointer so apps can read cmdline
         table()->cmdline = g_cmdline;
     }
+
+    void SetCwd(const int8_t* path) {
+        int i = 0;
+        if (!path) { g_cwd_buf[0] = '/'; g_cwd_buf[1] = 0; }
+        else {
+            while (path[i] && i < (int)sizeof(g_cwd_buf)-1) { g_cwd_buf[i] = path[i]; ++i; }
+            g_cwd_buf[i] = 0;
+        }
+        table()->cwd = g_cwd_buf;
+    }
 }}
 
 extern "C" void InitSysApi() {
@@ -69,7 +100,9 @@ extern "C" void InitSysApi() {
     t->puts = &sys_puts;
     t->hex  = &sys_hex;
     t->listroot = &sys_listroot;
+    t->mkdir = &sys_mkdir;
     t->get_argc = &sys_get_argc;
     t->get_arg = &sys_get_arg;
     t->cmdline = g_cmdline;
+    t->cwd = g_cwd_buf;
 }

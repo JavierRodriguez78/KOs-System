@@ -19,6 +19,12 @@ namespace kos {
             virtual bool ReadSectors(uint32_t lba,
                              uint8_t sectorCount,
                              uint8_t* buffer) = 0;
+
+            // Write up to 255 sectors (512 bytes each) starting at LBA from buffer
+            // Returns true on success
+            virtual bool WriteSectors(uint32_t lba,
+                               uint8_t sectorCount,
+                               const uint8_t* buffer) = 0;
             };
 
     } // namespace drivers
