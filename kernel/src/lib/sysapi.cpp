@@ -8,18 +8,22 @@ using namespace kos::common;
 
 extern kos::fs::Filesystem* g_fs_ptr;
 
+// Forward declaration for path normalization used by sys_listdir and sys_chdir
+static void normalize_abs_path(const int8_t* inPath, const int8_t* cwd, int8_t* outBuf, int outSize);
+
 extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
 extern "C" void sys_listdir(const int8_t* path) {
-    if (!g_fs_ptr || !path) return;
-    // Minimal listing via Filesystem interface: if FAT32 mounted, reuse helper; fallback to root list
-    // For now, just attempt to read entries from the target directory cluster by using GetCommandEntry/Exists or direct prints.
-    // As a simple implementation here, call ListRoot when path=="/"; otherwise print a hint.
-    if (path[0] == '/' && path[1] == 0) { g_fs_ptr->ListRoot(); return; }
-    TTY::Write((const int8_t*)"ls: listing of arbitrary dirs not yet implemented; showing root instead\n");
-    g_fs_ptr->ListRoot();
+    if (!g_fs_ptr) return;
+    // Resolve relative path against current working directory and normalize
+    int8_t absBuf[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    const int8_t* use = path && path[0] ? path : cwd;
+    normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
+    if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); return; }
+    g_fs_ptr->ListDir(absBuf);
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     if (g_fs_ptr) {
@@ -101,7 +105,11 @@ extern "C" int32_t sys_chdir(const int8_t* path) {
     int8_t absBuf[160];
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     normalize_abs_path(path ? path : (const int8_t*)"/", cwd, absBuf, (int)sizeof(absBuf));
-    // TODO: validate directory exists using filesystem once implemented
+    // Validate directory exists using filesystem if available
+    if (g_fs_ptr && !g_fs_ptr->DirExists(absBuf)) {
+        TTY::Write((const int8_t*)"cd: path not found\n");
+        return -1;
+    }
     kos::sys::SetCwd(absBuf);
     return 0;
 }

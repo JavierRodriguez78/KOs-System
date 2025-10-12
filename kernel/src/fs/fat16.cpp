@@ -171,6 +171,25 @@ void FAT16::ListDir(const int8_t* path) {
     if (col>0) tty.PutChar('\n');
 }
 
+bool FAT16::DirExists(const int8_t* path) {
+    if (!mounted) return false;
+    if (!path) return false;
+    if (path[0]=='/' && path[1]==0) return true;
+    const int8_t* p = (path[0]=='/') ? (path+1) : path;
+    uint32_t dirCl = 0; bool atRoot = true; int8_t comp[13];
+    while (*p) {
+        int ci=0; while (*p && *p!='/') { if (ci<12) comp[ci++]=*p; ++p; }
+        comp[ci]=0; if (*p=='/') ++p; if (ci==0) continue;
+        for (int i=0; comp[i]; ++i) if (comp[i]>='a'&&comp[i]<='z') comp[i]-=('a'-'A');
+        uint32_t childCl=0, childSz=0; bool isDir=false; bool ok=false;
+        if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
+        else ok = FindShortNameInDirCluster(dirCl, comp, childCl, childSz, isDir);
+        if (!ok || !isDir) return false;
+        dirCl = childCl; atRoot = false;
+    }
+    return true;
+}
+
 bool FAT16::ReadSectors(uint32_t lba, uint32_t count, uint8_t* buf) {
     return dev->ReadSectors(lba, (uint8_t)count, buf);
 }

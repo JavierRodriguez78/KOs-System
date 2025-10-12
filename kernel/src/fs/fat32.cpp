@@ -490,6 +490,25 @@ void FAT32::ListDir(const int8_t* path) {
     if (col > 0) tty.PutChar('\n');
 }
 
+bool FAT32::DirExists(const int8_t* path) {
+    if (!mountedFlag) return false;
+    if (!path) return false;
+    if (path[0] == '/' && path[1] == 0) return true; // root always exists
+    // Traverse path components from root cluster
+    uint32_t dirCl = bpb.rootCluster;
+    const int8_t* p = (path[0] == '/') ? (path + 1) : path;
+    int8_t comp[13];
+    while (*p) {
+        int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+        comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
+        for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+        uint32_t childCl = 0, childSz = 0; 
+        if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) return false; // component not found
+        dirCl = childCl; // descend
+    }
+    return true;
+}
+
 // Find short 8.3 name in a single directory cluster (no subdir traversal beyond one hop)
 bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortName83, uint32_t& outStartCluster, uint32_t& outFileSize) {
     uint8_t* clusterBuf = (uint8_t*)0x20000; // scratch area

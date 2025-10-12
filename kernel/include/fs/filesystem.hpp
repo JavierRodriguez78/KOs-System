@@ -17,6 +17,9 @@ namespace kos {
                 static void* GetCommandEntry(const int8_t* path); 
                 // List contents of a directory by absolute path ("/" to list root). Default falls back to ListRoot.
                 virtual void ListDir(const int8_t* path) { (void)path; ListRoot(); }
+                // Check whether an absolute directory path exists ("/" is always true by convention)
+                // Default implementation supports only root
+                virtual bool DirExists(const int8_t* path) { return path && path[0] == '/' && path[1] == 0; }
                 // Minimal read API: read a file by absolute path into provided buffer.
                 // Returns number of bytes read, or -1 on error.
                 virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) { 

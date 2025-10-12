@@ -28,6 +28,7 @@ namespace kos {
                 virtual bool Mount();
                 virtual void ListRoot();
                 virtual void ListDir(const int8_t* path) override;
+                virtual bool DirExists(const int8_t* path) override;
                 virtual void DebugInfo();
                 virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) override;
                 virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;
