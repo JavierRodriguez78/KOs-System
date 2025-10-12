@@ -47,3 +47,6 @@ build/
 
 # Doxygen files
 /kernel/doc
+
+# Disk image
+/kernel/disk.img

@@ -23,7 +23,17 @@ cmake --build . --target iso
 ```
 ISO will be at `build/mykernel.iso` and copied to `../output/mykernel.iso` relative to the kernel folder.
 
+## Create dis image
+```
+cmake --build . --target diskimg
+```
+
 ## Run in QEMU
+
+Install:
+sudo apt-get install dosfstools mtools qemu-system-i386
+
+
 ```
 cmake --build . --target qemu      # requires ./disk.img (real HDD image)
 # or

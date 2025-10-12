@@ -101,9 +101,8 @@ mykernel.iso: mykernel.bin
 	mkdir ../output
 	mv ./mykernel.iso ../output/mykernel.iso
 
-qemu: ../output/mykernel.iso
+qemu: ../output/mykernel.iso disk.img
 	# Runs kernel from CD-ROM and attaches a primary master HDD image at ./disk.img
-	# Create and format ./disk.img as FAT32 before running this target
 	qemu-system-i386 -boot d -cdrom $< -hda ./disk.img -m 512
 
 qemu-vvfat: ../output/mykernel.iso
@@ -123,6 +122,37 @@ gdb: ../output/mykernel.iso
 clean:
 	rm -rf ../obj mykernel.bin mykernel.iso ../output
 	rm -rf $(APP_BINDIR)/*.elf
+
+# -----------------------
+# FAT32 disk image (128MB) with /BIN and /HOME and apps copied
+# Requires: dd, mkfs.vfat (dosfstools), mtools (mmd, mcopy)
+# -----------------------
+.PHONY: diskimg-clean
+diskimg-clean:
+	rm -f disk.img
+
+# Build disk image after apps so we can copy .elf files into /BIN
+disk.img: apps
+	@which mkfs.vfat >/dev/null 2>&1 || { echo "Error: mkfs.vfat not found. Install dosfstools"; exit 1; }
+	rm -f $@
+	dd if=/dev/zero of=$@ bs=1M count=128
+	mkfs.vfat -F 32 -n KOS_DISK $@
+	# Try using mtools if available and runnable; otherwise, fall back to loop-mount (requires sudo)
+	if command -v mmd >/dev/null 2>&1 && mmd -V >/dev/null 2>&1; then \
+		echo "Using mtools to prepare disk image"; \
+		env MTOOLS_NO_VFAT=1 mmd -i $@ ::/BIN || true; \
+		env MTOOLS_NO_VFAT=1 mmd -i $@ ::/HOME || true; \
+		env MTOOLS_NO_VFAT=1 mcopy -i $@ $(APP_BINDIR)/*.elf ::/BIN || true; \
+	else \
+		echo "mtools not available or not executable; using loop-mount (sudo required)"; \
+		mkdir -p .diskmnt; \
+		sudo mount -o loop $@ .diskmnt; \
+		sudo mkdir -p .diskmnt/BIN .diskmnt/HOME; \
+		sudo cp $(APP_BINDIR)/*.elf .diskmnt/BIN/ 2>/dev/null || true; \
+		sync; \
+		sudo umount .diskmnt; \
+		rmdir .diskmnt; \
+	fi
 
 # -----------------------
 # Documentation (Doxygen)

@@ -296,13 +296,11 @@ bool FAT32::WriteCluster(uint32_t cluster, const uint8_t* buf) {
 }
 
 uint32_t FAT32::AllocateCluster() {
-    // Naive scan for a free cluster: iterate over FAT sectors and find 0 entry
-    // Note: This is slow but acceptable for a minimal OS.
-    uint32_t totalClusters = (bpb.totalSectors - (bpb.reservedSectors + bpb.numFATs * bpb.sectorsPerFAT)) / bpb.sectorsPerCluster;
-    if (totalClusters < 2) return 0; // invalid
-    // FAT32 cluster numbers start at 2
+    // Scan FAT entries directly based on FAT size (more robust than deriving totalClusters)
+    uint32_t entries = bpb.sectorsPerFAT * 512 / 4; // 4 bytes per FAT32 entry
+    if (entries < 3) return 0; // not valid
     uint8_t sec[512];
-    for (uint32_t cl = 2; cl < totalClusters; ++cl) {
+    for (uint32_t cl = 2; cl < entries; ++cl) {
         uint32_t fatOffset = cl * 4;
         uint32_t fatSector = fatStartLBA + (fatOffset / 512);
         uint32_t entOffset = fatOffset % 512;
@@ -313,7 +311,7 @@ uint32_t FAT32::AllocateCluster() {
                        ((uint32_t)sec[entOffset + 3] << 24);
         val &= 0x0FFFFFFF;
         if (val == 0x00000000) {
-            // Mark allocated with EOC (isolated cluster for a dir)
+            // Mark allocated with EOC
             if (UpdateFAT(cl, 0x0FFFFFF8)) return cl;
             return 0;
         }
@@ -367,24 +365,45 @@ bool FAT32::InitDirCluster(uint32_t newDirCluster, uint32_t parentCluster) {
 
 bool FAT32::AddEntryToDirCluster(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, bool isDir) {
     uint8_t* cl = (uint8_t*)0x40000; // scratch
-    if (!ReadCluster(dirCluster, cl)) return false;
     uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
-    // Find free entry (0x00 or 0xE5)
-    uint32_t off = 0;
-    for (; off < bytesPerCluster; off += 32) {
-        uint8_t fb = cl[off];
-        if (fb == 0x00 || fb == 0xE5) break;
+    uint32_t cur = dirCluster;
+    while (true) {
+        if (!ReadCluster(cur, cl)) return false;
+        // Find free entry (0x00 or 0xE5)
+        uint32_t off = 0;
+        for (; off < bytesPerCluster; off += 32) {
+            uint8_t fb = cl[off];
+            if (fb == 0x00 || fb == 0xE5) break;
+        }
+        if (off < bytesPerCluster) {
+            // Write short 8.3 entry here
+            for (int i = 0; i < 11; ++i) cl[off + i] = shortName11[i];
+            cl[off + 11] = isDir ? 0x10 : 0x20; // ATTR
+            cl[off + 26] = (uint8_t)(startCluster & 0xFF);
+            cl[off + 27] = (uint8_t)((startCluster >> 8) & 0xFF);
+            cl[off + 20] = (uint8_t)((startCluster >> 16) & 0xFF);
+            cl[off + 21] = (uint8_t)((startCluster >> 24) & 0xFF);
+            cl[off + 28] = cl[off + 29] = cl[off + 30] = cl[off + 31] = 0; // size
+            return WriteCluster(cur, cl);
+        }
+        // No free slot in this cluster; move to next or extend chain
+        uint32_t nxt = NextCluster(cur);
+        if (nxt >= 0x0FFFFFF8 || nxt == 0) {
+            // Allocate a new cluster for the directory and link it
+            uint32_t newCl = AllocateCluster();
+            if (newCl < 2) return false;
+            if (!UpdateFAT(cur, newCl)) return false;
+            if (!UpdateFAT(newCl, 0x0FFFFFF8)) return false; // EOC
+            // Zero-initialize the new cluster
+            uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+            for (uint8_t s = 0; s < bpb.sectorsPerCluster; ++s) {
+                if (!WriteSector(ClusterToLBA(newCl) + s, zero)) return false;
+            }
+            cur = newCl; // and loop to write entry there
+        } else {
+            cur = nxt;
+        }
     }
-    if (off >= bytesPerCluster) return false; // no space (not handling chain expansion yet)
-    // Write short 8.3 entry
-    for (int i = 0; i < 11; ++i) cl[off + i] = shortName11[i];
-    cl[off + 11] = isDir ? 0x10 : 0x20; // ATTR
-    cl[off + 26] = (uint8_t)(startCluster & 0xFF);
-    cl[off + 27] = (uint8_t)((startCluster >> 8) & 0xFF);
-    cl[off + 20] = (uint8_t)((startCluster >> 16) & 0xFF);
-    cl[off + 21] = (uint8_t)((startCluster >> 24) & 0xFF);
-    cl[off + 28] = cl[off + 29] = cl[off + 30] = cl[off + 31] = 0; // size
-    return WriteCluster(dirCluster, cl);
 }
 
 void FAT32::ListRoot() {
@@ -463,8 +482,9 @@ void FAT32::ListDir(const int8_t* path) {
         comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
         for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
         uint32_t childCl = 0, childSz = 0; if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) {
+            // Print the full path provided to help debugging instead of only the failing component
             tty.Write((const int8_t*)"ls: path not found: ");
-            tty.Write(comp);
+            tty.Write(path ? path : (const int8_t*)"(null)");
             tty.PutChar('\n');
             return;
         }

@@ -147,8 +147,9 @@ void FAT16::ListDir(const int8_t* path) {
         if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
         else ok = FindShortNameInDirCluster(dirCl, comp, childCl, childSz, isDir);
         if (!ok || !isDir) {
+            // Print the full path provided to help debugging instead of only the failing component
             tty.Write((const int8_t*)"ls: path not found: ");
-            tty.Write(comp);
+            tty.Write(path ? path : (const int8_t*)"(null)");
             tty.PutChar('\n');
             return;
         }
@@ -264,21 +265,32 @@ uint32_t FAT16::AllocateCluster() {
 }
 
 bool FAT16::InitDirCluster(uint32_t newCluster, uint32_t parentCluster) {
-    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
-    uint8_t tmp[4096];
-    for (uint32_t i = 0; i < bytesPerCluster && i < sizeof(tmp); ++i) tmp[i] = 0;
+    // Zero the entire cluster sector-by-sector to avoid large stack buffers
+    uint32_t lba = ClusterToLBA(newCluster);
+    uint8_t zeroSec[512];
+    for (int i = 0; i < 512; ++i) zeroSec[i] = 0;
+    for (uint8_t s = 0; s < bpb.sectorsPerCluster; ++s) {
+        if (!WriteSector(lba + s, zeroSec)) return false;
+    }
+
+    // Prepare first sector with '.' and '..' entries
+    uint8_t sec[512];
+    for (int i = 0; i < 512; ++i) sec[i] = 0;
+
     auto writeEntry = [&](uint32_t off, const char* name, uint32_t startCl, bool isDir) {
-        for (int i = 0; i < 11; ++i) tmp[off+i] = ' ';
-        tmp[off+0] = name[0]; if (name[1]) tmp[off+1] = name[1];
-        tmp[off+11] = isDir ? 0x10 : 0x20;
-        tmp[off+26] = (uint8_t)(startCl & 0xFF);
-        tmp[off+27] = (uint8_t)((startCl >> 8) & 0xFF);
-        tmp[off+28] = tmp[off+29] = tmp[off+30] = tmp[off+31] = 0;
+        for (int i = 0; i < 11; ++i) sec[off + i] = ' ';
+        sec[off + 0] = name[0]; if (name[1]) sec[off + 1] = name[1];
+        sec[off + 11] = isDir ? 0x10 : 0x20;
+        // FAT16 cluster number low word at 26-27
+        sec[off + 26] = (uint8_t)(startCl & 0xFF);
+        sec[off + 27] = (uint8_t)((startCl >> 8) & 0xFF);
+        // size=0 for directories
+        sec[off + 28] = sec[off + 29] = sec[off + 30] = sec[off + 31] = 0;
     };
     writeEntry(0, ".", newCluster, true);
-    // For root parent in FAT16, parentCluster is 0 in ..
+    // For root parent in FAT16, parentCluster is 0 in '..'
     writeEntry(32, "..", parentCluster, true);
-    return WriteCluster(newCluster, tmp);
+    return WriteSector(lba, sec);
 }
 
 bool FAT16::AddEntryToRoot(const uint8_t shortName11[11], uint32_t startCluster, bool isDir) {
@@ -348,14 +360,48 @@ int32_t FAT16::Mkdir(const int8_t* path, int32_t parents) {
             ok = AddEntryToRoot(short11, newCl, true);
             if (!ok) return -1;
         } else {
-            // write short entry into dir cluster directly
-            uint8_t* clbuf = (uint8_t*)0x28000; if (!ReadCluster(curCl, clbuf)) return -1;
-            uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster; uint32_t off=0;
-            for (; off < bytesPerCluster; off += 32) { uint8_t fb = clbuf[off]; if (fb==0x00 || fb==0xE5) break; }
-            if (off >= bytesPerCluster) { tty.Write((const int8_t*)"FAT16: dir full\n"); return -1; }
-            for (int j=0;j<11;++j) clbuf[off+j]=short11[j]; clbuf[off+11]=0x10; clbuf[off+26]=(uint8_t)(newCl&0xFF); clbuf[off+27]=(uint8_t)((newCl>>8)&0xFF);
-            clbuf[off+28]=clbuf[off+29]=clbuf[off+30]=clbuf[off+31]=0;
-            if (!WriteCluster(curCl, clbuf)) return -1; ok = true;
+            // Walk entire directory chain to find a free entry; extend chain if needed
+            uint8_t* clbuf = (uint8_t*)0x28000;
+            uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+            uint32_t curDirCl = curCl;
+            while (true) {
+                if (!ReadCluster(curDirCl, clbuf)) return -1;
+                uint32_t off = 0;
+                for (; off < bytesPerCluster; off += 32) {
+                    uint8_t fb = clbuf[off];
+                    if (fb == 0x00 || fb == 0xE5) break;
+                }
+                if (off < bytesPerCluster) {
+                    // Write short entry here
+                    for (int j=0; j<11; ++j) clbuf[off+j] = short11[j];
+                    clbuf[off+11] = 0x10; // ATTR: directory
+                    clbuf[off+26] = (uint8_t)(newCl & 0xFF);
+                    clbuf[off+27] = (uint8_t)((newCl >> 8) & 0xFF);
+                    clbuf[off+28] = clbuf[off+29] = clbuf[off+30] = clbuf[off+31] = 0;
+                    if (!WriteCluster(curDirCl, clbuf)) return -1;
+                    ok = true;
+                    break;
+                }
+                // No free slot in this cluster; move to next or extend
+                uint32_t nxt = NextCluster(curDirCl);
+                if (nxt >= 0xFFF8 || nxt == 0) {
+                    // Allocate a new cluster and link it
+                    uint32_t extCl = AllocateCluster();
+                    if (extCl < 2) { tty.Write((const int8_t*)"FAT16: no free clusters (extend)\n"); return -1; }
+                    if (!UpdateFAT(curDirCl, (uint16_t)extCl)) return -1;
+                    if (!UpdateFAT(extCl, 0xFFFF)) return -1; // EOC
+                    // Zero initialize new cluster
+                    uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+                    uint32_t baseLBA = ClusterToLBA(extCl);
+                    for (uint8_t sct=0; sct<bpb.sectorsPerCluster; ++sct) {
+                        if (!WriteSector(baseLBA + sct, zero)) return -1;
+                    }
+                    curDirCl = extCl; // loop and write into new cluster
+                } else {
+                    curDirCl = nxt;
+                }
+            }
+            if (!ok) return -1;
         }
         curCl = newCl; atRoot = false;
     }

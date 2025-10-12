@@ -169,5 +169,21 @@ bool ATADriver::WriteSectors(uint32_t lba, uint8_t sectorCount, const uint8_t* b
             dataPort.Write(word);
         }
     }
+    // After writing all sectors, wait for the device to complete the operation
+    // Some devices require a flush for data to be committed reliably
+    // Issue FLUSH CACHE (0xE7) and wait for !BSY (ignore if unsupported)
+    commandPort.Write(0xE7);
+    // Poll status: wait until BSY clears; error bits will cause failure
+    {
+        int32_t timeout = ATA_READY_TIMEOUT;
+        while (timeout-- > 0) {
+            uint8_t s = commandPort.Read();
+            if (!(s & ATA_STATUS_BSY)) {
+                if (s & (ATA_STATUS_ERR | ATA_STATUS_DF)) return false;
+                break;
+            }
+        }
+        if (timeout <= 0) return false;
+    }
     return true;
 }

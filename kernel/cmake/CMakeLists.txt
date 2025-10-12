@@ -142,7 +142,7 @@ add_custom_command(TARGET iso POST_BUILD
 # -----------------------
 add_custom_target(qemu
     COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512
-    DEPENDS iso
+    DEPENDS iso diskimg
     USES_TERMINAL
 )
 
@@ -166,6 +166,40 @@ add_custom_target(gdb
     DEPENDS iso
     USES_TERMINAL
 )
+
+# -----------------------
+# FAT32 disk image (128MB) with /BIN and /HOME and apps copied in /BIN
+# Requires: dd, mkfs.vfat (dosfstools), mtools (mmd, mcopy)
+# -----------------------
+set(DISK_IMG ${KOS_ROOT_DIR}/disk.img)
+
+add_custom_command(
+    OUTPUT ${DISK_IMG}
+    COMMAND ${CMAKE_COMMAND} -E echo "Creating FAT32 disk image at ${DISK_IMG}"
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${DISK_IMG}
+    COMMAND dd if=/dev/zero of=${DISK_IMG} bs=1M count=128
+    COMMAND mkfs.vfat -F 32 -n KOS_DISK ${DISK_IMG}
+        # Prefer mtools if available; else fallback to loop-mount (requires sudo)
+        COMMAND /bin/sh -c "if command -v mmd >/dev/null 2>&1 && mmd -V >/dev/null 2>&1; then \
+                echo 'Using mtools to populate disk'; \
+                MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/BIN || true; \
+                MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/HOME || true; \
+                MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/bin/*.elf ::/BIN || true; \
+            else \
+                echo 'mtools unavailable; using loop-mount (sudo)'; \
+                mkdir -p ${KOS_ROOT_DIR}/.diskmnt; \
+                sudo mount -o loop ${DISK_IMG} ${KOS_ROOT_DIR}/.diskmnt; \
+                sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/BIN ${KOS_ROOT_DIR}/.diskmnt/HOME; \
+                sudo cp ${KOS_ROOT_DIR}/disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
+                sync; \
+                sudo umount ${KOS_ROOT_DIR}/.diskmnt; \
+                rmdir ${KOS_ROOT_DIR}/.diskmnt; \
+            fi"
+    DEPENDS apps
+    VERBATIM
+)
+
+add_custom_target(diskimg DEPENDS ${DISK_IMG})
 
 # -----------------------
 # Doxygen documentation

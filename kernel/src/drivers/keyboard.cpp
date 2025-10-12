@@ -55,15 +55,36 @@ void KeyboardDriver::Activate()
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 {
     uint8_t key = dataport.Read();
-   
+
     if(handler == 0)
         return esp;
 
+    // Handle extended scancode prefix 0xE0 (for keys like keypad '/').
+    if (key == 0xE0) {
+        e0Prefix = true;
+        return esp;
+    }
+
+    // Break (key release) codes are >= 0x80; we only process make codes here.
     if(key < 0x80)
     {
+        // If previous byte was 0xE0, handle extended mappings
+        if (e0Prefix) {
+            e0Prefix = false;
+            switch (key) {
+                case 0x35: handler->OnKeyDown('/'); break; // Keypad '/' (E0 35)
+                case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-' (E0 4A) on some layouts
+                default:
+                    // Unhandled E0 make code; optional debug
+                    // tty.Write("E0 "); tty.WriteHex(key);
+                    break;
+            }
+            return esp;
+        }
+
         switch(key)
         {
-            // Numeric Keys
+            // Numeric Keys (main row)
             case 0x02: handler->OnKeyDown('1'); break;
             case 0x03: handler->OnKeyDown('2'); break;
             case 0x04: handler->OnKeyDown('3'); break;
@@ -74,7 +95,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             case 0x09: handler->OnKeyDown('8'); break;
             case 0x0A: handler->OnKeyDown('9'); break;
             case 0x0B: handler->OnKeyDown('0'); break;
-            case 0x0C: handler->OnKeyDown('-'); break; // '-' key
+            case 0x0C: handler->OnKeyDown('-'); break; // Main row '-'
 
             case 0x10: handler->OnKeyDown('q'); break;
             case 0x11: handler->OnKeyDown('w'); break;
@@ -106,21 +127,21 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             case 0x32: handler->OnKeyDown('m'); break;
             case 0x33: handler->OnKeyDown(','); break;
             case 0x34: handler->OnKeyDown('.'); break;
-            case 0x35: handler->OnKeyDown('/'); break; // '/' key
+            case 0x35: handler->OnKeyDown('-'); break; // Map to '-' per layout
+            case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-'
 
             case 0x1C: handler->OnKeyDown('\n'); break;
             case 0x39: handler->OnKeyDown(' '); break;
-           
-                      
+
             default:
-            { 
+            {
                 tty.Write("KEYBOARD 0X");
                 tty.WriteHex(key);
                 break;
             }
         }
     }
-      
+
     return esp;
 };
 

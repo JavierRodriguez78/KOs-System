@@ -22,7 +22,15 @@ extern "C" void sys_listdir(const int8_t* path) {
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     const int8_t* use = path && path[0] ? path : cwd;
     normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
+    // Root listing is a special-case
     if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); return; }
+    // If the path doesn't exist as a directory, report a clear error up-front
+    if (!g_fs_ptr->DirExists(absBuf)) {
+        TTY::Write((const int8_t*)"ls: path not found: ");
+        TTY::Write(absBuf);
+        TTY::PutChar('\n');
+        return;
+    }
     g_fs_ptr->ListDir(absBuf);
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
