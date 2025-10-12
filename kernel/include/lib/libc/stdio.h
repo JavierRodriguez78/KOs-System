@@ -18,6 +18,8 @@ typedef struct ApiTableC {
     const int8_t* (*get_arg)(int32_t index);
     const int8_t* cmdline;
     int32_t (*mkdir)(const int8_t* path, int32_t parents);
+    // Change current working directory. Returns 0 on success, negative on failure.
+    int32_t (*chdir)(const int8_t* path);
     const int8_t* cwd;
 } ApiTableC;
 
@@ -33,6 +35,11 @@ static inline void kos_listdir(const int8_t* path) { if (kos_sys_table()->listdi
 
 static inline int32_t kos_mkdir(const int8_t* path, int32_t parents) {
     if (kos_sys_table()->mkdir) return kos_sys_table()->mkdir(path, parents);
+    return -1;
+}
+
+static inline int32_t kos_chdir(const int8_t* path) {
+    if (kos_sys_table()->chdir) return kos_sys_table()->chdir(path);
     return -1;
 }
 

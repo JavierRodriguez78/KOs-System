@@ -111,6 +111,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
     if (argc == 0) return;
     const int8_t* prog = argv[0];
 
+
     // Built-in: show logo (text mode)
     if (String::strcmp(prog, (const int8_t*)"logo", 4) == 0 &&
         (prog[4] == 0)) {
@@ -160,7 +161,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
                 if (n > 0) {
                     tty.Write((int8_t*)"Loading ELF...\n");
                     // Set args into system API for the app to read
-                    kos::sys::SetArgs(argc, argv, command);
+                    SetArgs(argc, argv, command);
                     if (!ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) {
                         tty.Write("ELF load failed\n");
                     }

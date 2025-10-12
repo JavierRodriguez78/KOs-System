@@ -23,6 +23,8 @@ namespace kos {
             // mkdir(path, parents): create directory; if parents!=0, create intermediate parents like `mkdir -p`.
             // Returns 0 on success, negative on failure.
             int32_t (*mkdir)(const int8_t* path, int32_t parents);
+            // Change current working directory. Returns 0 on success.
+            int32_t (*chdir)(const int8_t* path);
             // Current working directory path (null-terminated). Set by shell/kernel.
             const int8_t* cwd;
         };

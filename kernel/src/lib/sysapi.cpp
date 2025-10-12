@@ -56,6 +56,56 @@ extern "C" const int8_t* sys_get_arg(int32_t index) {
     return g_argv_vec[index];
 }
 
+// Helper: normalize and make absolute path based on cwd
+static void normalize_abs_path(const int8_t* inPath, const int8_t* cwd, int8_t* outBuf, int outSize) {
+    if (!inPath || !outBuf || outSize <= 0) { if (outSize > 0) outBuf[0] = 0; return; }
+    int8_t tmp[160];
+    if (inPath[0] == '/') {
+        // copy inPath into tmp
+        int i = 0; for (; inPath[i] && i < (int)sizeof(tmp)-1; ++i) tmp[i] = inPath[i]; tmp[i] = 0;
+    } else {
+        // join cwd + '/' + inPath
+        const int8_t* base = cwd ? cwd : (const int8_t*)"/";
+        int i = 0; for (; base[i] && i < (int)sizeof(tmp)-1; ++i) tmp[i] = base[i];
+        if (i == 0 || tmp[i-1] != '/') { if (i < (int)sizeof(tmp)-1) tmp[i++] = '/'; }
+        int j = 0; while (inPath[j] && i < (int)sizeof(tmp)-1) tmp[i++] = inPath[j++];
+        tmp[i] = 0;
+    }
+
+    // normalize tmp into outBuf
+    outBuf[0] = '/'; int out = 1;
+    int segStart[32]; int segCount = 0;
+    const int8_t* s = tmp;
+    while (*s) {
+        while (*s == '/') ++s;
+        if (!*s) break;
+        int8_t seg[80]; int k = 0;
+        while (*s && *s != '/' && k < (int)sizeof(seg)-1) { seg[k++] = *s++; }
+        seg[k] = 0;
+        if (k == 0) continue;
+        if (seg[0] == '.' && seg[1] == 0) continue;
+        if (seg[0] == '.' && seg[1] == '.' && seg[2] == 0) {
+            if (segCount > 0) { out = segStart[--segCount]; }
+            continue;
+        }
+        if (out > 1 && out < outSize-1 && outBuf[out-1] != '/') outBuf[out++] = '/';
+        segStart[segCount++] = out;
+        for (int t = 0; seg[t] && out < outSize-1; ++t) outBuf[out++] = seg[t];
+    }
+    if (out > 1 && outBuf[out-1] == '/') --out;
+    outBuf[out] = 0;
+}
+
+extern "C" int32_t sys_chdir(const int8_t* path) {
+    // Resolve path relative to current cwd
+    int8_t absBuf[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    normalize_abs_path(path ? path : (const int8_t*)"/", cwd, absBuf, (int)sizeof(absBuf));
+    // TODO: validate directory exists using filesystem once implemented
+    kos::sys::SetCwd(absBuf);
+    return 0;
+}
+
 namespace kos { namespace sys {
     // Setter utilities for the kernel/shell to populate before launching an app
     void SetArgs(int32_t argc, const int8_t** argv, const int8_t* cmdline) {
@@ -111,6 +161,7 @@ extern "C" void InitSysApi() {
     t->listroot = &sys_listroot;
     t->listdir = &sys_listdir;
     t->mkdir = &sys_mkdir;
+    t->chdir = &sys_chdir;
     t->get_argc = &sys_get_argc;
     t->get_arg = &sys_get_arg;
     t->cmdline = g_cmdline;
