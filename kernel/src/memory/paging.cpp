@@ -34,17 +34,47 @@ static PageTableEntry* ensureTable(uint32_t vaddr, bool create, bool user=false)
     uint32_t pdi = pde_index(vaddr);
     if (!(g_pageDirectory[pdi].value & 1)) {
         if (!create) return nullptr;
-        phys_addr_t frame = PMM::AllocFrame();
-        if (frame == 0) return nullptr;
-        PageTableEntry* v = (PageTableEntry*)frame; // identity map during early init
-        // clear
+        
+        // CRITICAL FIX: Only allocate page table frames from identity-mapped region
+        // We need to ensure we can access the page table after allocation
+        phys_addr_t frame;
+        const uint32_t MAX_TRIES = 100;  // Prevent infinite loops
+        uint32_t tries = 0;
+        
+        do {
+            frame = PMM::AllocFrame();
+            if (frame == 0) return nullptr;  // Out of memory
+            
+            // If frame is in identity-mapped region (< 64MB), we can use it
+            if (frame < 64*1024*1024) {
+                break;
+            }
+            
+            // Frame is outside identity-mapped region, free it and try again
+            PMM::FreeFrame(frame);
+            tries++;
+        } while (tries < MAX_TRIES);
+        
+        if (tries >= MAX_TRIES) {
+            // Could not find a suitable frame in identity-mapped region
+            return nullptr;
+        }
+        
+        PageTableEntry* v = (PageTableEntry*)frame; // Safe: frame < 64MB, so identity-mapped
         for (int i = 0; i < 1024; ++i) v[i].value = 0;
         uint32_t pdeFlags = (Paging::Present | Paging::RW);
         if (user) pdeFlags |= Paging::User;
         g_pageDirectory[pdi].value = (frame & 0xFFFFF000) | pdeFlags;
         return v;
     }
-    return (PageTableEntry*)(g_pageDirectory[pdi].value & 0xFFFFF000); // identity assumption early
+    
+    // Get existing page table - verify it's still accessible
+    uint32_t ptPhys = g_pageDirectory[pdi].value & 0xFFFFF000;
+    if (ptPhys >= 64*1024*1024) {
+        // Page table is outside our identity mapped region - we can't access it!
+        return nullptr;
+    }
+    return (PageTableEntry*)ptPhys;
 }
 
 void Paging::MapPage(virt_addr_t vaddr, phys_addr_t paddr, uint32_t flags)
@@ -157,8 +187,8 @@ void Paging::Init(phys_addr_t kernelStart, phys_addr_t kernelEnd)
     // Make .rodata read-only
     RemapRangeFlags((virt_addr_t)&::rodata_start, (uint32_t)((virt_addr_t)&::rodata_end - (virt_addr_t)&::rodata_start), Present /*no RW*/);
 
-    // Proactively remove identity mappings from the app VA window so future user mappings take effect cleanly.
-    // Our apps are linked at 0x01000000 and typically small; clear a few megabytes (e.g., 4 MiB) around it.
-    UnmapRange((virt_addr_t)0x01000000, 4 * 1024 * 1024);
+    // NOTE: Don't clear identity mappings yet - our page tables might be allocated there
+    // and we need to access them. We'll handle this in the ELF loader instead.
+    // UnmapRange((virt_addr_t)0x01000000, 4 * 1024 * 1024);
 }
 

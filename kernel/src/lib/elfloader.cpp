@@ -1,5 +1,6 @@
 #include <lib/elfloader.hpp>
 #include <console/tty.hpp>
+#include <console/logger.hpp>
 #include <lib/string.hpp>
 #include <memory/pmm.hpp>
 #include <memory/paging.hpp>
@@ -7,6 +8,7 @@
 using namespace kos::lib;
 using namespace kos::common;
 using namespace kos::console;
+using namespace kos::memory;
 
 // Minimal ELF32 definitions
 struct Elf32_Ehdr {
@@ -69,16 +71,108 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
         // For now, allocate fresh frames for the app segment; a more advanced loader could honor p_paddr
         for (uint32_t off = 0; off < mapSize; off += PAGE_SIZE) {
             // Proactively unmap any existing identity mappings for this page
-            kos::memory::Paging::UnmapPage(vpage + off);
-            pa = kos::memory::PMM::AllocFrame();
+            Paging::UnmapPage(vpage + off);
+            pa = PMM::AllocFrame();
             if (!pa) { TTY::Write((int8_t*)"ELF: OOM frames\n"); return false; }
+            
+            if (Logger::IsDebugEnabled()) {
+                // Debug: Check if physical frame is in valid range
+                TTY::Write((int8_t*)"Mapping VA=");
+                for (int k = 7; k >= 0; --k) {
+                    uint8_t nyb = ((vpage + off) >> (k*4)) & 0xF;
+                    TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
+                }
+                TTY::Write((int8_t*)" PA=");
+                for (int k = 7; k >= 0; --k) {
+                    uint8_t nyb = (pa >> (k*4)) & 0xF;
+                    TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
+                }
+                
+                // Check if PA is in identity-mapped region
+                if (pa >= 64*1024*1024) {
+                    TTY::Write((int8_t*)" PA_TOO_HIGH!");
+                }
+            }
+            
             kos::memory::Paging::MapPage(vpage + off, pa, kos::memory::Paging::Present | kos::memory::Paging::RW | kos::memory::Paging::User);
+            
+            // Force TLB flush for this specific page
+            asm volatile("invlpg (%0)" :: "r"(vpage + off) : "memory");
+            
+            if (Logger::IsDebugEnabled()) {
+                // Test if mapping succeeded by checking GetPhys
+                phys_addr_t testPA = kos::memory::Paging::GetPhys(vpage + off);
+                TTY::Write((int8_t*)" GetPhys=");
+                for (int k = 7; k >= 0; --k) {
+                    uint8_t nyb = (testPA >> (k*4)) & 0xF;
+                    TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
+                }
+                
+                if (testPA == 0) {
+                    TTY::Write((int8_t*)" MAPPING FAILED!\n");
+                    return false;
+                }
+                
+                // First test: try writing directly to physical address via identity mapping
+                TTY::Write((int8_t*)" phys_test:");
+                if (pa < 64*1024*1024) {
+                    uint8_t* physPtr = (uint8_t*)pa;
+                    physPtr[0] = 0x11; physPtr[1] = 0x22; physPtr[2] = 0x33; physPtr[3] = 0x44;
+                    TTY::WriteHex(physPtr[0]); TTY::WriteHex(physPtr[1]); TTY::WriteHex(physPtr[2]); TTY::WriteHex(physPtr[3]);
+                } else {
+                    TTY::Write((int8_t*)"N/A");
+                }
+                
+                // Test the mapping by writing and reading back with more detail
+                uint8_t* pagePtr = (uint8_t*)(vpage + off);
+                pagePtr[0] = 0xAA; pagePtr[1] = 0xBB; pagePtr[2] = 0xCC; pagePtr[3] = 0xDD;
+                TTY::Write((int8_t*)" virt_test:");
+                TTY::WriteHex(pagePtr[0]); TTY::WriteHex(pagePtr[1]); TTY::WriteHex(pagePtr[2]); TTY::WriteHex(pagePtr[3]);
+                
+                if (pagePtr[0] != 0xAA || pagePtr[1] != 0xBB || pagePtr[2] != 0xCC || pagePtr[3] != 0xDD) {
+                    TTY::Write((int8_t*)" VIRT_FAIL!");
+                }
+                
+                TTY::Write((int8_t*)" OK\n");
+            }
+            
+            // Zero the newly mapped page to ensure clean state
+            uint8_t* pagePtr = (uint8_t*)(vpage + off);
+            for (int j = 0; j < PAGE_SIZE; j++) pagePtr[j] = 0;
         }
+        
+        // Flush TLB to ensure mappings are visible before copying
+        kos::memory::Paging::FlushAll();
+        
+        if (Logger::IsDebugEnabled()) {
+            // Test if we can write to the mapped memory at all
+            TTY::Write((int8_t*)"Testing write to ");
+            for (int j = 7; j >= 0; --j) {
+                uint8_t nyb = (ph[i].p_vaddr >> (j*4)) & 0xF;
+                TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
+            }
+            TTY::Write((int8_t*)": ");
+            
+            dst[0] = 0xDE; dst[1] = 0xAD; dst[2] = 0xBE; dst[3] = 0xEF;
+            TTY::WriteHex(dst[0]); TTY::WriteHex(dst[1]); TTY::WriteHex(dst[2]); TTY::WriteHex(dst[3]);
+        }
+        
         // Copy file-backed segment into memory
         String::memmove(dst, src, ph[i].p_filesz);
         // Zero BSS tail (if any)
         if (ph[i].p_memsz > ph[i].p_filesz) {
             String::memset(dst + ph[i].p_filesz, 0, ph[i].p_memsz - ph[i].p_filesz);
+        }
+        
+        if (Logger::IsDebugEnabled()) {
+            // Debug: verify the copy worked by checking first few bytes
+            TTY::Write((int8_t*)" -> copied: ");
+            for (int j = 0; j < 4; ++j) {
+                TTY::PutChar("0123456789ABCDEF"[(dst[j]>>4)&0xF]);
+                TTY::PutChar("0123456789ABCDEF"[dst[j]&0xF]);
+                TTY::PutChar(' ');
+            }
+            TTY::PutChar('\n');
         }
         // If segment is not writable (p_flags bit 1), drop RW from mapped pages
         const uint32_t PF_W = 0x2;
@@ -89,7 +183,7 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
             uint32_t total = pageOffset + ph[i].p_memsz;
             uint32_t mapSize = (total + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
             for (uint32_t off = 0; off < mapSize; off += PAGE_SIZE) {
-                kos::memory::Paging::RemapPageFlags(vpage + off, kos::memory::Paging::Present | kos::memory::Paging::User);
+                Paging::RemapPageFlags(vpage + off, Paging::Present | Paging::User);
             }
         }
     }
@@ -105,11 +199,11 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
     if (!entryOK) { TTY::Write((int8_t*)"ELF: entry not in PT_LOAD\n"); return false; }
 
     // Ensure all new mappings are visible to the CPU
-    kos::memory::Paging::FlushAll();
+    Paging::FlushAll();
 
-    // Debug: print entry, phys mapping, dst bytes and src bytes
-    TTY::Write((int8_t*)"ELF entry=");
-    {
+    if (Logger::IsDebugEnabled()) {
+        // Debug: print entry, phys mapping, dst bytes and src bytes
+        TTY::Write((int8_t*)"ELF entry=");
         uint32_t v = entryVA;
         TTY::Write((int8_t*)"0x");
         for (int i = 7; i >= 0; --i) {
@@ -117,12 +211,20 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
             TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
         }
         TTY::Write((int8_t*)" phys=");
-        uint32_t pa = kos::memory::Paging::GetPhys((kos::common::uintptr_t)entryVA);
+        uint32_t pa = Paging::GetPhys((uintptr_t)entryVA);
         TTY::Write((int8_t*)"0x");
         for (int i = 7; i >= 0; --i) {
             uint8_t nyb = (pa >> (i*4)) & 0xF;
             TTY::PutChar(nyb < 10 ? ('0'+nyb) : ('A'+nyb-10));
         }
+        
+        // Debug: Check if the issue is that our copy never happened
+        TTY::Write((int8_t*)" test_write:");
+        uint8_t* testPtr = (uint8_t*)entryVA;
+        uint8_t oldVal = testPtr[0];
+        testPtr[0] = 0xAA;  // Write test pattern
+        TTY::WriteHex(testPtr[0]); // Should show AA if writable
+        testPtr[0] = oldVal;  // Restore
         TTY::Write((int8_t*)" dst:");
         uint8_t* p = (uint8_t*)entryVA;
         for (int i = 0; i < 8; ++i) {
@@ -148,7 +250,23 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
                 TTY::PutChar("0123456789ABCDEF"[srcBytes[i]&0xF]);
             }
         }
+        
+        // Additional debug: check if phys frame looks like it contains expected data
+        TTY::Write((int8_t*)" phys_direct:");
+        if (pa && pa < 64*1024*1024) {  // within identity mapped region
+            uint8_t* physDirect = (uint8_t*)pa;
+            for (int i = 0; i < 8; ++i) {
+                TTY::PutChar(' ');
+                TTY::PutChar("0123456789ABCDEF"[(physDirect[i]>>4)&0xF]);
+                TTY::PutChar("0123456789ABCDEF"[physDirect[i]&0xF]);
+            }
+        }
         TTY::PutChar('\n');
+        
+        // PAUSE: Wait for user input to continue after diagnostic
+        TTY::Write((int8_t*)"Press any key to continue...\n");
+        // Simple wait loop - halt until keyboard interrupt
+        // asm volatile("hlt");
     }
 
     int (*entry)() = (int (*)())entryVA;

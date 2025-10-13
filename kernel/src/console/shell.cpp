@@ -166,7 +166,12 @@ void Shell::ExecuteCommand(const int8_t* command) {
                 static uint8_t elfBuf[256*1024]; // 256 KB buffer for apps
                 int32_t n = g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
                 if (n > 0) {
-                    tty.Write((int8_t*)"Loading ELF...\n");
+                    tty.Write((int8_t*)"Loading ELF ");
+                    tty.Write(elfPath);
+                    tty.Write((int8_t*)" size=");
+                    tty.WriteHex((n >> 8) & 0xFF);
+                    tty.WriteHex(n & 0xFF);
+                    tty.Write((int8_t*)"...\n");
                     // Set args into system API for the app to read
                     SetArgs(argc, argv, command);
                     if (!ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) {

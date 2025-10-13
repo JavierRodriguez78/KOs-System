@@ -51,8 +51,10 @@ void PMM::Init(uint32_t memLowerKB, uint32_t memUpperKB,
     // clear bitmap: 0 = free
     for (uint32_t i = 0; i < g_bitmapWords; ++i) g_bitmap[i] = 0;
 
-    // By policy, reserve below 0x90000 (~576 KiB) for BIOS/IVT; free 0x90000..1MiB for use
-    uint32_t reserveFrames = (0x90000u >> PAGE_SIZE_SHIFT);
+    // Reserve entire region below 1MB (0x100000) for BIOS/IVT/VGA/ROM
+    // This includes 0x00000-0x9FFFF (conventional memory used by BIOS)
+    // and 0xA0000-0xFFFFF (VGA memory, BIOS ROM, etc.)
+    uint32_t reserveFrames = (0x100000u >> PAGE_SIZE_SHIFT);  // 256 frames = 1MB
     for (uint32_t f = 0; f < reserveFrames; ++f) {
         bset(f);
     }
@@ -65,6 +67,7 @@ void PMM::Init(uint32_t memLowerKB, uint32_t memUpperKB,
 
     // Optionally, we could parse Multiboot memory map to free/reserve specific regions.
     // For now, assume everything from 1MiB..totalBytes is free except kernel.
+    // This ensures we only allocate frames from actual RAM above 1MB.
 
     // Count free frames
     uint32_t used = 0;
