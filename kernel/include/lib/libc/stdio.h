@@ -23,6 +23,11 @@ typedef struct ApiTableC {
     // Change current working directory. Returns 0 on success, negative on failure.
     int32_t (*chdir)(const int8_t* path);
     const int8_t* cwd;
+    // Memory information functions
+    uint32_t (*get_total_frames)();
+    uint32_t (*get_free_frames)();
+    uint32_t (*get_heap_size)();
+    uint32_t (*get_heap_used)();
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -50,6 +55,12 @@ static inline int32_t kos_argc(void) { return kos_sys_table()->get_argc ? kos_sy
 static inline const int8_t* kos_argv(int32_t index) { return kos_sys_table()->get_arg ? kos_sys_table()->get_arg(index) : (const int8_t*)0; }
 static inline const int8_t* kos_cmdline(void) { return kos_sys_table()->cmdline; }
 static inline const int8_t* kos_cwd(void) { return kos_sys_table()->cwd; }
+
+// Memory information functions
+static inline uint32_t kos_get_total_frames(void) { return kos_sys_table()->get_total_frames ? kos_sys_table()->get_total_frames() : 0; }
+static inline uint32_t kos_get_free_frames(void) { return kos_sys_table()->get_free_frames ? kos_sys_table()->get_free_frames() : 0; }
+static inline uint32_t kos_get_heap_size(void) { return kos_sys_table()->get_heap_size ? kos_sys_table()->get_heap_size() : 0; }
+static inline uint32_t kos_get_heap_used(void) { return kos_sys_table()->get_heap_used ? kos_sys_table()->get_heap_used() : 0; }
 
 // Flags for kos_listdir_ex
 #define KOS_LS_FLAG_LONG  (1u << 0)  // Show long listing: attrs, size, date

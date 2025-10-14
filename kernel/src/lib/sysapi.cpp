@@ -1,6 +1,8 @@
 #include <lib/stdio.hpp>
 #include <console/tty.hpp>
 #include <fs/filesystem.hpp>
+#include <memory/pmm.hpp>
+#include <memory/heap.hpp>
 
 using namespace kos::sys;
 using namespace kos::console;
@@ -73,6 +75,29 @@ extern "C" int32_t sys_get_argc() { return g_argc; }
 extern "C" const int8_t* sys_get_arg(int32_t index) {
     if (index < 0 || index >= g_argc) return nullptr;
     return g_argv_vec[index];
+}
+
+// Memory information system calls
+extern "C" uint32_t sys_get_total_frames() {
+    return kos::memory::PMM::TotalFrames();
+}
+
+extern "C" uint32_t sys_get_free_frames() {
+    return kos::memory::PMM::FreeFrames();
+}
+
+extern "C" uint32_t sys_get_heap_size() {
+    // Heap size is the difference between end and base (0x02000000)
+    virt_addr_t end = kos::memory::Heap::End();
+    const virt_addr_t base = 0x02000000;
+    return (end >= base) ? (uint32_t)(end - base) : 0;
+}
+
+extern "C" uint32_t sys_get_heap_used() {
+    // Heap used is the difference between brk and base (0x02000000)
+    virt_addr_t brk = kos::memory::Heap::Brk();
+    const virt_addr_t base = 0x02000000;
+    return (brk >= base) ? (uint32_t)(brk - base) : 0;
 }
 
 // Helper: normalize and make absolute path based on cwd
@@ -192,4 +217,9 @@ extern "C" void InitSysApi() {
     t->get_arg = &sys_get_arg;
     t->cmdline = g_cmdline;
     t->cwd = g_cwd_buf;
+    // Memory information functions
+    t->get_total_frames = &sys_get_total_frames;
+    t->get_free_frames = &sys_get_free_frames;
+    t->get_heap_size = &sys_get_heap_size;
+    t->get_heap_used = &sys_get_heap_used;
 }

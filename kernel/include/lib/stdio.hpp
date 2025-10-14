@@ -28,6 +28,11 @@ namespace kos {
             int32_t (*chdir)(const int8_t* path);
             // Current working directory path (null-terminated). Set by shell/kernel.
             const int8_t* cwd;
+            // Memory information functions
+            uint32_t (*get_total_frames)();
+            uint32_t (*get_free_frames)();
+            uint32_t (*get_heap_size)();
+            uint32_t (*get_heap_used)();
         };
 
         // Access to the API table (placed by the kernel at a fixed address)

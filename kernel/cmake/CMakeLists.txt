@@ -106,9 +106,10 @@ add_app(mkdir)
 add_app(memtest)
 add_app(pwd)
 add_app(cd)
+add_app(free)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
