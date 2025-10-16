@@ -19,6 +19,11 @@
 #include <memory/pmm.hpp>
 #include <memory/paging.hpp>
 #include <memory/heap.hpp>
+#include <process/scheduler.hpp>
+#include <process/pipe.hpp>
+#include <process/thread_manager.hpp>
+#include <process/timer.hpp>
+#include <console/threaded_shell.hpp>
 
 
 using namespace kos;
@@ -29,6 +34,7 @@ using namespace kos::console;
 using namespace kos::fs;
 using namespace kos::memory;
 using namespace kos::gfx;
+using namespace kos::process;
 
 
 class MouseToConsole: public MouseEventHandler
@@ -101,6 +107,9 @@ extern "C" void callConstructors()
 // Global shell pointer for keyboard handler
 kos::console::Shell* g_shell = nullptr;
 
+// Global shell instance
+Shell g_shell_instance;
+
 // Prepare ATA drivers for all 4 IDE positions and FAT32 instances for scanning
 static ATADriver g_ata_p0m(ATADriver::Primary, ATADriver::Master);
 static ATADriver g_ata_p0s(ATADriver::Primary, ATADriver::Slave);
@@ -119,8 +128,6 @@ static FAT16 g_fs16_p1m(&g_ata_p1m);
 static FAT16 g_fs16_p1s(&g_ata_p1s);
 
 Filesystem* g_fs_ptr = 0;
-// Global shell instance
-Shell g_shell_instance;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
@@ -187,8 +194,27 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     Heap::Init((virt_addr_t)0x02000000, 2);
     Logger::LogStatus("Kernel heap initialized", true);
 
+    // Initialize scheduler and timer for preemptive multitasking
+    g_scheduler = new Scheduler();
+    SchedulerTimerHandler* timer_handler = new SchedulerTimerHandler(&interrupts, g_scheduler);
+    Logger::LogStatus("Scheduler initialized", true);
+
+    // Initialize pipe manager for inter-task communication
+    g_pipe_manager = new PipeManager();
+    Logger::LogStatus("Pipe manager initialized", true);
+
+    // Initialize thread manager for comprehensive threading
+    if (ThreadManagerAPI::InitializeThreading()) {
+        Logger::LogStatus("Thread manager initialized", true);
+    } else {
+        Logger::LogStatus("Thread manager initialization failed", false);
+    }
+
     Logger::Log("Initializing Hardware, Stage 1");
     DriverManager drvManager;
+
+    // Initialize shell pointer for keyboard handler fallback
+    g_shell = &g_shell_instance;
 
     Logger::Log("Loading device drivers");
     ShellKeyboardHandler skbhandler;
@@ -207,6 +233,16 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     Logger::Log("Initializing Hardware, Stage 3");
     interrupts.Activate();
     Logger::LogStatus("Hardware initialized Stage 3", true);
+    
+    // Explicitly enable timer interrupt (IRQ0) and keyboard interrupt (IRQ1)
+    interrupts.EnableIRQ(0);
+    Logger::LogStatus("Timer IRQ0 enabled", true);
+    interrupts.EnableIRQ(1);
+    Logger::LogStatus("Keyboard IRQ1 enabled", true);
+    
+    // Enable preemptive scheduling now that interrupts are active
+    g_scheduler->EnablePreemption();
+    Logger::LogStatus("Preemptive scheduling enabled", true);
 
     // Try to mount FAT32 on any IDE position (Primary/Secondary x Master/Slave)
     struct Candidate { ATADriver* ata; FAT32* fs32; FAT16* fs16; const char* name; };
@@ -249,10 +285,25 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     // Built-in commands removed; rely on /bin/<cmd>.elf execution
 
-    // Create and start the shell
-    g_shell = &g_shell_instance;
-    Logger::LogStatus("Starting shell...", true);
-    g_shell_instance.Run();
+    // Start the threading system and threaded shell
+    ThreadManagerAPI::StartMultitasking();
+    Logger::LogStatus("Multitasking environment started", true);
+    
+    // Initialize and start threaded shell
+    if (ThreadedShellAPI::InitializeShell()) {
+        Logger::LogStatus("Threaded shell initialized", true);
+        ThreadedShellAPI::StartShell();
+    } else {
+        Logger::LogStatus("Failed to initialize threaded shell", false);
+        // Fallback to original shell
+        g_shell = &g_shell_instance;
+        Logger::LogStatus("Starting fallback shell...", true);
+        g_shell_instance.Run();
+    }
 
-    while(1);
+    // Main kernel thread continues to run
+    while(1) {
+        SchedulerAPI::YieldThread();
+        SchedulerAPI::SleepThread(1000); // Sleep 1 second
+    }
 }

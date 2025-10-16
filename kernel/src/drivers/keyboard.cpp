@@ -42,14 +42,69 @@ KeyboardDriver::~KeyboardDriver()
 
 void KeyboardDriver::Activate()
 {
-     while(commandport.Read() & 0x1)
-      dataport.Read();
-    commandport.Write(0xae); //activate interrupts
-    commandport.Write(0x20); //get current state -> command 0x20 = read controller command byte
-    uint8_t status = (dataport.Read() | 1) & ~0x10;
-    commandport.Write(0x60); //set state -> command 0x60 = set controller command byte
-    dataport.Write(status);
-    dataport.Write(0xf4); //Activate keyboard
+    static TTY tty;
+    tty.Write("[KBD] Activating keyboard...\n");
+    
+    // Clear keyboard buffer
+    while(commandport.Read() & 0x1) {
+        dataport.Read();
+    }
+    
+    // Wait for keyboard controller to be ready
+    int timeout = 1000;
+    while ((commandport.Read() & 0x02) && timeout-- > 0) {
+        // Wait for input buffer to be empty
+    }
+    
+    tty.Write("[KBD] Disabling devices...\n");
+    commandport.Write(0xAD); // Disable first PS/2 port
+    commandport.Write(0xA7); // Disable second PS/2 port (if exists)
+    
+    // Clear buffer again
+    while(commandport.Read() & 0x1) {
+        dataport.Read();
+    }
+    
+    tty.Write("[KBD] Reading controller config...\n");
+    commandport.Write(0x20); // Read controller config
+    uint8_t config = dataport.Read();
+    tty.Write("[KBD] Controller config: ");
+    tty.WriteHex(config);
+    tty.Write("\n");
+    
+    // Set configuration - enable interrupts and scanning
+    config |= 0x01;  // Enable first PS/2 port interrupt
+    config &= ~0x10; // Enable first PS/2 port
+    config &= ~0x20; // Enable second PS/2 port (if exists)
+    
+    tty.Write("[KBD] Writing new config: ");
+    tty.WriteHex(config);
+    tty.Write("\n");
+    commandport.Write(0x60); // Write controller config
+    dataport.Write(config);
+    
+    tty.Write("[KBD] Enabling first PS/2 port...\n");
+    commandport.Write(0xAE); // Enable first PS/2 port
+    
+    tty.Write("[KBD] Sending enable command to keyboard...\n");
+    dataport.Write(0xF4); // Enable scanning
+    
+    // Wait for acknowledgment
+    timeout = 1000;
+    while (timeout-- > 0 && !(commandport.Read() & 0x01)) {
+        // Wait for response
+    }
+    
+    if (commandport.Read() & 0x01) {
+        uint8_t response = dataport.Read();
+        tty.Write("[KBD] Keyboard response: ");
+        tty.WriteHex(response);
+        tty.Write("\n");
+    } else {
+        tty.Write("[KBD] No keyboard response\n");
+    }
+    
+    tty.Write("[KBD] Keyboard activation complete\n");
 };
   
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)

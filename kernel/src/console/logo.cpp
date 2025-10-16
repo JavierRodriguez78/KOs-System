@@ -3,8 +3,11 @@
 #include <drivers/vga.hpp>
 #include <common/logo.h>
 #include <graphics/framebuffer.hpp>
+#include <process/scheduler.hpp>
 
 using namespace kos::console;
+using namespace kos::process;
+
 
 namespace kos { 
     namespace console {
@@ -25,7 +28,12 @@ namespace kos {
         // Internal helper to render a downsampled color block logo in VGA text mode
         static void PrintLogoBlockArtImpl(uint32_t xStep, uint32_t yStep) {
             // Defensive: if logo has no data, skip
-            if (!KOS_LOGO_DATA || KOS_LOGO_WIDTH == 0 || KOS_LOGO_HEIGHT == 0) return;
+            if (!KOS_LOGO_DATA || KOS_LOGO_WIDTH == 0 || KOS_LOGO_HEIGHT == 0) {
+                TTY::Write("Error: Logo data not available or invalid dimensions\n");
+                return;
+            }
+
+            TTY::Write("Starting logo rendering...\n");
 
             // VGA 16-color palette approximation (RGB 0..255)
             struct RGB { uint8_t r,g,b; };
@@ -94,11 +102,19 @@ namespace kos {
                         }
                     }
                 }
-                if (printRow) { TTY::PutChar('\n'); }
+                if (printRow) { 
+                    TTY::PutChar('\n'); 
+                    // Yield CPU every few rows to allow other threads to run
+                    if ((y % (yStep * 5)) == 0) {
+                        // Safe to call unconditionally; API checks scheduler presence
+                        kos::process::SchedulerAPI::SleepThread(1);
+                    }
+                }
             }
 
             // Restore default attribute
             TTY::SetAttr(defaultAttr);
+            TTY::Write("Logo rendering completed.\n");
         }
 
         void PrintLogoBlockArt() {
@@ -121,8 +137,16 @@ namespace kos {
         }
 
         void PrintLogoFramebuffer32Scaled(uint32_t targetW, uint32_t targetH) {
-            if (!KOS_LOGO_DATA || KOS_LOGO_WIDTH == 0 || KOS_LOGO_HEIGHT == 0) return;
-            if (!kos::gfx::IsAvailable()) return;
+            if (!KOS_LOGO_DATA || KOS_LOGO_WIDTH == 0 || KOS_LOGO_HEIGHT == 0) {
+                TTY::Write("Error: Logo data not available for framebuffer\n");
+                return;
+            }
+            if (!kos::gfx::IsAvailable()) {
+                TTY::Write("Error: Framebuffer not available\n");
+                return;
+            }
+            
+            TTY::Write("Starting framebuffer logo rendering...\n");
             const uint32_t srcW = KOS_LOGO_WIDTH;
             const uint32_t srcH = KOS_LOGO_HEIGHT;
 
@@ -147,7 +171,15 @@ namespace kos {
                     uint32_t rgba = (0xFFu << 24) | (uint32_t(r) << 16) | (uint32_t(g) << 8) | (uint32_t(b));
                     kos::gfx::PutPixel32(startX + x, startY + y, rgba);
                 }
+                
+                // Yield CPU every few rows to allow other threads to run
+                if ((y % 20) == 0) {
+                    // Safe to call unconditionally; API checks scheduler presence
+                    kos::process::SchedulerAPI::SleepThread(1);
+                }
             }
+            
+            TTY::Write("Framebuffer logo rendering completed.\n");
 
         } 
     }

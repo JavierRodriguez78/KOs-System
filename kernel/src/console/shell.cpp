@@ -10,11 +10,16 @@
 // Logo printer
 #include <console/logo.hpp>
 #include <graphics/framebuffer.hpp>
+// Scheduler / threads
+#include <process/scheduler.hpp>
+// Pipe management
+#include <process/pipe.hpp>
 
 using namespace kos::console;
 using namespace kos::lib;
 using namespace kos::drivers;
 using namespace kos::sys;
+using namespace kos::process;
 
 // File-local TTY instance for output
 static TTY tty;
@@ -36,7 +41,37 @@ Shell::Shell() : bufferIndex(0) {
 
 void Shell::PrintPrompt() {
     const int8_t* cwd = kos::sys::table()->cwd ? kos::sys::table()->cwd : (const int8_t*)"/";
-    tty.Write(cwd);
+    // Prompt prefix: kos[00]:
+    tty.Write((const int8_t*)"kos[");
+    tty.Write((const int8_t*)"00");
+    tty.Write((const int8_t*)"]:");
+
+    // Print path with basename colorized (closest VGA color to #27F5E7 is light cyan = 11)
+    // Find last '/'
+    const int8_t* last_slash = nullptr;
+    for (const int8_t* p = cwd; *p; ++p) {
+        if (*p == '/') last_slash = p;
+    }
+    if (!last_slash) {
+        // No slash found, colorize entire cwd
+        tty.SetColor(11, 0);
+        tty.Write(cwd);
+        tty.SetAttr(0x07);
+    } else {
+        // Write prefix up to and including last '/'
+        // Compute length from cwd start to last_slash inclusive
+        int32_t prefix_len = (int32_t)(last_slash - cwd + 1);
+        // Write prefix normally
+        for (int32_t i = 0; i < prefix_len; ++i) tty.PutChar(cwd[i]);
+        // Write basename in color
+        const int8_t* base = last_slash + 1;
+        if (*base) {
+            tty.SetColor(11, 0);
+            tty.Write(base);
+            tty.SetAttr(0x07);
+        }
+    }
+
     tty.Write((const int8_t*)"$ ");
 }
 
@@ -122,19 +157,278 @@ void Shell::ExecuteCommand(const int8_t* command) {
     // Built-in: show logo (text mode)
     if (String::strcmp(prog, (const int8_t*)"logo", 4) == 0 &&
         (prog[4] == 0)) {
+        tty.Write("Executing logo command...\n");
         PrintLogoBlockArt();
+        tty.Write("Logo command completed.\n");
         return;
     }
 
     // Built-in: show logo on framebuffer (32bpp)
     if (String::strcmp(prog, (const int8_t*)"logo32", 6) == 0 &&
         (prog[6] == 0)) {
+        tty.Write("Executing logo32 command...\n");
         if (gfx::IsAvailable()) {
+            tty.Write("Framebuffer available, showing 32bpp logo.\n");
             PrintLogoFramebuffer32();
         } else {
             tty.Write("Framebuffer 32bpp not available, falling back to text logo\n");
             PrintLogoBlockArt();
         }
+        tty.Write("Logo32 command completed.\n");
+        return;
+    }
+
+
+
+    // Built-in: show scheduler statistics
+    if (String::strcmp(prog, (const int8_t*)"ps", 2) == 0 &&
+        (prog[2] == 0)) {
+        if (!g_scheduler) {
+            tty.Write("Scheduler not initialized\n");
+        } else {
+            tty.Write("Scheduler Statistics:\n");
+            tty.Write("  Current task ID: ");
+            tty.WriteHex(SchedulerAPI::GetCurrentThreadId());
+            tty.Write("\n");
+
+            tty.Write("  Total tasks: ");
+            tty.WriteHex(g_scheduler->GetTaskCount());
+            tty.Write("\n");
+
+            tty.Write("  Scheduling enabled: ");
+            tty.Write(g_scheduler->IsSchedulingEnabled() ? "Yes" : "No");
+            tty.Write("\n");
+        }
+        return;
+    }
+
+    // Built-in: detailed thread list
+    if (String::strcmp(prog, (const int8_t*)"threads", 7) == 0 &&
+        (prog[7] == 0)) {
+        if (g_scheduler) {
+            g_scheduler->PrintTaskList();
+        } else {
+            tty.Write("Scheduler not initialized\n");
+        }
+        return;
+    }
+
+    // Built-in: kill thread
+    if (String::strcmp(prog, (const int8_t*)"kill", 4) == 0 &&
+        (prog[4] == 0) && argc >= 2) {
+        uint32_t thread_id = 0;
+        // Simple hex parsing for thread ID
+        const int8_t* id_str = argv[1];
+        for (int i = 0; id_str[i]; i++) {
+            thread_id <<= 4;
+            if (id_str[i] >= '0' && id_str[i] <= '9') {
+                thread_id += id_str[i] - '0';
+            } else if (id_str[i] >= 'a' && id_str[i] <= 'f') {
+                thread_id += id_str[i] - 'a' + 10;
+            } else if (id_str[i] >= 'A' && id_str[i] <= 'F') {
+                thread_id += id_str[i] - 'A' + 10;
+            }
+        }
+        
+        if (SchedulerAPI::KillThread(thread_id)) {
+            tty.Write("Thread killed successfully\n");
+        } else {
+            tty.Write("Failed to kill thread\n");
+        }
+        return;
+    }
+
+    // Built-in: suspend thread
+    if (String::strcmp(prog, (const int8_t*)"suspend", 7) == 0 &&
+        (prog[7] == 0) && argc >= 2) {
+        uint32_t thread_id = 0;
+        // Simple hex parsing for thread ID
+        const int8_t* id_str = argv[1];
+        for (int i = 0; id_str[i]; i++) {
+            thread_id <<= 4;
+            if (id_str[i] >= '0' && id_str[i] <= '9') {
+                thread_id += id_str[i] - '0';
+            } else if (id_str[i] >= 'a' && id_str[i] <= 'f') {
+                thread_id += id_str[i] - 'a' + 10;
+            } else if (id_str[i] >= 'A' && id_str[i] <= 'F') {
+                thread_id += id_str[i] - 'A' + 10;
+            }
+        }
+        
+        if (SchedulerAPI::SuspendThread(thread_id)) {
+            tty.Write("Thread suspended successfully\n");
+        } else {
+            tty.Write("Failed to suspend thread\n");
+        }
+        return;
+    }
+
+    // Built-in: resume thread
+    if (String::strcmp(prog, (const int8_t*)"resume", 6) == 0 &&
+        (prog[6] == 0) && argc >= 2) {
+        uint32_t thread_id = 0;
+        // Simple hex parsing for thread ID
+        const int8_t* id_str = argv[1];
+        for (int i = 0; id_str[i]; i++) {
+            thread_id <<= 4;
+            if (id_str[i] >= '0' && id_str[i] <= '9') {
+                thread_id += id_str[i] - '0';
+            } else if (id_str[i] >= 'a' && id_str[i] <= 'f') {
+                thread_id += id_str[i] - 'a' + 10;
+            } else if (id_str[i] >= 'A' && id_str[i] <= 'F') {
+                thread_id += id_str[i] - 'A' + 10;
+            }
+        }
+
+        if (SchedulerAPI::ResumeThread(thread_id)) {
+            tty.Write("Thread resumed successfully\n");
+        } else {
+            tty.Write("Failed to resume thread\n");
+        }
+        return;
+    }
+
+    // Built-in: sleep current thread
+    if (String::strcmp(prog, (const int8_t*)"sleep", 5) == 0 &&
+        (prog[5] == 0) && argc >= 2) {
+        uint32_t ms = 0;
+        // Simple decimal parsing for milliseconds
+        const int8_t* ms_str = argv[1];
+        for (int i = 0; ms_str[i]; i++) {
+            if (ms_str[i] >= '0' && ms_str[i] <= '9') {
+                ms = ms * 10 + (ms_str[i] - '0');
+            }
+        }
+        
+        tty.Write("Sleeping for ");
+        tty.WriteHex(ms);
+        tty.Write(" ms...\n");
+        SchedulerAPI::SleepThread(ms);
+        return;
+    }
+
+    // Built-in: yield current task (if any)
+    if (String::strcmp(prog, (const int8_t*)"yield", 5) == 0 &&
+        (prog[5] == 0)) {
+        tty.Write("Yielding CPU...\n");
+        SchedulerAPI::YieldThread();
+        return;
+    }
+
+    // Built-in: pipes command (show all pipes)
+    if (String::strcmp(prog, (const int8_t*)"pipes", 5) == 0 &&
+        (prog[5] == 0)) {
+        if (g_pipe_manager) {
+            g_pipe_manager->PrintAllPipes();
+        } else {
+            tty.Write("Pipe manager not initialized\n");
+        }
+        return;
+    }
+
+    // Built-in: mkpipe command (create pipe)
+    if (String::strcmp(prog, (const int8_t*)"mkpipe", 6) == 0 &&
+        (prog[6] == ' ' || prog[6] == 0)) {
+        if (prog[6] == 0) {
+            tty.Write("Usage: mkpipe <name> [buffer_size]\n");
+            return;
+        }
+        
+        // Find pipe name
+        const int8_t* name_start = prog + 7;
+        while (*name_start == ' ') name_start++; // Skip spaces
+        
+        if (*name_start == 0) {
+            tty.Write("Usage: mkpipe <name> [buffer_size]\n");
+            return;
+        }
+        
+        // Find end of name
+        const int8_t* name_end = name_start;
+        while (*name_end && *name_end != ' ') name_end++;
+        
+        // Extract name
+        char pipe_name[32];
+        int name_len = name_end - name_start;
+        if (name_len >= sizeof(pipe_name)) name_len = sizeof(pipe_name) - 1;
+        for (int i = 0; i < name_len; i++) {
+            pipe_name[i] = name_start[i];
+        }
+        pipe_name[name_len] = 0;
+        
+        uint32_t pipe_id = PipeAPI::CreatePipe(pipe_name);
+        if (pipe_id) {
+            tty.Write("Created pipe: ");
+            tty.Write(pipe_name);
+            tty.Write(" (ID: ");
+            tty.WriteHex(pipe_id);
+            tty.Write(")\n");
+        } else {
+            tty.Write("Failed to create pipe\n");
+        }
+        return;
+    }
+
+    // Built-in: rmpipe command (remove pipe)
+    if (String::strcmp(prog, (const int8_t*)"rmpipe", 6) == 0 &&
+        (prog[6] == ' ' || prog[6] == 0)) {
+        if (prog[6] == 0) {
+            tty.Write("Usage: rmpipe <name>\n");
+            return;
+        }
+        
+        // Find pipe name
+        const int8_t* name_start = prog + 7;
+        while (*name_start == ' ') name_start++; // Skip spaces
+        
+        if (*name_start == 0) {
+            tty.Write("Usage: rmpipe <name>\n");
+            return;
+        }
+        
+        // Find end of name
+        const int8_t* name_end = name_start;
+        while (*name_end && *name_end != ' ') name_end++;
+        
+        // Extract name
+        char pipe_name[32];
+        int name_len = name_end - name_start;
+        if (name_len >= sizeof(pipe_name)) name_len = sizeof(pipe_name) - 1;
+        for (int i = 0; i < name_len; i++) {
+            pipe_name[i] = name_start[i];
+        }
+        pipe_name[name_len] = 0;
+        
+        if (PipeAPI::DestroyPipe(pipe_name)) {
+            tty.Write("Removed pipe: ");
+            tty.Write(pipe_name);
+            tty.Write("\n");
+        } else {
+            tty.Write("Failed to remove pipe or pipe not found\n");
+        }
+        return;
+    }
+
+    // Built-in: help command
+    if (String::strcmp(prog, (const int8_t*)"help", 4) == 0 &&
+        (prog[4] == 0)) {
+        tty.Write("KOS Shell Commands:\n");
+        tty.Write("  help           - Show this help message\n");
+        tty.Write("  logo           - Show KOS logo in text mode\n");
+        tty.Write("  logo32         - Show KOS logo on framebuffer\n");
+        
+        
+        tty.Write("  ps             - Show scheduler statistics\n");
+        tty.Write("  threads        - Show detailed thread list\n");
+        tty.Write("  yield          - Yield CPU to other tasks\n");
+        tty.Write("  kill <id>      - Kill thread by ID (hex)\n");
+        tty.Write("  suspend <id>   - Suspend thread by ID (hex)\n");
+        tty.Write("  resume <id>    - Resume thread by ID (hex)\n");
+        tty.Write("  sleep <ms>     - Sleep current thread (decimal ms)\n");
+        tty.Write("  pipes          - Show all active pipes\n");
+        tty.Write("  mkpipe <name>  - Create a new pipe\n");
+        tty.Write("  rmpipe <name>  - Remove a pipe\n");
+        tty.Write("  <cmd>          - Execute /bin/<cmd>.elf from filesystem\n");
         return;
     }
 

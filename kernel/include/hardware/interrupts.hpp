@@ -118,6 +118,8 @@ namespace kos
                 uint16_t HardwareInterruptOffset();
                 void Activate();
                 void Deactivate();
+                void EnableIRQ(uint8_t irq);
+                void DisableIRQ(uint8_t irq);
             private:
                 static TTY tty;
         };

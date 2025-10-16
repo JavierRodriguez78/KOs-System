@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/e/proyectos/KOs-System/kernel/src/hardware/interruptstubs.s
+
+/mnt/e/proyectos/KOs-System/kernel/src/loader.s
+

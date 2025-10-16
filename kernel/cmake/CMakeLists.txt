@@ -36,8 +36,11 @@ file(GLOB_RECURSE KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/*.cpp
 )
 
-# Exclude the app stub new/delete from kernel (kernel uses newdelete_kernel.cpp)
-list(REMOVE_ITEM KERNEL_CPP_SOURCES ${KOS_SRC_DIR}/lib/newdelete.cpp)
+# Exclude deprecated demos and commands
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/process/pipe_demo.cpp
+    ${KOS_SRC_DIR}/process/scheduler_demo.cpp
+)
 
 # Build kernel objects into an OBJECT library
 add_library(kernel_objs OBJECT
@@ -73,7 +76,7 @@ add_custom_command(TARGET kernel_bin POST_BUILD
 add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
-    ${KOS_ROOT_DIR}/src/lib/newdelete.cpp
+    ${KOS_ROOT_DIR}/src/lib/newdelete_kernel.cpp
     ${KOS_ROOT_DIR}/src/drivers/vga.cpp
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR})

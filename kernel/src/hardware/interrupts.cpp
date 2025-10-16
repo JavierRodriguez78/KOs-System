@@ -138,12 +138,26 @@ uint16_t InterruptManager::HardwareInterruptOffset()
 
 void InterruptManager::Activate()
 {
-    if(ActiveInterruptManager != 0)
+    static TTY tty;
+    tty.Write("\n\n=== INTERRUPT MANAGER ACTIVATION ===\n");
+    tty.Write("[INT] Activating interrupt manager...\n");
+    
+    if(ActiveInterruptManager != 0) {
+        tty.Write("[INT] Deactivating previous manager\n");
         ActiveInterruptManager->Deactivate();
+    }
     
     ActiveInterruptManager = this;
-    asm("sti"); //https://www.felixcloutier.com/x86/sti
+    tty.Write("[INT] Set as active manager\n");
     
+    // Check if interrupts are currently enabled
+    uint32_t flags;
+    asm volatile("pushfl; popl %0" : "=r"(flags));
+    tty.Write("[INT] Flags before STI: ");
+    tty.WriteHex(flags);
+    tty.Write("\n");
+    
+    asm("sti");
 }
 
 void InterruptManager::Deactivate()
@@ -152,6 +166,42 @@ void InterruptManager::Deactivate()
     {
         ActiveInterruptManager = 0;
         asm("cli"); //https://www.felixcloutier.com/x86/cli
+    }
+}
+
+void InterruptManager::EnableIRQ(uint8_t irq)
+{
+    if(irq < 8)
+    {
+        // IRQ 0-7 on master PIC
+        uint8_t mask = programmableInterruptControllerMasterDataPort.Read();
+        mask &= ~(1 << irq);
+        programmableInterruptControllerMasterDataPort.Write(mask);
+    }
+    else if(irq < 16)
+    {
+        // IRQ 8-15 on slave PIC
+        uint8_t mask = programmableInterruptControllerSlaveDataPort.Read();
+        mask &= ~(1 << (irq - 8));
+        programmableInterruptControllerSlaveDataPort.Write(mask);
+    }
+}
+
+void InterruptManager::DisableIRQ(uint8_t irq)
+{
+    if(irq < 8)
+    {
+        // IRQ 0-7 on master PIC
+        uint8_t mask = programmableInterruptControllerMasterDataPort.Read();
+        mask |= (1 << irq);
+        programmableInterruptControllerMasterDataPort.Write(mask);
+    }
+    else if(irq < 16)
+    {
+        // IRQ 8-15 on slave PIC
+        uint8_t mask = programmableInterruptControllerSlaveDataPort.Read();
+        mask |= (1 << (irq - 8));
+        programmableInterruptControllerSlaveDataPort.Write(mask);
     }
 }
 

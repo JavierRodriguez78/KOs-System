@@ -1,4 +1,5 @@
 #include <console/shell.hpp>
+#include <console/threaded_shell.hpp>
 #include <console/tty.hpp>
 #include <drivers/keyboard.hpp>
 
@@ -15,11 +16,14 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 
 };
 
-// Reference to the shell instance
+// Reference to the shell instances
 extern Shell* g_shell;
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
-    if (g_shell) {
+    // Priority: threaded shell if available, otherwise fallback to original shell
+    if (kos::console::g_threaded_shell) {
+        kos::console::g_threaded_shell->OnKeyPressed(c);
+    } else if (g_shell) {
         g_shell->InputChar(c);
     }
 }
