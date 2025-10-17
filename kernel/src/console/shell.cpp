@@ -178,6 +178,78 @@ void Shell::ExecuteCommand(const int8_t* command) {
         return;
     }
 
+    // Built-in: gfxinfo (print framebuffer information)
+    if (String::strcmp(prog, (const int8_t*)"gfxinfo", 7) == 0 &&
+        (prog[7] == 0)) {
+        if (gfx::IsAvailable()) {
+            const auto& fb = gfx::GetInfo();
+            tty.Write("Framebuffer: ");
+            tty.Write("addr=0x");
+            // Print high then low for 64-bit addr readability (simple hex pairs)
+            uint64_t a = fb.addr;
+            for (int i = 7; i >= 0; --i) {
+                uint8_t byte = (a >> (i*8)) & 0xFF;
+                tty.WriteHex(byte);
+            }
+            tty.Write(" pitch=");
+            tty.WriteHex((fb.pitch >> 8) & 0xFF); tty.WriteHex(fb.pitch & 0xFF);
+            tty.Write(" size=");
+            tty.WriteHex((fb.width >> 8) & 0xFF); tty.WriteHex(fb.width & 0xFF);
+            tty.Write("x");
+            tty.WriteHex((fb.height >> 8) & 0xFF); tty.WriteHex(fb.height & 0xFF);
+            tty.Write("x");
+            tty.WriteHex(fb.bpp);
+            tty.Write(" type=");
+            tty.WriteHex(fb.type);
+            tty.Write("\n");
+        } else {
+            tty.Write("Framebuffer not available. Reboot using the 'graphic mode' GRUB entry.\n");
+        }
+        return;
+    }
+
+    // Built-in: gfxinit (clear framebuffer, draw logo) and optional gfxclear <RRGGBB>
+    if (String::strcmp(prog, (const int8_t*)"gfxinit", 7) == 0 && (prog[7] == 0)) {
+        if (!gfx::IsAvailable()) {
+            tty.Write("Framebuffer not available. Reboot using the 'graphic mode' GRUB entry.\n");
+            return;
+        }
+        // Clear to black and draw logo
+        gfx::Clear32(0xFF000000u);
+        PrintLogoFramebuffer32();
+        tty.Write("Graphics initialized.\n");
+        return;
+    }
+
+    if (String::strcmp(prog, (const int8_t*)"gfxclear", 8) == 0 && (prog[8] == 0)) {
+        if (!gfx::IsAvailable()) {
+            tty.Write("Framebuffer not available.\n");
+            return;
+        }
+        // Optional argument: RRGGBB (hex)
+        uint32_t rgba = 0xFF000000u; // default black
+        if (argc >= 2) {
+            const int8_t* s = argv[1];
+            // Skip leading 0x if present
+            if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) s += 2;
+            uint32_t val = 0;
+            for (int i = 0; s[i]; ++i) {
+                int8_t ch = s[i];
+                uint8_t v;
+                if (ch >= '0' && ch <= '9') v = ch - '0';
+                else if (ch >= 'a' && ch <= 'f') v = 10 + (ch - 'a');
+                else if (ch >= 'A' && ch <= 'F') v = 10 + (ch - 'A');
+                else break;
+                val = (val << 4) | v;
+            }
+            // Interpret as RRGGBB
+            if (val <= 0xFFFFFFu) rgba = 0xFF000000u | val;
+        }
+        gfx::Clear32(rgba);
+        tty.Write("Framebuffer cleared.\n");
+        return;
+    }
+
 
 
     // Built-in: show scheduler statistics
@@ -416,6 +488,9 @@ void Shell::ExecuteCommand(const int8_t* command) {
         tty.Write("  help           - Show this help message\n");
         tty.Write("  logo           - Show KOS logo in text mode\n");
         tty.Write("  logo32         - Show KOS logo on framebuffer\n");
+    tty.Write("  gfxinfo        - Show framebuffer info (if available)\n");
+    tty.Write("  gfxinit        - Initialize graphics: clear and draw logo\n");
+    tty.Write("  gfxclear [hex] - Clear framebuffer to RRGGBB (default black)\n");
         
         
         tty.Write("  ps             - Show scheduler statistics\n");

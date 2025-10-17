@@ -139,6 +139,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     static TTY tty;
     tty.Clear();
 
+    // If a 32bpp framebuffer is available (set by GRUB), clear it to the desired wallpaper color at boot.
+    if (kos::gfx::IsAvailable()) {
+        Logger::Log("Framebuffer (32bpp) detected; initializing graphics background to #66F1C2");
+        // ARGB 0xFF66F1C2 (R=0x66, G=0xF1, B=0xC2)
+        kos::gfx::Clear32(0xFF66F1C2u);
+    }
+
     // Parse Multiboot (v1) cmdline for debug flag before most logs
     // Minimal multiboot info structure (we only need flags and cmdline)
     struct MultibootInfoMinimal { uint32_t flags; uint32_t mem_lower; uint32_t mem_upper; uint32_t boot_device; uint32_t cmdline; };
