@@ -390,6 +390,32 @@ lshw.elf/fast:
 .PHONY : lshw.elf/fast
 
 #=============================================================================
+# Target rules for targets named clear_obj
+
+# Build rule for target.
+clear_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clear_obj
+.PHONY : clear_obj
+
+# fast build rule for target.
+clear_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear_obj.dir/build.make kernel/cmake/CMakeFiles/clear_obj.dir/build
+.PHONY : clear_obj/fast
+
+#=============================================================================
+# Target rules for targets named clear.elf
+
+# Build rule for target.
+clear.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clear.elf
+.PHONY : clear.elf
+
+# fast build rule for target.
+clear.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear.elf.dir/build.make kernel/cmake/CMakeFiles/clear.elf.dir/build
+.PHONY : clear.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -516,6 +542,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... apps"
 	@echo "... cd.elf"
+	@echo "... clear.elf"
 	@echo "... debug"
 	@echo "... diskimg"
 	@echo "... docs"
@@ -535,6 +562,7 @@ help:
 	@echo "... qemu-vvfat"
 	@echo "... app_support_objs"
 	@echo "... cd_obj"
+	@echo "... clear_obj"
 	@echo "... echo_obj"
 	@echo "... free_obj"
 	@echo "... hello_obj"

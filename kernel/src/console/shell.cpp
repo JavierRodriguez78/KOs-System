@@ -82,20 +82,9 @@ void Shell::Run() {
     } else {
         PrintLogoBlockArt();
     }
-    // Initialize current working directory to /home (create if missing)
-    if (g_fs_ptr) {
-        // Best-effort ensure /HOME exists (8.3 uppercase) and select a valid CWD.
-        // If creation fails or directory still absent, fall back to root.
-        g_fs_ptr->Mkdir((const int8_t*)"/HOME", 1);
-        if (g_fs_ptr->DirExists((const int8_t*)"/HOME")) {
-            SetCwd((const int8_t*)"/home");
-        } else {
-            SetCwd((const int8_t*)"/");
-        }
-    } else {
-        // No filesystem mounted; use root as a neutral prompt path
-        SetCwd((const int8_t*)"/");
-    }
+    // Initialize current working directory to filesystem root
+    // Regardless of filesystem presence, use "/" as the starting directory
+    SetCwd((const int8_t*)"/");
     tty.Write("Welcome to KOS Shell\n");
     PrintPrompt();
     while (true) {
@@ -152,6 +141,12 @@ void Shell::ExecuteCommand(const int8_t* command) {
     }
     if (argc == 0) return;
     const int8_t* prog = argv[0];
+
+    // Built-in alias: cls -> clear application
+    if (String::strcmp(prog, (const int8_t*)"cls", 3) == 0 && (prog[3] == 0)) {
+        // Rewrite prog to "clear" and fall through to app execution
+        prog = (const int8_t*)"clear";
+    }
 
 
     // Built-in: show logo (text mode)
@@ -486,6 +481,8 @@ void Shell::ExecuteCommand(const int8_t* command) {
         (prog[4] == 0)) {
         tty.Write("KOS Shell Commands:\n");
         tty.Write("  help           - Show this help message\n");
+    tty.Write("  clear          - Clear the text screen\n");
+    tty.Write("  cls            - Alias for clear\n");
         tty.Write("  logo           - Show KOS logo in text mode\n");
         tty.Write("  logo32         - Show KOS logo on framebuffer\n");
     tty.Write("  gfxinfo        - Show framebuffer info (if available)\n");

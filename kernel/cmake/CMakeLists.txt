@@ -110,9 +110,10 @@ add_app(pwd)
 add_app(cd)
 add_app(free)
 add_app(lshw)
+add_app(clear)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

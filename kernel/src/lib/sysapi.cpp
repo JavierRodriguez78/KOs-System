@@ -3,6 +3,7 @@
 #include <fs/filesystem.hpp>
 #include <memory/pmm.hpp>
 #include <memory/heap.hpp>
+#include <memory/paging.hpp>
 
 using namespace kos::sys;
 using namespace kos::console;
@@ -18,6 +19,20 @@ extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
+extern "C" void sys_clear() { TTY::Clear(); }
+// PCI config read helper: mediates access to 0xCF8/0xCFC
+extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
+    uint32_t id = 0x80000000u |
+                  ((uint32_t)bus << 16) |
+                  ((uint32_t)device << 11) |
+                  ((uint32_t)function << 8) |
+                  (offset & 0xFC);
+    uint32_t val;
+    asm volatile ("outl %0, %1" :: "a"(id), "Nd"((uint16_t)0xCF8));
+    asm volatile ("inl %1, %0" : "=a"(val) : "Nd"((uint16_t)0xCFC));
+    uint8_t shift = (offset & 3) * 8;
+    return val >> shift;
+}
 extern "C" void sys_listdir(const int8_t* path) {
     if (!g_fs_ptr) return;
     // Resolve relative path against current working directory and normalize
@@ -25,10 +40,13 @@ extern "C" void sys_listdir(const int8_t* path) {
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     const int8_t* use = path && path[0] ? path : cwd;
     normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
-    // Root listing is a special-case
-    if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); return; }
+    // Treat any form of root ("/" or only slashes) as ListRoot
+    bool isRoot = (absBuf[0] == '/') && (absBuf[1] == 0);
+    if (isRoot) { g_fs_ptr->ListRoot(); return; }
     // If the path doesn't exist as a directory, report a clear error up-front
     if (!g_fs_ptr->DirExists(absBuf)) {
+        // As a safety net, if it somehow normalizes to root but DirExists disagrees, still list root
+        if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); return; }
         TTY::Write((const int8_t*)"ls: path not found: ");
         TTY::Write(absBuf);
         TTY::PutChar('\n');
@@ -46,7 +64,17 @@ extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     const int8_t* use = path && path[0] ? path : cwd;
     normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
+    // Root always lists root
     if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
+    // Optional safety: if DirExists says no for '/', still list root
+    if (!g_fs_ptr->DirExists(absBuf)) {
+        if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
+        TTY::Write((const int8_t*)"ls: path not found: ");
+        TTY::Write(absBuf);
+        TTY::PutChar('\n');
+        g_list_flags = 0;
+        return;
+    }
     g_fs_ptr->ListDir(absBuf);
     g_list_flags = 0;
 }
@@ -66,10 +94,16 @@ extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
 // --- Simple argument storage for current process/app ---
 static int32_t g_argc = 0;
 static const int8_t* g_argv_vec[16];
-static const int8_t* g_cmdline = nullptr;
-static int8_t g_cmdline_buf[128];
 static int8_t g_argv_storage[512];
-static int8_t g_cwd_buf[128] = "/";
+
+// Helpers: place cmdline and cwd buffers inside the API table page at 0x0007F000
+// Layout: [ApiTable][cmdline 128][cwd 128]
+static inline int8_t* api_cmdline_buf() {
+    return (int8_t*)((uint32_t)kos::sys::table() + sizeof(kos::sys::ApiTable));
+}
+static inline int8_t* api_cwd_buf() {
+    return api_cmdline_buf() + 128;
+}
 
 extern "C" int32_t sys_get_argc() { return g_argc; }
 extern "C" const int8_t* sys_get_arg(int32_t index) {
@@ -159,14 +193,15 @@ namespace kos { namespace sys {
     void SetArgs(int32_t argc, const int8_t** argv, const int8_t* cmdline) {
         if (argc < 0) argc = 0;
         if (argc > (int32_t)(sizeof(g_argv_vec)/sizeof(g_argv_vec[0]))) argc = (int32_t)(sizeof(g_argv_vec)/sizeof(g_argv_vec[0]));
-
-        // Copy cmdline to internal buffer
+        
+        // Copy cmdline into API page buffer so apps (even in user mode) can read it
+        int8_t* dstCmd = api_cmdline_buf();
         int pos = 0;
         if (cmdline) {
-            while (cmdline[pos] && pos < (int)sizeof(g_cmdline_buf) - 1) { g_cmdline_buf[pos] = cmdline[pos]; ++pos; }
+            while (cmdline[pos] && pos < 127) { dstCmd[pos] = cmdline[pos]; ++pos; }
         }
-        g_cmdline_buf[pos] = 0;
-        g_cmdline = g_cmdline_buf;
+        dstCmd[pos] = 0;
+        table()->cmdline = dstCmd;
 
         // Copy argv strings into a contiguous storage and set pointers
         int storagePos = 0;
@@ -186,18 +221,20 @@ namespace kos { namespace sys {
             ++g_argc;
         }
 
-        // Update API table pointer so apps can read cmdline
-        table()->cmdline = g_cmdline;
+        // Ensure table()->cmdline points to the API page buffer
+        table()->cmdline = dstCmd;
     }
 
     void SetCwd(const int8_t* path) {
+        // Store CWD string inside API page so user apps can read it safely
+        int8_t* dst = api_cwd_buf();
         int i = 0;
-        if (!path) { g_cwd_buf[0] = '/'; g_cwd_buf[1] = 0; }
+        if (!path) { dst[0] = '/'; dst[1] = 0; }
         else {
-            while (path[i] && i < (int)sizeof(g_cwd_buf)-1) { g_cwd_buf[i] = path[i]; ++i; }
-            g_cwd_buf[i] = 0;
+            while (path[i] && i < 127) { dst[i] = path[i]; ++i; }
+            dst[i] = 0;
         }
-        table()->cwd = g_cwd_buf;
+        table()->cwd = dst;
     }
     // Provide a lightweight accessor so fs code can check listing flags
     uint32_t CurrentListFlags() { return g_list_flags; }
@@ -211,15 +248,23 @@ extern "C" void InitSysApi() {
     t->listroot = &sys_listroot;
     t->listdir = &sys_listdir;
     t->listdir_ex = &sys_listdir_ex;
-    t->mkdir = &sys_mkdir;
-    t->chdir = &sys_chdir;
+    t->clear = &sys_clear;
+    // IMPORTANT: follow the exact struct field order declared in headers
+    // After 'clear', the order is: get_argc, get_arg, cmdline, mkdir, chdir, cwd
     t->get_argc = &sys_get_argc;
-    t->get_arg = &sys_get_arg;
-    t->cmdline = g_cmdline;
-    t->cwd = g_cwd_buf;
+    t->get_arg  = &sys_get_arg;
+    // Initialize cmdline and cwd buffers within API page
+    int8_t* cmdBuf = api_cmdline_buf(); cmdBuf[0] = 0;
+    int8_t* cwdBuf = api_cwd_buf(); cwdBuf[0] = '/'; cwdBuf[1] = 0; cwdBuf[2] = 0;
+    t->cmdline  = cmdBuf;
+    t->mkdir    = &sys_mkdir;
+    t->chdir    = &sys_chdir;
+    t->cwd      = cwdBuf;
     // Memory information functions
     t->get_total_frames = &sys_get_total_frames;
     t->get_free_frames = &sys_get_free_frames;
     t->get_heap_size = &sys_get_heap_size;
     t->get_heap_used = &sys_get_heap_used;
+    // Hardware helpers
+    t->pci_cfg_read = &sys_pci_cfg_read;
 }

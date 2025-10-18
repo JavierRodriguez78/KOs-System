@@ -16,6 +16,8 @@ typedef struct ApiTableC {
     void (*listdir)(const int8_t* path);
     // Extended listdir with flags (bitmask). See KOS_LS_FLAG_* below.
     void (*listdir_ex)(const int8_t* path, uint32_t flags);
+    // Clear text screen
+    void (*clear)();
     int32_t (*get_argc)();
     const int8_t* (*get_arg)(int32_t index);
     const int8_t* cmdline;
@@ -28,6 +30,8 @@ typedef struct ApiTableC {
     uint32_t (*get_free_frames)();
     uint32_t (*get_heap_size)();
     uint32_t (*get_heap_used)();
+    // PCI config space read helper (kernel mediates privileged I/O)
+    uint32_t (*pci_cfg_read)(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -40,6 +44,7 @@ static inline void kos_hex(uint8_t v) { if (kos_sys_table()->hex) kos_sys_table(
 static inline void kos_listroot(void) { if (kos_sys_table()->listroot) kos_sys_table()->listroot(); }
 static inline void kos_listdir(const int8_t* path) { if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
 static inline void kos_listdir_ex(const int8_t* path, uint32_t flags) { if (kos_sys_table()->listdir_ex) kos_sys_table()->listdir_ex(path, flags); else if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
+static inline void kos_clear(void) { if (kos_sys_table()->clear) kos_sys_table()->clear(); }
 
 static inline int32_t kos_mkdir(const int8_t* path, int32_t parents) {
     if (kos_sys_table()->mkdir) return kos_sys_table()->mkdir(path, parents);
@@ -61,6 +66,12 @@ static inline uint32_t kos_get_total_frames(void) { return kos_sys_table()->get_
 static inline uint32_t kos_get_free_frames(void) { return kos_sys_table()->get_free_frames ? kos_sys_table()->get_free_frames() : 0; }
 static inline uint32_t kos_get_heap_size(void) { return kos_sys_table()->get_heap_size ? kos_sys_table()->get_heap_size() : 0; }
 static inline uint32_t kos_get_heap_used(void) { return kos_sys_table()->get_heap_used ? kos_sys_table()->get_heap_used() : 0; }
+
+// PCI config read wrapper for apps (prevents GP faults by using kernel service)
+static inline uint32_t kos_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
+    if (kos_sys_table()->pci_cfg_read) return kos_sys_table()->pci_cfg_read(bus, device, function, offset);
+    return 0xFFFFFFFFu;
+}
 
 // Flags for kos_listdir_ex
 #define KOS_LS_FLAG_LONG  (1u << 0)  // Show long listing: attrs, size, date

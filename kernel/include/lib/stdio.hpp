@@ -16,6 +16,8 @@ namespace kos {
             void (*listroot)();
             void (*listdir)(const int8_t* path);
             void (*listdir_ex)(const int8_t* path, uint32_t flags);
+            // Clear text screen
+            void (*clear)();
             // Argument passing support
             int32_t (*get_argc)();
             const int8_t* (*get_arg)(int32_t index);
@@ -33,6 +35,9 @@ namespace kos {
             uint32_t (*get_free_frames)();
             uint32_t (*get_heap_size)();
             uint32_t (*get_heap_used)();
+            // PCI config space access (read-only): returns a 32-bit value right-shifted by (offset&3)*8
+            // Equivalent to reading dword at (offset & ~3) then shifting to align the requested byte/word
+            uint32_t (*pci_cfg_read)(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
         };
 
         // Access to the API table (placed by the kernel at a fixed address)
@@ -45,6 +50,8 @@ namespace kos {
         void listroot();
     void listdir(const int8_t* path);
     void listdir_ex(const int8_t* path, uint32_t flags);
+    // Clear text screen from apps
+    void clear();
     // Accessor used by filesystem printers to customize listing output
     uint32_t CurrentListFlags();
 
@@ -56,6 +63,11 @@ namespace kos {
         // Minimal printf-like output
         void vprintf(const int8_t* fmt, va_list ap);
         void printf(const int8_t* fmt, ...);
+
+        // Optional kernel-side helper wrappers (for kernel code)
+        static inline uint32_t pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
+            return table()->pci_cfg_read ? table()->pci_cfg_read(bus, device, function, offset) : 0xFFFFFFFFu;
+        }
 
     // Kernel-side utilities exposed here for convenience so users can include a single header
     void SetArgs(int argc, const int8_t** argv, const int8_t* cmdline);

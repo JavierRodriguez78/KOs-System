@@ -15,6 +15,7 @@ namespace kos { namespace sys {
     void puts(const int8_t* s) { if (table_raw()->puts) table_raw()->puts(s); }
     void hex(uint8_t v) { if (table_raw()->hex) table_raw()->hex(v); }
     void listroot() { if (table_raw()->listroot) table_raw()->listroot(); }
+    void clear() { if (table_raw()->clear) table_raw()->clear(); }
 
     int32_t argc() { return (table_raw()->get_argc) ? table_raw()->get_argc() : 0; }
     const int8_t* argv(int32_t index) { return (table_raw()->get_arg) ? table_raw()->get_arg(index) : nullptr; }

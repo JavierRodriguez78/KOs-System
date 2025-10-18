@@ -93,6 +93,9 @@ void ThreadedShell::Start() {
         shell_thread_id = current ? current->task_id : 0;
     }
     
+    // Initialize working directory to filesystem root
+    kos::sys::SetCwd((const int8_t*)"/");
+
     ShowWelcome();
     MainLoop();
 }

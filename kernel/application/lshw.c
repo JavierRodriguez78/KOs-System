@@ -74,17 +74,7 @@ static void print_cpuid_info(void) {
 }
 
 static inline uint32_t pci_config_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
-    uint32_t id = 0x80000000u |
-                  ((uint32_t)bus << 16) |
-                  ((uint32_t)device << 11) |
-                  ((uint32_t)function << 8) |
-                  (offset & 0xFC);
-    // Write to CONFIG_ADDRESS (0xCF8) and read CONFIG_DATA (0xCFC)
-    __asm__ __volatile__("outl %0, %1" :: "a"(id), "Nd"((uint16_t)0xCF8));
-    uint32_t val; __asm__ __volatile__("inl %1, %0" : "=a"(val) : "Nd"((uint16_t)0xCFC));
-    // Align to byte offset inside dword
-    uint8_t shift = (offset & 3) * 8;
-    return val >> shift;
+    return kos_pci_cfg_read(bus, device, function, offset);
 }
 
 static void print_pci_devices(void) {

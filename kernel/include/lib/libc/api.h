@@ -1,31 +1,11 @@
+// Deprecated compatibility header
+// Historically defined a partial ApiTableC and a separate API surface.
+// To avoid ABI/layout mismatches with applications, this header now
+// forwards to the authoritative libc stdio API, which defines the full
+// ApiTableC with the correct field order and inline wrappers.
 #ifndef KOS_LIBC_API_H
 #define KOS_LIBC_API_H
 
-#include <lib/libc/stdint.h>
-#include <stdarg.h>
+#include <lib/libc/stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct ApiTableC {
-    void (*putc)(int8_t c);
-    void (*puts)(const int8_t* s);
-    void (*hex)(uint8_t v);
-    void (*listroot)();
-} ApiTableC;
-
-ApiTableC* kos_sys_table(void);
-void kos_putc(int8_t c);
-void kos_puts(const int8_t* s);
-void kos_hex(uint8_t v);
-void kos_listroot(void);
-
-void kos_vprintf(const int8_t* fmt, va_list ap);
-void kos_printf(const int8_t* fmt, ...);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif // KOS_LIBC_API_H

@@ -9,7 +9,7 @@ static void print_usage(void) {
 
 void app_ls(void) {
     // Default to current working directory if available, else root
-    const int8_t* path = 0;
+    const int8_t* path = 0; // explicit user-specified path (or NULL)
     uint32_t flags = 0; // KOS_LS_FLAG_LONG | KOS_LS_FLAG_ALL
     int32_t argc = kos_argc();
     // Parse options
@@ -24,16 +24,28 @@ void app_ls(void) {
         break; // first non-option
     }
     if (i < argc) path = kos_argv(i);
-    if (!path) { path = kos_cwd(); if (!path || path[0] == 0) path = (const int8_t*)"/"; }
-    if (path[0] == '/' && path[1] == 0) {
-        kos_puts((const int8_t*)"Listing /:\n");
-        kos_listroot();
-        return;
+
+    // For display, compute what directory we're listing. If no explicit path, show CWD.
+    const int8_t* display = path;
+    if (!display || !display[0]) {
+        display = kos_cwd();
+        if (!display || !display[0]) display = (const int8_t*)"/";
     }
-    kos_puts((const int8_t*)"Listing: ");
-    kos_puts(path);
-    kos_puts((const int8_t*)"\n");
-    kos_listdir_ex(path, flags);
+    // Special-case root for a nicer header
+    if (display[0] == '/' && display[1] == 0) {
+        kos_puts((const int8_t*)"Listing /:\n");
+    } else {
+        kos_puts((const int8_t*)"Listing: ");
+        kos_puts(display);
+        kos_puts((const int8_t*)"\n");
+    }
+
+    // Let the kernel resolve CWD by passing NULL when no path explicitly provided
+    if (path && path[0]) {
+        kos_listdir_ex(path, flags);
+    } else {
+        kos_listdir_ex(0, flags);
+    }
 }
 
 #ifndef APP_EMBED
