@@ -191,13 +191,20 @@ add_custom_command(
                 echo 'Using mtools to populate disk'; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/BIN || true; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/HOME || true; \
+                MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC || true; \
                 MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/bin/*.elf ::/BIN || true; \
+                if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ::/ETC/ || true; \
+                fi; \
             else \
                 echo 'mtools unavailable; using loop-mount (sudo)'; \
                 mkdir -p ${KOS_ROOT_DIR}/.diskmnt; \
                 sudo mount -o loop ${DISK_IMG} ${KOS_ROOT_DIR}/.diskmnt; \
-                sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/BIN ${KOS_ROOT_DIR}/.diskmnt/HOME; \
+                sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/BIN ${KOS_ROOT_DIR}/.diskmnt/HOME ${KOS_ROOT_DIR}/.diskmnt/ETC; \
                 sudo cp ${KOS_ROOT_DIR}/disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
+                if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
+                    sudo cp ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/; \
+                fi; \
                 sync; \
                 sudo umount ${KOS_ROOT_DIR}/.diskmnt; \
                 rmdir ${KOS_ROOT_DIR}/.diskmnt; \

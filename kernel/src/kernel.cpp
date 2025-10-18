@@ -24,6 +24,9 @@
 #include <process/thread_manager.hpp>
 #include <process/timer.hpp>
 #include <console/threaded_shell.hpp>
+#include <services/service_manager.hpp>
+#include <services/banner_service.hpp>
+#include <services/time_service.hpp>
 
 
 using namespace kos;
@@ -35,6 +38,7 @@ using namespace kos::fs;
 using namespace kos::memory;
 using namespace kos::gfx;
 using namespace kos::process;
+using namespace kos::services;
 
 
 class MouseToConsole: public MouseEventHandler
@@ -128,6 +132,10 @@ static FAT16 g_fs16_p1m(&g_ata_p1m);
 static FAT16 g_fs16_p1s(&g_ata_p1s);
 
 Filesystem* g_fs_ptr = 0;
+
+// Global service instances (file-scope to avoid thread-safe static guards)
+static BannerService g_banner_service;
+static TimeService g_time_service;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
@@ -289,6 +297,12 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     if (!g_fs_ptr) {
         Logger::Log("No filesystem mounted; continuing without disk");
     }
+
+    // Register built-in services and start them based on configuration
+    ServiceManager::Register(&g_banner_service);
+    ServiceManager::Register(&g_time_service);
+    ServiceManager::InitAndStart();
+    ServiceAPI::StartManagerThread();
 
     // Built-in commands removed; rely on /bin/<cmd>.elf execution
 
