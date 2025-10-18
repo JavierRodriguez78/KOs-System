@@ -76,7 +76,6 @@ add_custom_command(TARGET kernel_bin POST_BUILD
 add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
-    ${KOS_ROOT_DIR}/src/lib/newdelete_kernel.cpp
     ${KOS_ROOT_DIR}/src/drivers/vga.cpp
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR})
@@ -110,9 +109,10 @@ add_app(memtest)
 add_app(pwd)
 add_app(cd)
 add_app(free)
+add_app(lshw)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
@@ -160,14 +160,14 @@ add_custom_target(qemu-vvfat
 )
 
 add_custom_target(debug
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -s -S -m 512
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(gdb
     COMMAND ${CMAKE_COMMAND} -E echo ">>> Start Qemu in Debug && GDB mode..."
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -s -S &
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S &
     COMMAND sleep 1
     COMMAND gdb -x ${KOS_ROOT_DIR}/.gdbinit
     DEPENDS iso

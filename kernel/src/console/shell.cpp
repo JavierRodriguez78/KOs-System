@@ -491,6 +491,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
     tty.Write("  gfxinfo        - Show framebuffer info (if available)\n");
     tty.Write("  gfxinit        - Initialize graphics: clear and draw logo\n");
     tty.Write("  gfxclear [hex] - Clear framebuffer to RRGGBB (default black)\n");
+        tty.Write("  lshw           - Hardware info: CPU, memory, PCI\n");
         
         
         tty.Write("  ps             - Show scheduler statistics\n");

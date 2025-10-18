@@ -364,6 +364,32 @@ free.elf/fast:
 .PHONY : free.elf/fast
 
 #=============================================================================
+# Target rules for targets named lshw_obj
+
+# Build rule for target.
+lshw_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lshw_obj
+.PHONY : lshw_obj
+
+# fast build rule for target.
+lshw_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lshw_obj.dir/build.make kernel/cmake/CMakeFiles/lshw_obj.dir/build
+.PHONY : lshw_obj/fast
+
+#=============================================================================
+# Target rules for targets named lshw.elf
+
+# Build rule for target.
+lshw.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lshw.elf
+.PHONY : lshw.elf
+
+# fast build rule for target.
+lshw.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lshw.elf.dir/build.make kernel/cmake/CMakeFiles/lshw.elf.dir/build
+.PHONY : lshw.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -501,6 +527,7 @@ help:
 	@echo "... iso"
 	@echo "... kernel_bin"
 	@echo "... ls.elf"
+	@echo "... lshw.elf"
 	@echo "... memtest.elf"
 	@echo "... mkdir.elf"
 	@echo "... pwd.elf"
@@ -513,6 +540,7 @@ help:
 	@echo "... hello_obj"
 	@echo "... kernel_objs"
 	@echo "... ls_obj"
+	@echo "... lshw_obj"
 	@echo "... memtest_obj"
 	@echo "... mkdir_obj"
 	@echo "... pwd_obj"

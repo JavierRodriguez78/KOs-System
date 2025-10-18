@@ -9,5 +9,6 @@ void app_mkdir(void);
 void app_cd(void);
 void app_pwd(void);
 void app_free(void);
+void app_lshw(void);
 
 #endif // KOS_APPLICATION_APP_H
