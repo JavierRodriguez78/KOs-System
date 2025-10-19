@@ -2,13 +2,15 @@
 #define  __KOS__DRIVERS__KEYBOARD_H
 
 #include <common/types.hpp>
-#include <hardware/interrupts.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <hardware/port.hpp>
 #include <drivers/driver.hpp>
 #include <console/tty.hpp>
 
 using namespace kos::common;
 using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::interrupts;
 using namespace kos::console;
 
 namespace kos

@@ -1,5 +1,6 @@
 #include <process/timer.hpp>
 #include <process/scheduler.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <console/logger.hpp>
 #include <console/tty.hpp>
 

@@ -1,6 +1,7 @@
 #include <common/types.hpp>
 #include <memory/gdt.hpp>
-#include <hardware/interrupts.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <hardware/pci.hpp>
 #include <drivers/driver.hpp>
 #include <drivers/keyboard.hpp>

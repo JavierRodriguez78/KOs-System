@@ -1,7 +1,6 @@
 #ifndef __KOS__HARDWARE__PCI_H
 #define __KOS__HARDWARE__PCI_H
 
-#include <hardware/interrupts.hpp>
 #include <hardware/port.hpp>
 #include <drivers/driver.hpp>
 #include <common/types.hpp>

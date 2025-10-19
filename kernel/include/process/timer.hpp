@@ -2,7 +2,7 @@
 #define __KOS__PROCESS__TIMER_H
 
 #include <common/types.hpp>
-#include <hardware/interrupts.hpp>
+#include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <hardware/port.hpp>
 
 using namespace kos::common;

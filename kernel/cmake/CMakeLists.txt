@@ -14,6 +14,7 @@ set (KOS_INCLUDE_DIR "${KOS_ROOT_DIR}/include")
 # Includes
 include_directories(
     ${KOS_INCLUDE_DIR}
+    ${KOS_ROOT_DIR} # Allow includes like <arch/x86/...>
 )
 
 # Global compile flags mirroring the Makefile
@@ -36,6 +37,12 @@ file(GLOB_RECURSE KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/*.cpp
 )
 
+# Arch-specific sources (not under src/)
+set(ARCH_X86_SOURCES
+    ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_manager.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_handler.cpp
+)
+
 # Exclude deprecated demos and commands
 list(REMOVE_ITEM KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/process/pipe_demo.cpp
@@ -46,9 +53,10 @@ list(REMOVE_ITEM KERNEL_CPP_SOURCES
 add_library(kernel_objs OBJECT
     ${KERNEL_CPP_SOURCES}
     ${KERNEL_ASM_SOURCES}
+    ${ARCH_X86_SOURCES}
 )
 target_compile_options(kernel_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
-target_include_directories(kernel_objs PRIVATE ${KOS_INCLUDE_DIR})
+target_include_directories(kernel_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 
 # Link kernel using ld and the provided linker script
 set(KERNEL_BIN ${CMAKE_BINARY_DIR}/mykernel.bin)
@@ -78,7 +86,7 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
     ${KOS_ROOT_DIR}/src/drivers/vga.cpp
 )
-target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR})
+target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
 
 function(add_app NAME)
@@ -131,9 +139,9 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E rm -rf ${ISO_DIR}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ISO_GRUB_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy ${KERNEL_BIN} ${ISO_BOOT_DIR}/mykernel.bin
-    COMMAND ${CMAKE_COMMAND} -E copy ${KOS_ROOT_DIR}/boot/grub-cmake.cfg ${ISO_GRUB_DIR}/grub.cfg
+    COMMAND ${CMAKE_COMMAND} -E copy ${KOS_ROOT_DIR}/arch/x86/boot/grub-cmake.cfg ${ISO_GRUB_DIR}/grub.cfg
     COMMAND grub-mkrescue --output=${ISO_OUT} ${ISO_DIR}
-    DEPENDS kernel_bin ${KOS_ROOT_DIR}/boot/grub-cmake.cfg
+    DEPENDS kernel_bin ${KOS_ROOT_DIR}/arch/x86/boot/grub-cmake.cfg
     VERBATIM
 )
 
