@@ -29,6 +29,7 @@
 #include <services/service_manager.hpp>
 #include <services/banner_service.hpp>
 #include <services/time_service.hpp>
+#include <services/filesystem_service.hpp>
 
 
 using namespace kos;
@@ -140,6 +141,7 @@ Filesystem* g_fs_ptr = 0;
 static BannerService g_banner_service;
 static TimeService g_time_service;
 static kos::services::WindowManager g_window_manager;
+static FilesystemService g_fs_service;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
@@ -303,6 +305,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     }
 
     // Register built-in services and start them based on configuration
+    // Filesystem must start early so other services relying on /ETC config can work
+    ServiceManager::Register(&g_fs_service);
     ServiceManager::Register(&g_banner_service);
     ServiceManager::Register(&g_time_service);
     ServiceManager::Register(&g_window_manager);
