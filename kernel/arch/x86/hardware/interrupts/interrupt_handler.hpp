@@ -7,8 +7,19 @@
 #include <common/types.hpp>
 #include <hardware/port.hpp>
 #include <console/tty.hpp>
+
 // Forward declaration to avoid circular include with interrupt_manager.hpp
-namespace kos { namespace arch { namespace x86 { namespace hardware { namespace interrupts { class InterruptManager; }}}}}
+namespace kos { 
+    namespace arch { 
+        namespace x86 { 
+            namespace hardware { 
+                namespace interrupts { 
+                    class InterruptManager; 
+                }
+            }
+        }
+    }
+}
 
 using namespace kos::common;
 using namespace kos::console;

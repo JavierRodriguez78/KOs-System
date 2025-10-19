@@ -1,0 +1,26 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/process/thread_manager.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/sync.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/scheduler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/pipe.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/logger.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/hardware/rtc.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/string.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/shell.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/string.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/stdint.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/keyboard.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/gdt.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/hardware/port.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_handler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/driver.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/threaded_shell.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/heap.hpp

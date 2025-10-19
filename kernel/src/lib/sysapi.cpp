@@ -4,6 +4,7 @@
 #include <memory/pmm.hpp>
 #include <memory/heap.hpp>
 #include <memory/paging.hpp>
+#include <arch/x86/hardware/pci/peripheral_component_inter_constants.hpp>
 
 using namespace kos::sys;
 using namespace kos::console;
@@ -20,16 +21,17 @@ extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
 extern "C" void sys_clear() { TTY::Clear(); }
-// PCI config read helper: mediates access to 0xCF8/0xCFC
+// PCI config read helper: mediates access to PCI config space ports
 extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
-    uint32_t id = 0x80000000u |
-                  ((uint32_t)bus << 16) |
-                  ((uint32_t)device << 11) |
-                  ((uint32_t)function << 8) |
-                  (offset & 0xFC);
+    using namespace kos::arch::x86::hardware::pci;
+    uint32_t id = PCI_ENABLE_BIT |
+                  (((uint32_t)bus & PCI_BUS_MASK) << PCI_BUS_SHIFT) |
+                  (((uint32_t)device & PCI_DEVICE_MASK) << PCI_DEVICE_SHIFT) |
+                  (((uint32_t)function & PCI_FUNCTION_MASK) << PCI_FUNCTION_SHIFT) |
+                  (offset & PCI_REGISTER_MASK);
     uint32_t val;
-    asm volatile ("outl %0, %1" :: "a"(id), "Nd"((uint16_t)0xCF8));
-    asm volatile ("inl %1, %0" : "=a"(val) : "Nd"((uint16_t)0xCFC));
+    asm volatile ("outl %0, %1" :: "a"(id), "Nd"(PCI_COMMAND_PORT));
+    asm volatile ("inl %1, %0" : "=a"(val) : "Nd"(PCI_DATA_PORT));
     uint8_t shift = (offset & 3) * 8;
     return val >> shift;
 }

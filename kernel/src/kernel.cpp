@@ -2,7 +2,7 @@
 #include <memory/gdt.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
-#include <hardware/pci.hpp>
+#include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>
 #include <drivers/driver.hpp>
 #include <drivers/keyboard.hpp>
 #include <drivers/mouse.hpp>
@@ -35,6 +35,7 @@ using namespace kos;
 using namespace kos::common;
 using namespace kos::drivers;
 using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::pci;
 using namespace kos::console;
 using namespace kos::fs;
 using namespace kos::memory;

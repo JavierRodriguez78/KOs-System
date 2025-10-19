@@ -30,7 +30,7 @@ set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -m32")
 # Kernel sources
 set(KERNEL_ASM_SOURCES
     ${KOS_SRC_DIR}/loader.s
-    ${KOS_SRC_DIR}/hardware/interruptstubs.s
+    ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interruptstubs.s
 )
 
 file(GLOB_RECURSE KERNEL_CPP_SOURCES
@@ -41,6 +41,8 @@ file(GLOB_RECURSE KERNEL_CPP_SOURCES
 set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_manager.cpp
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_handler.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp
 )
 
 # Exclude deprecated demos and commands
