@@ -234,6 +234,188 @@ ls.elf/fast:
 .PHONY : ls.elf/fast
 
 #=============================================================================
+# Target rules for targets named mkdir_obj
+
+# Build rule for target.
+mkdir_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 mkdir_obj
+.PHONY : mkdir_obj
+
+# fast build rule for target.
+mkdir_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/mkdir_obj.dir/build.make kernel/cmake/CMakeFiles/mkdir_obj.dir/build
+.PHONY : mkdir_obj/fast
+
+#=============================================================================
+# Target rules for targets named mkdir.elf
+
+# Build rule for target.
+mkdir.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 mkdir.elf
+.PHONY : mkdir.elf
+
+# fast build rule for target.
+mkdir.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/mkdir.elf.dir/build.make kernel/cmake/CMakeFiles/mkdir.elf.dir/build
+.PHONY : mkdir.elf/fast
+
+#=============================================================================
+# Target rules for targets named memtest_obj
+
+# Build rule for target.
+memtest_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 memtest_obj
+.PHONY : memtest_obj
+
+# fast build rule for target.
+memtest_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/memtest_obj.dir/build.make kernel/cmake/CMakeFiles/memtest_obj.dir/build
+.PHONY : memtest_obj/fast
+
+#=============================================================================
+# Target rules for targets named memtest.elf
+
+# Build rule for target.
+memtest.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 memtest.elf
+.PHONY : memtest.elf
+
+# fast build rule for target.
+memtest.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/memtest.elf.dir/build.make kernel/cmake/CMakeFiles/memtest.elf.dir/build
+.PHONY : memtest.elf/fast
+
+#=============================================================================
+# Target rules for targets named pwd_obj
+
+# Build rule for target.
+pwd_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pwd_obj
+.PHONY : pwd_obj
+
+# fast build rule for target.
+pwd_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/pwd_obj.dir/build.make kernel/cmake/CMakeFiles/pwd_obj.dir/build
+.PHONY : pwd_obj/fast
+
+#=============================================================================
+# Target rules for targets named pwd.elf
+
+# Build rule for target.
+pwd.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pwd.elf
+.PHONY : pwd.elf
+
+# fast build rule for target.
+pwd.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/pwd.elf.dir/build.make kernel/cmake/CMakeFiles/pwd.elf.dir/build
+.PHONY : pwd.elf/fast
+
+#=============================================================================
+# Target rules for targets named cd_obj
+
+# Build rule for target.
+cd_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cd_obj
+.PHONY : cd_obj
+
+# fast build rule for target.
+cd_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/cd_obj.dir/build.make kernel/cmake/CMakeFiles/cd_obj.dir/build
+.PHONY : cd_obj/fast
+
+#=============================================================================
+# Target rules for targets named cd.elf
+
+# Build rule for target.
+cd.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cd.elf
+.PHONY : cd.elf
+
+# fast build rule for target.
+cd.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/cd.elf.dir/build.make kernel/cmake/CMakeFiles/cd.elf.dir/build
+.PHONY : cd.elf/fast
+
+#=============================================================================
+# Target rules for targets named free_obj
+
+# Build rule for target.
+free_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 free_obj
+.PHONY : free_obj
+
+# fast build rule for target.
+free_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/free_obj.dir/build.make kernel/cmake/CMakeFiles/free_obj.dir/build
+.PHONY : free_obj/fast
+
+#=============================================================================
+# Target rules for targets named free.elf
+
+# Build rule for target.
+free.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 free.elf
+.PHONY : free.elf
+
+# fast build rule for target.
+free.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/free.elf.dir/build.make kernel/cmake/CMakeFiles/free.elf.dir/build
+.PHONY : free.elf/fast
+
+#=============================================================================
+# Target rules for targets named lshw_obj
+
+# Build rule for target.
+lshw_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lshw_obj
+.PHONY : lshw_obj
+
+# fast build rule for target.
+lshw_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lshw_obj.dir/build.make kernel/cmake/CMakeFiles/lshw_obj.dir/build
+.PHONY : lshw_obj/fast
+
+#=============================================================================
+# Target rules for targets named lshw.elf
+
+# Build rule for target.
+lshw.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lshw.elf
+.PHONY : lshw.elf
+
+# fast build rule for target.
+lshw.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lshw.elf.dir/build.make kernel/cmake/CMakeFiles/lshw.elf.dir/build
+.PHONY : lshw.elf/fast
+
+#=============================================================================
+# Target rules for targets named clear_obj
+
+# Build rule for target.
+clear_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clear_obj
+.PHONY : clear_obj
+
+# fast build rule for target.
+clear_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear_obj.dir/build.make kernel/cmake/CMakeFiles/clear_obj.dir/build
+.PHONY : clear_obj/fast
+
+#=============================================================================
+# Target rules for targets named clear.elf
+
+# Build rule for target.
+clear.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clear.elf
+.PHONY : clear.elf
+
+# fast build rule for target.
+clear.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear.elf.dir/build.make kernel/cmake/CMakeFiles/clear.elf.dir/build
+.PHONY : clear.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -311,6 +493,45 @@ gdb/fast:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/gdb.dir/build.make kernel/cmake/CMakeFiles/gdb.dir/build
 .PHONY : gdb/fast
 
+#=============================================================================
+# Target rules for targets named diskimg
+
+# Build rule for target.
+diskimg: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 diskimg
+.PHONY : diskimg
+
+# fast build rule for target.
+diskimg/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/diskimg.dir/build.make kernel/cmake/CMakeFiles/diskimg.dir/build
+.PHONY : diskimg/fast
+
+#=============================================================================
+# Target rules for targets named docs
+
+# Build rule for target.
+docs: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 docs
+.PHONY : docs
+
+# fast build rule for target.
+docs/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/docs.dir/build.make kernel/cmake/CMakeFiles/docs.dir/build
+.PHONY : docs/fast
+
+#=============================================================================
+# Target rules for targets named docs-clean
+
+# Build rule for target.
+docs-clean: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 docs-clean
+.PHONY : docs-clean
+
+# fast build rule for target.
+docs-clean/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/docs-clean.dir/build.make kernel/cmake/CMakeFiles/docs-clean.dir/build
+.PHONY : docs-clean/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -320,20 +541,37 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... apps"
+	@echo "... cd.elf"
+	@echo "... clear.elf"
 	@echo "... debug"
+	@echo "... diskimg"
+	@echo "... docs"
+	@echo "... docs-clean"
 	@echo "... echo.elf"
+	@echo "... free.elf"
 	@echo "... gdb"
 	@echo "... hello.elf"
 	@echo "... iso"
 	@echo "... kernel_bin"
 	@echo "... ls.elf"
+	@echo "... lshw.elf"
+	@echo "... memtest.elf"
+	@echo "... mkdir.elf"
+	@echo "... pwd.elf"
 	@echo "... qemu"
 	@echo "... qemu-vvfat"
 	@echo "... app_support_objs"
+	@echo "... cd_obj"
+	@echo "... clear_obj"
 	@echo "... echo_obj"
+	@echo "... free_obj"
 	@echo "... hello_obj"
 	@echo "... kernel_objs"
 	@echo "... ls_obj"
+	@echo "... lshw_obj"
+	@echo "... memtest_obj"
+	@echo "... mkdir_obj"
+	@echo "... pwd_obj"
 .PHONY : help
 
 

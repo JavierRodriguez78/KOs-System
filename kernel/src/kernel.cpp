@@ -15,6 +15,7 @@
 #include <fs/filesystem.hpp>
 #include <lib/stdio.hpp>
 #include <graphics/framebuffer.hpp>
+#include <services/window_manager.hpp>
 #include <memory/memory.hpp>
 #include <memory/pmm.hpp>
 #include <memory/paging.hpp>
@@ -136,6 +137,7 @@ Filesystem* g_fs_ptr = 0;
 // Global service instances (file-scope to avoid thread-safe static guards)
 static BannerService g_banner_service;
 static TimeService g_time_service;
+static kos::services::WindowManager g_window_manager;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
@@ -301,6 +303,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     // Register built-in services and start them based on configuration
     ServiceManager::Register(&g_banner_service);
     ServiceManager::Register(&g_time_service);
+    ServiceManager::Register(&g_window_manager);
     ServiceManager::InitAndStart();
     ServiceAPI::StartManagerThread();
 

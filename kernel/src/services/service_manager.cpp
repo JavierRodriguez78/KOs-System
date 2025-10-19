@@ -60,12 +60,17 @@ void ServiceManager::ApplyConfig() {
         return;
     }
 
-    // Try to read /etc/services.cfg (FAT is typically uppercase, but we normalize path handling in FS)
+    // Try to read /etc/services.cfg. On FAT the short names are typically uppercase.
     const int8_t* path = (const int8_t*)"/etc/services.cfg";
     const uint32_t MAX_CFG = 4096;
     uint8_t* buf = (uint8_t*)Heap::Alloc(MAX_CFG);
     if (!buf) return;
     int32_t n = fs->ReadFile(path, buf, MAX_CFG - 1);
+    if (n <= 0) {
+        // Fallback to uppercase path for FAT root dirs
+        path = (const int8_t*)"/ETC/SERVICES.CFG";
+        n = fs->ReadFile(path, buf, MAX_CFG - 1);
+    }
     if (n <= 0) {
         Heap::Free(buf);
         Logger::Log("ServiceManager: No config found; using defaults");
