@@ -87,4 +87,221 @@ namespace kos { namespace sys {
         va_list ap; va_start(ap, fmt); vprintf(fmt, ap); va_end(ap);
     }
 
+    // --- Minimal keyboard input consumer for scanf ---
+    // Simple single-consumer buffer to accumulate keystrokes offered
+    // by the keyboard handler via TryDeliverKey. We avoid dynamic
+    // allocation and keep it tiny.
+    static volatile bool g_input_active = false; // scanf is waiting
+    static volatile int g_buf_head = 0;
+    static volatile int g_buf_tail = 0;
+    static int8_t g_input_buf[256];
+
+    // Offer a character from keyboard path; returns true if consumed.
+    bool TryDeliverKey(int8_t c) {
+        if (!g_input_active) return false;
+        // Handle backspace locally: remove last buffered char if any
+        if (c == '\b' || c == 127) {
+            if (g_buf_head != g_buf_tail) {
+                // Decrement tail (mod 256)
+                g_buf_tail = (g_buf_tail - 1) & 0xFF;
+                // Erase on screen
+                puts((const int8_t*)"\b \b");
+            }
+            return true; // consumed
+        }
+        if (c == '\r') c = '\n';
+        int next_tail = (g_buf_tail + 1) & 0xFF;
+        if (next_tail == g_buf_head) {
+            // Buffer full; drop key so shell can handle (unlikely)
+            return false;
+        }
+        g_input_buf[g_buf_tail] = c;
+        g_buf_tail = next_tail;
+        // Echo printable and newline
+        if ((c >= 32 && c <= 126) || c == '\n') putc(c);
+        return true;
+    }
+
+    // Blocking-like get next char for scanf; integrates with shell echoes
+    static int getch_blocking() {
+        // Wait until a char is available. If threading exists, yield.
+        while (g_buf_head == g_buf_tail) {
+            // Busy-wait fallback; if scheduler API is available, try to yield lightly
+            // We cannot include scheduler headers here; keep it tight.
+        }
+        int8_t c = g_input_buf[g_buf_head];
+        g_buf_head = (g_buf_head + 1) & 0xFF;
+        return (int)(uint8_t)c;
+    }
+
+    // Helper: peek without consuming
+    static int peekch() {
+        if (g_buf_head == g_buf_tail) return -1;
+        return (int)(uint8_t)g_input_buf[g_buf_head];
+    }
+
+    // Helper: consume one char if available
+    static int popch() {
+        if (g_buf_head == g_buf_tail) return -1;
+        int8_t c = g_input_buf[g_buf_head];
+        g_buf_head = (g_buf_head + 1) & 0xFF;
+        return (int)(uint8_t)c;
+    }
+
+    // Basic scanners
+    static void skip_ws() {
+        int ch;
+        while ((ch = peekch()) != -1) {
+            if (ch==' ' || ch=='\t' || ch=='\n' || ch=='\r' || ch=='\v' || ch=='\f') {
+                popch();
+            } else break;
+        }
+    }
+
+    static bool scan_int_signed(int32_t* out) {
+        skip_ws();
+        int ch = peekch();
+        int sign = 1; int32_t val = 0; bool any=false;
+        if (ch == '+' || ch == '-') { sign = (ch=='-') ? -1 : 1; popch(); }
+        while ((ch = peekch()) != -1) {
+            if (ch >= '0' && ch <= '9') { val = val*10 + (ch - '0'); any=true; popch(); }
+            else break;
+        }
+        if (!any) return false;
+        *out = val * sign;
+        return true;
+    }
+
+    static bool scan_uint(uint32_t* out) {
+        skip_ws();
+        int ch; uint32_t val=0; bool any=false;
+        while ((ch = peekch()) != -1) {
+            if (ch >= '0' && ch <= '9') { val = val*10 + (ch - '0'); any=true; popch(); }
+            else break;
+        }
+        if (!any) return false;
+        *out = val; return true;
+    }
+
+    static uint8_t hexval(int ch) {
+        if (ch >= '0' && ch <= '9') return (uint8_t)(ch - '0');
+        if (ch >= 'a' && ch <= 'f') return (uint8_t)(10 + (ch - 'a'));
+        if (ch >= 'A' && ch <= 'F') return (uint8_t)(10 + (ch - 'A'));
+        return 0xFF;
+    }
+
+    static bool scan_hex(uint32_t* out) {
+        skip_ws();
+        int ch = peekch();
+        // Optional 0x/0X
+        if (ch == '0') {
+            popch();
+            int ch2 = peekch();
+            if (ch2 == 'x' || ch2 == 'X') { popch(); }
+            else { // it was just 0
+                *out = 0; return true;
+            }
+        }
+        uint32_t val=0; bool any=false;
+        while ((ch = peekch()) != -1) {
+            uint8_t v = hexval(ch);
+            if (v != 0xFF) { val = (val<<4) | v; any=true; popch(); }
+            else break;
+        }
+        if (!any) return false;
+        *out = val; return true;
+    }
+
+    static bool scan_str(int8_t* dst, int maxLen) {
+        if (!dst || maxLen <= 0) return false;
+        skip_ws();
+        int ch; int n=0; bool any=false;
+        while ((ch = peekch()) != -1) {
+            if (ch==' '||ch=='\t'||ch=='\n'||ch=='\r'||ch=='\v'||ch=='\f') break;
+            if (n < maxLen-1) { dst[n++] = (int8_t)ch; any=true; }
+            popch();
+        }
+        if (n < maxLen) dst[n] = 0; else dst[maxLen-1]=0;
+        return any;
+    }
+
+    static bool scan_char(int8_t* out) {
+        int ch = getch_blocking();
+        if (ch < 0) return false;
+        *out = (int8_t)ch; return true;
+    }
+
+    int scanf(const int8_t* fmt, ...) {
+        if (!fmt) return 0;
+        // Reset buffer pointers and mark active
+        g_buf_head = g_buf_tail = 0; g_input_active = true;
+
+        int assigned = 0;
+        va_list ap; va_start(ap, fmt);
+        for (int i=0; fmt[i]; ++i) {
+            int8_t f = fmt[i];
+            if (f == ' ' || f=='\t' || f=='\n') {
+                // skip whitespace in input
+                skip_ws();
+                continue;
+            }
+            if (f != '%') {
+                // Literal match: consume and require it
+                int ch = getch_blocking();
+                if (ch != f) { break; }
+                continue;
+            }
+            // Format specifier
+            ++i; char spec = fmt[i];
+            if (!spec) break;
+            switch (spec) {
+                case 'd': {
+                    int32_t* p = va_arg(ap, int32_t*);
+                    int32_t v;
+                    if (scan_int_signed(&v)) { if (p) *p = v; assigned++; }
+                    else { goto done; }
+                } break;
+                case 'u': {
+                    uint32_t* p = va_arg(ap, uint32_t*);
+                    uint32_t v;
+                    if (scan_uint(&v)) { if (p) *p = v; assigned++; }
+                    else { goto done; }
+                } break;
+                case 'x': case 'X': {
+                    uint32_t* p = va_arg(ap, uint32_t*);
+                    uint32_t v;
+                    if (scan_hex(&v)) { if (p) *p = v; assigned++; }
+                    else { goto done; }
+                } break;
+                case 's': {
+                    int8_t* dst = va_arg(ap, int8_t*);
+                    // No width parsing for simplicity; assume caller provided enough space
+                    if (scan_str(dst, 128)) { assigned++; }
+                    else { goto done; }
+                } break;
+                case 'c': {
+                    int8_t* p = va_arg(ap, int8_t*);
+                    int8_t ch;
+                    if (scan_char(&ch)) { if (p) *p = ch; assigned++; }
+                    else { goto done; }
+                } break;
+                case '%': {
+                    int ch = getch_blocking();
+                    if (ch != '%') { goto done; }
+                } break;
+                default:
+                    // Unsupported spec - treat as literal
+                    {
+                        int ch = getch_blocking();
+                        if (ch != spec) { goto done; }
+                    }
+                    break;
+            }
+        }
+    done:
+        va_end(ap);
+        g_input_active = false;
+        return assigned;
+    }
+
 }}

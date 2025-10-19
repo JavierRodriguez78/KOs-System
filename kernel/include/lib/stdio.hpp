@@ -64,6 +64,15 @@ namespace kos {
         void vprintf(const int8_t* fmt, va_list ap);
         void printf(const int8_t* fmt, ...);
 
+    // Minimal keyboard-backed scanf
+    // Supports %d, %u, %x/%X, %s, %c with basic whitespace handling.
+    // Returns number of successfully assigned items.
+    int scanf(const int8_t* fmt, ...);
+
+    // Internal: keyboard handler can offer a key to stdio input consumer.
+    // Returns true if the key was consumed by an active scanf/read, false otherwise.
+    bool TryDeliverKey(int8_t c);
+
         // Optional kernel-side helper wrappers (for kernel code)
         static inline uint32_t pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
             return table()->pci_cfg_read ? table()->pci_cfg_read(bus, device, function, offset) : 0xFFFFFFFFu;

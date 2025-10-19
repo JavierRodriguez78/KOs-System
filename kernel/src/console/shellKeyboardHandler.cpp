@@ -2,6 +2,7 @@
 #include <console/threaded_shell.hpp>
 #include <console/tty.hpp>
 #include <drivers/keyboard.hpp>
+#include <lib/stdio.hpp>
 
 
 using namespace kos::common;    
@@ -20,6 +21,10 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 extern Shell* g_shell;
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
+    // First, see if stdio scanf is actively reading input
+    if (kos::sys::TryDeliverKey(c)) {
+        return; // consumed by scanf/input reader
+    }
     // Priority: threaded shell if available, otherwise fallback to original shell
     if (kos::console::g_threaded_shell) {
         kos::console::g_threaded_shell->OnKeyPressed(c);
