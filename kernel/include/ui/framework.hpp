@@ -19,6 +19,18 @@ namespace kos {
         // Render all windows using the compositor
         void RenderAll();
 
+        // Hit-testing: returns topmost window under (x,y). onTitleBar=true when point is on the title bar area
+        bool HitTest(int x, int y, uint32_t& outWindowId, bool& onTitleBar);
+
+        // Bring a window to front (top of z-order)
+        bool BringToFront(uint32_t windowId);
+
+        // Set window position
+        bool SetWindowPos(uint32_t windowId, uint32_t nx, uint32_t ny);
+
+        // Query window properties
+        bool GetWindowDesc(uint32_t windowId, kos::gfx::WindowDesc& outDesc);
+
     }
 
 }

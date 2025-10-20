@@ -4,6 +4,7 @@
 #include <memory/paging.hpp>
 #include <memory/memory.hpp>
 #include <memory/heap.hpp>
+#include <ui/input.hpp>
 
 using namespace kos::gfx;
 using namespace kos::lib;
@@ -100,6 +101,22 @@ void Compositor::EndFrame() {
     if (!s_ready) return;
     // Copy backbuffer to framebuffer (mapped at s_fbBase)
     if (!s_fbBase) return;
+    // Optionally warp slightly from screen edges for a smoother experience
+    // (no-op right now; we just render the cursor)
+    // Draw a very simple mouse cursor (10x16) into backbuffer before presenting
+    int mx, my; uint8_t mb; kos::ui::GetMouseState(mx, my, mb);
+    const uint32_t stride = s_width;
+    // Triangle cursor pattern
+    for (int j = 0; j < 16; ++j) {
+        for (int i = 0; i <= j && i < 10; ++i) {
+            int x = mx + i; int y = my + j;
+            if (x >= 0 && y >= 0 && (uint32_t)x < s_width && (uint32_t)y < s_height) {
+                uint32_t color = 0xFFFFFFFFu; // white
+                if (mb & 1u) color = 0xFFFFA500u; // left pressed: orange
+                s_backbuf[y * stride + x] = color;
+            }
+        }
+    }
     for (uint32_t y = 0; y < s_height; ++y) {
         uint32_t* dst = (uint32_t*)(s_fbBase + y * s_pitchBytes);
         uint32_t* src = s_backbuf + y * s_width;

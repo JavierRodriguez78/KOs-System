@@ -7,6 +7,7 @@
 #include <drivers/keyboard.hpp>
 #include <drivers/mouse.hpp>
 #include <drivers/vga.hpp>
+#include <ui/input.hpp>
 #include <console/tty.hpp>
 #include <console/logger.hpp>
 #include <console/shell.hpp>
@@ -86,6 +87,21 @@ public:
 
 };
 
+// Mouse handler that routes events into the UI input system when graphics is available
+class MouseToUI : public MouseEventHandler {
+public:
+    virtual void OnActivate() override {}
+    virtual void OnMouseMove(int xoffset, int yoffset) override {
+        if (kos::gfx::IsAvailable()) { kos::ui::MouseMove(xoffset, yoffset); }
+    }
+    virtual void OnMouseDown(uint8_t button) override {
+        if (kos::gfx::IsAvailable()) { kos::ui::MouseButtonDown(button); }
+    }
+    virtual void OnMouseUp(uint8_t button) override {
+        if (kos::gfx::IsAvailable()) { kos::ui::MouseButtonUp(button); }
+    }
+};
+static MouseToUI g_mouse_ui_handler;
 
 // Simple no-op handler for IDE primary IRQ (IRQ14 -> vector hardwareInterruptOffset+14)
 class IDEIRQHandler : public InterruptHandler {
@@ -185,7 +201,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
         }
     }
 
-    Logger::SetDebugEnabled(false); // Default to false; can be enabled via cmdline
+    // Do not forcibly disable debug after parsing cmdline; default is off unless enabled above
     Logger::Log("KOS Kernel starting...");
     Logger::LogStatus("Initializing core subsystems", true);
 
@@ -242,9 +258,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     KeyboardDriver keyboard(&interrupts, &skbhandler);
     drvManager.AddDriver(&keyboard);
 
-    // MouseToConsole mhandler;
-    // MouseDriver mouse(&interrupts, &mhandler);
-    // drvManager.AddDriver(&mouse);
+    // In graphics mode, route mouse events to UI input
+    MouseDriver mouse(&interrupts, &g_mouse_ui_handler);
+    drvManager.AddDriver(&mouse);
 
     PeripheralComponentIntercontroller PCIController;
     PCIController.SelectDrivers(&drvManager);
@@ -260,6 +276,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     Logger::LogStatus("Timer IRQ0 enabled", true);
     interrupts.EnableIRQ(1);
     Logger::LogStatus("Keyboard IRQ1 enabled", true);
+    // Enable mouse IRQ (PS/2 auxiliary device)
+    interrupts.EnableIRQ(12);
+    Logger::LogStatus("Mouse IRQ12 enabled", true);
     
     // Enable preemptive scheduling now that interrupts are active
     g_scheduler->EnablePreemption();

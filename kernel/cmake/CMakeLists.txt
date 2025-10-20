@@ -159,26 +159,26 @@ add_custom_command(TARGET iso POST_BUILD
 # QEMU helpers
 # -----------------------
 add_custom_target(qemu
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso diskimg
     USES_TERMINAL
 )
 
 add_custom_target(qemu-vvfat
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(debug
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(gdb
     COMMAND ${CMAKE_COMMAND} -E echo ">>> Start Qemu in Debug && GDB mode..."
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S &
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio &
     COMMAND sleep 1
     COMMAND gdb -x ${KOS_ROOT_DIR}/.gdbinit
     DEPENDS iso
