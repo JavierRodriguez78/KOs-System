@@ -1,6 +1,7 @@
 #include <lib/stdio.hpp>
 #include <console/tty.hpp>
 #include <fs/filesystem.hpp>
+#include <lib/elfloader.hpp>
 #include <memory/pmm.hpp>
 #include <memory/heap.hpp>
 #include <memory/paging.hpp>
@@ -79,6 +80,28 @@ extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
     }
     g_fs_ptr->ListDir(absBuf);
     g_list_flags = 0;
+}
+
+// Read a file into buffer; returns bytes read or -1
+extern "C" int32_t sys_readfile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
+    if (!g_fs_ptr || !path || !outBuf || maxLen == 0) return -1;
+    return g_fs_ptr->ReadFile(path, outBuf, maxLen);
+}
+
+// Execute an ELF32 by path with argv; returns 0 on success
+extern "C" int32_t sys_exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
+    if (!g_fs_ptr || !path) return -1;
+    // Load file
+    static uint8_t elfBuf[256*1024];
+    int32_t n = g_fs_ptr->ReadFile(path, elfBuf, sizeof(elfBuf));
+    if (n <= 0) {
+        TTY::Write((const int8_t*)"exec: not found: "); TTY::Write(path); TTY::PutChar('\n');
+        return -1;
+    }
+    // Pass args and cmdline into API table
+    kos::sys::SetArgs(argc, argv, cmdline ? cmdline : path);
+    if (!kos::lib::ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n)) return -1;
+    return 0;
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     if (g_fs_ptr) {
@@ -183,7 +206,7 @@ extern "C" int32_t sys_chdir(const int8_t* path) {
     normalize_abs_path(path ? path : (const int8_t*)"/", cwd, absBuf, (int)sizeof(absBuf));
     // Validate directory exists using filesystem if available
     if (g_fs_ptr && !g_fs_ptr->DirExists(absBuf)) {
-        TTY::Write((const int8_t*)"cd: path not found\n");
+        // Do not print here; let the caller decide how to report errors
         return -1;
     }
     kos::sys::SetCwd(absBuf);
@@ -269,4 +292,7 @@ extern "C" void InitSysApi() {
     t->get_heap_used = &sys_get_heap_used;
     // Hardware helpers
     t->pci_cfg_read = &sys_pci_cfg_read;
+    // New APIs
+    t->readfile = &sys_readfile;
+    t->exec = &sys_exec;
 }

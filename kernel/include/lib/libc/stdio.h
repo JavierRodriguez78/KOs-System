@@ -32,6 +32,10 @@ typedef struct ApiTableC {
     uint32_t (*get_heap_used)();
     // PCI config space read helper (kernel mediates privileged I/O)
     uint32_t (*pci_cfg_read)(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+    // Read file into buffer. Returns bytes read or -1 on error.
+    int32_t (*readfile)(const int8_t* path, uint8_t* outBuf, uint32_t maxLen);
+    // Execute ELF image by path with argv and full cmdline. Returns 0 on success, negative on failure.
+    int32_t (*exec)(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -71,6 +75,18 @@ static inline uint32_t kos_get_heap_used(void) { return kos_sys_table()->get_hea
 static inline uint32_t kos_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
     if (kos_sys_table()->pci_cfg_read) return kos_sys_table()->pci_cfg_read(bus, device, function, offset);
     return 0xFFFFFFFFu;
+}
+
+// File read wrapper for apps
+static inline int32_t kos_readfile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
+    if (kos_sys_table()->readfile) return kos_sys_table()->readfile(path, outBuf, maxLen);
+    return -1;
+}
+
+// Exec wrapper for apps
+static inline int32_t kos_exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
+    if (kos_sys_table()->exec) return kos_sys_table()->exec(path, argc, argv, cmdline);
+    return -1;
 }
 
 // Flags for kos_listdir_ex

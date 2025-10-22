@@ -1,0 +1,9 @@
+# KOS init.d rc.local
+# One command per line. Lines starting with # are comments.
+# Each command executes /bin/<name>.elf with optional arguments.
+
+clear
+
+echo Booting KOS... welcome!
+
+hello

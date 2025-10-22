@@ -416,6 +416,32 @@ clear.elf/fast:
 .PHONY : clear.elf/fast
 
 #=============================================================================
+# Target rules for targets named init_obj
+
+# Build rule for target.
+init_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 init_obj
+.PHONY : init_obj
+
+# fast build rule for target.
+init_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init_obj.dir/build.make kernel/cmake/CMakeFiles/init_obj.dir/build
+.PHONY : init_obj/fast
+
+#=============================================================================
+# Target rules for targets named init.elf
+
+# Build rule for target.
+init.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 init.elf
+.PHONY : init.elf
+
+# fast build rule for target.
+init.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init.elf.dir/build.make kernel/cmake/CMakeFiles/init.elf.dir/build
+.PHONY : init.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -551,6 +577,7 @@ help:
 	@echo "... free.elf"
 	@echo "... gdb"
 	@echo "... hello.elf"
+	@echo "... init.elf"
 	@echo "... iso"
 	@echo "... kernel_bin"
 	@echo "... ls.elf"
@@ -566,6 +593,7 @@ help:
 	@echo "... echo_obj"
 	@echo "... free_obj"
 	@echo "... hello_obj"
+	@echo "... init_obj"
 	@echo "... kernel_objs"
 	@echo "... ls_obj"
 	@echo "... lshw_obj"

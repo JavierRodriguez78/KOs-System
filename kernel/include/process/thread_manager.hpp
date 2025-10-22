@@ -33,6 +33,9 @@ namespace kos {
             const char* description;
             uint32_t parent_id;         // Parent thread ID
             bool is_system;             // System vs user thread
+            // Lightweight process identifier for user processes (separate from scheduler thread IDs)
+            // 0 means no PID assigned (system threads or helper threads)
+            uint32_t pid;
             ThreadEntry* next;          // Linked list
         };
 
@@ -73,6 +76,12 @@ namespace kos {
             uint32_t CreateUserThread(void* entry_point, uint32_t stack_size,
                                     ThreadPriority priority, const char* description,
                                     uint32_t parent_id = 0);
+            // Spawn a user process from an ELF path in a dedicated user thread and assign a PID.
+            // Returns thread_id; optionally writes the assigned PID to out_pid.
+            // argv0/name may be null, in which case the basename of path is used.
+            uint32_t SpawnProcess(const char* elf_path, const char* name = nullptr, uint32_t* out_pid = nullptr,
+                                  uint32_t stack_size = 8192, ThreadPriority priority = PRIORITY_NORMAL,
+                                  uint32_t parent_id = 0);
             bool TerminateThread(uint32_t thread_id);
             bool SuspendThread(uint32_t thread_id);
             bool ResumeThread(uint32_t thread_id);
@@ -89,6 +98,8 @@ namespace kos {
             void PrintAllThreads() const;
             void PrintSystemThreads() const;
             void PrintUserThreads() const;
+            // Look up PID for a given thread id (0 if none)
+            uint32_t GetPid(uint32_t thread_id);
             
             // System threads
             Thread* GetMainThread() const { return main_thread; }
@@ -131,6 +142,10 @@ namespace kos {
                                       uint32_t stack_size = 4096,
                                       ThreadPriority priority = PRIORITY_HIGH,
                                       const char* description = "system-thread");
+            // Create a user process from an ELF path and assign PID (PID 1 reserved for first spawn).
+            uint32_t SpawnProcess(const char* elf_path, const char* name = nullptr, uint32_t* out_pid = nullptr,
+                                  uint32_t stack_size = 8192, ThreadPriority priority = PRIORITY_NORMAL,
+                                  uint32_t parent_id = 0);
             
             bool TerminateThread(uint32_t thread_id);
             uint32_t ExecuteCommand(const char* command);

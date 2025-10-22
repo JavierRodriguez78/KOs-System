@@ -121,9 +121,10 @@ add_app(cd)
 add_app(free)
 add_app(lshw)
 add_app(clear)
+add_app(init)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
@@ -207,6 +208,10 @@ add_custom_command(
                 if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
                     MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ::/ETC/ || true; \
                 fi; \
+                MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC/INIT.D || true; \
+                if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/init.d/* ::/ETC/INIT.D/ 2>/dev/null || true; \
+                fi; \
             else \
                 echo 'mtools unavailable; using loop-mount (sudo)'; \
                 mkdir -p ${KOS_ROOT_DIR}/.diskmnt; \
@@ -215,6 +220,10 @@ add_custom_command(
                 sudo cp ${KOS_ROOT_DIR}/disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
                 if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
                     sudo cp ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/; \
+                fi; \
+                sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D; \
+                if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
+                    sudo cp ${KOS_ROOT_DIR}/disk/etc/init.d/* ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D/ 2>/dev/null || true; \
                 fi; \
                 sync; \
                 sudo umount ${KOS_ROOT_DIR}/.diskmnt; \

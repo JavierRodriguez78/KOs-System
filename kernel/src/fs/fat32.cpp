@@ -607,51 +607,53 @@ bool FAT32::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
 int32_t FAT32::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
     if (!mountedFlag) return -1;
     if (!path || path[0] != '/') return -1;
-    // Support /<NAME>.<EXT> and /bin/<NAME>.<EXT>
-    const int8_t* p = path + 1;
+
+    // Traverse arbitrary path components from root cluster
     uint32_t dirCluster = bpb.rootCluster;
-    // Check optional "bin/" prefix and traverse into BIN directory
-    if (p[0]=='b' && p[1]=='i' && p[2]=='n' && p[3]=='/') {
-        // Locate BIN directory entry in root and use its start cluster
-        uint32_t binCl = 0, binSize = 0;
-        const int8_t binName[4] = {'B','I','N',0};
-        if (FindShortNameInDirCluster(bpb.rootCluster, binName, binCl, binSize)) {
-            if (binCl >= 2) dirCluster = binCl;
+    const int8_t* p = path + 1; // skip leading '/'
+    int8_t comp[13];
+    while (*p) {
+        // Extract next component
+        int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+        comp[ci] = 0;
+        if (*p == '/') ++p; // skip '/'
+        if (ci == 0) continue; // skip redundant slashes
+
+        // Uppercase for 8.3 short-name compare
+        for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+
+        // Determine if last component
+        const int8_t* q = p; while (*q == '/') ++q; bool isLast = (*q == 0);
+
+        uint32_t entryCl = 0, entrySize = 0;
+        if (!FindShortNameInDirCluster(dirCluster, comp, entryCl, entrySize)) return -1; // component not found
+
+        if (!isLast) {
+            // Must be a directory; descend (we don't validate attr here due to short helper, but paths are created as dirs by Mkdir)
+            dirCluster = entryCl;
+            continue;
         }
-        p += 4;
+
+        // Last component: treat as file and read its FAT chain
+        uint32_t toRead = (entrySize < maxLen) ? entrySize : maxLen;
+        uint32_t bytesRead = 0;
+        uint8_t* dst = outBuf;
+        uint32_t cluster = entryCl;
+        uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+        uint8_t* clBuf = (uint8_t*)0x30000; // scratch
+        while (cluster >= 2 && cluster < 0x0FFFFFF8 && bytesRead < toRead) {
+            if (!ReadCluster(cluster, clBuf)) break;
+            uint32_t chunk = bytesPerCluster;
+            if (bytesRead + chunk > toRead) chunk = toRead - bytesRead;
+            kos::lib::String::memmove(dst + bytesRead, clBuf, chunk);
+            bytesRead += chunk;
+            uint32_t next = NextCluster(cluster);
+            if (next >= 0x0FFFFFF8 || next == 0) break;
+            cluster = next;
+        }
+        return (int32_t)bytesRead;
     }
-    // p now points to short name like HELLO.ELF or hello.elf
-    // FAT short names are uppercase; normalize p to uppercase for comparison
-    int8_t name83[13];
-    uint32_t ni = 0;
-    while (p[ni] && ni < sizeof(name83) - 1) {
-        int8_t c = p[ni];
-        if (c >= 'a' && c <= 'z') c = c - ('a' - 'A');
-        name83[ni] = c;
-        ++ni;
-    }
-    name83[ni] = 0;
-    uint32_t startCluster = 0, fileSize = 0;
-    if (!FindShortNameInDirCluster(dirCluster, name83, startCluster, fileSize)) return -1;
-    // Read FAT chain
-    uint32_t toRead = (fileSize < maxLen) ? fileSize : maxLen;
-    uint32_t bytesRead = 0;
-    uint8_t* dst = outBuf;
-    uint32_t cluster = startCluster;
-    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
-    uint8_t* clBuf = (uint8_t*)0x30000; // scratch
-    while (cluster >= 2 && cluster < 0x0FFFFFF8 && bytesRead < toRead) {
-        if (!ReadCluster(cluster, clBuf)) break;
-        uint32_t chunk = bytesPerCluster;
-        if (bytesRead + chunk > toRead) chunk = toRead - bytesRead;
-    kos::lib::String::memmove(dst + bytesRead, clBuf, chunk);
-        bytesRead += chunk;
-        uint32_t next = NextCluster(cluster);
-        if (next >= 0x0FFFFFF8) break;
-        if (next == 0) break; // safety
-        cluster = next;
-    }
-    return (int32_t)bytesRead;
+    return -1; // empty path
 }
 
 int32_t FAT32::Mkdir(const int8_t* path, int32_t parents) {

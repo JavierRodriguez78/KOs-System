@@ -22,6 +22,7 @@ bool FilesystemService::Start() {
         (const int8_t*)"/BIN",
         (const int8_t*)"/HOME",
         (const int8_t*)"/ETC",
+        (const int8_t*)"/ETC/INIT.D",
     };
     for (unsigned i = 0; i < sizeof(dirs)/sizeof(dirs[0]); ++i) {
         if (!g_fs_ptr->DirExists(dirs[i])) {

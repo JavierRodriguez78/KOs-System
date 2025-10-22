@@ -31,6 +31,8 @@
 #include <services/banner_service.hpp>
 #include <services/time_service.hpp>
 #include <services/filesystem_service.hpp>
+#include <lib/elfloader.hpp>
+#include <application/init/service.hpp>
 
 
 using namespace kos;
@@ -158,6 +160,7 @@ static BannerService g_banner_service;
 static TimeService g_time_service;
 static kos::services::WindowManager g_window_manager;
 static FilesystemService g_fs_service;
+static kos::services::InitDService g_initd_service;
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
@@ -329,8 +332,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     ServiceManager::Register(&g_banner_service);
     ServiceManager::Register(&g_time_service);
     ServiceManager::Register(&g_window_manager);
+    ServiceManager::Register(&g_initd_service);
     ServiceManager::InitAndStart();
     ServiceAPI::StartManagerThread();
+
+    // If present, spawn /bin/init as the first userspace process (assign PID 1)
+    if (g_fs_ptr) {
+        uint32_t pid1 = 0;
+        uint32_t tid = ThreadManagerAPI::SpawnProcess("/bin/init.elf", "init", &pid1, 8192, PRIORITY_NORMAL, 0);
+        if (tid) {
+            Logger::LogKV("Kernel: spawned init (thread)", "ok");
+            Logger::LogKV("init PID", (pid1 ? "1" : "?"));
+        }
+    }
 
     // Built-in commands removed; rely on /bin/<cmd>.elf execution
 

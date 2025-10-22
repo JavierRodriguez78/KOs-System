@@ -509,38 +509,64 @@ bool FAT16::FindShortNameInDirCluster(uint32_t dirCluster, const int8_t* shortNa
 }
 
 int32_t FAT16::ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
-    if (!mounted) return -1; if (!path || path[0] != '/') return -1;
-    const int8_t* p = path + 1;
-    // optionally enter /bin
-    bool isDir=false; uint32_t binCl=0, binSz=0;
-    if (p[0]=='b' && p[1]=='i' && p[2]=='n' && p[3]=='/') {
-        const int8_t BIN[4] = {'B','I','N',0};
-        if (FindShortNameInRoot(BIN, binCl, binSz, isDir) && isDir) {
-            p += 4;
-        } else {
-            return -1;
+    if (!mounted) return -1;
+    if (!path || path[0] != '/') return -1;
+
+    // Traverse path components from root; FAT16 root is special (no cluster id)
+    const int8_t* p = path + 1; // skip leading '/'
+    bool atRoot = true;
+    uint32_t curDirCl = 0; // only valid when atRoot == false
+    int8_t comp[13];
+
+    // Extract components one by one
+    while (*p) {
+        // Read next component into comp (max 12 + nul)
+        int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+        comp[ci] = 0;
+        // Skip consecutive '/'
+        if (*p == '/') ++p;
+        if (ci == 0) continue; // ignore empty components
+
+        // Uppercase for 8.3 short-name compare
+        for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+
+        // Determine if this is the last component (file) or an intermediate directory
+        const int8_t* q = p; while (*q == '/') ++q; bool isLast = (*q == 0);
+
+        if (!isLast) {
+            // Must descend into a directory named 'comp'
+            uint32_t childCl = 0, childSz = 0; bool isDir = false; bool ok = false;
+            if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
+            else ok = FindShortNameInDirCluster(curDirCl, comp, childCl, childSz, isDir);
+            if (!ok || !isDir) return -1; // path component not found or not a directory
+            curDirCl = childCl; atRoot = false;
+            continue;
         }
+
+        // Last component: look up file entry in current directory (root or subdir)
+        uint32_t startCl = 0, fileSz = 0; bool isDir = false; bool ok = false;
+        if (atRoot) ok = FindShortNameInRoot(comp, startCl, fileSz, isDir);
+        else ok = FindShortNameInDirCluster(curDirCl, comp, startCl, fileSz, isDir);
+        if (!ok || isDir) return -1; // not found or is a directory
+
+        // Read file chain into outBuf
+        uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+        uint32_t toRead = (fileSz < maxLen) ? fileSz : maxLen;
+        uint8_t* dst = outBuf;
+        uint32_t read = 0;
+        uint8_t* clBuf = (uint8_t*)0x26000;
+        uint32_t cl = startCl;
+        while (cl >= 2 && cl < 0xFFF8 && read < toRead) {
+            if (!ReadCluster(cl, clBuf)) break;
+            uint32_t chunk = bytesPerCluster; if (read + chunk > toRead) chunk = toRead - read;
+            for (uint32_t i = 0; i < chunk; ++i) dst[read + i] = clBuf[i];
+            read += chunk;
+            uint32_t nxt = NextCluster(cl);
+            if (nxt >= 0xFFF8 || nxt == 0) break; cl = nxt;
+        }
+        return (int32_t)read;
     }
-    // uppercase
-    int8_t name83[13]; uint32_t ni=0; while(p[ni] && ni<sizeof(name83)-1){ int8_t c=p[ni]; if(c>='a'&&c<='z') c -= ('a'-'A'); name83[ni++]=c; } name83[ni]=0;
-    uint32_t startCl=0, fileSz=0; bool dir=false;
-    bool ok=false;
-    if (binCl >= 2) ok = FindShortNameInDirCluster(binCl, name83, startCl, fileSz, dir);
-    else ok = FindShortNameInRoot(name83, startCl, fileSz, dir);
-    if (!ok || dir) return -1;
-    // Read chain
-    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
-    uint32_t toRead = (fileSz < maxLen) ? fileSz : maxLen;
-    uint8_t* dst = outBuf; uint32_t read = 0; uint8_t* clBuf = (uint8_t*)0x26000; uint32_t cl=startCl;
-    while (cl >= 2 && cl < 0xFFF8 && read < toRead) {
-        if (!ReadCluster(cl, clBuf)) break;
-        uint32_t chunk = bytesPerCluster; if (read + chunk > toRead) chunk = toRead - read;
-        for (uint32_t i=0;i<chunk;++i) dst[read+i] = clBuf[i];
-        read += chunk;
-        uint32_t nxt = NextCluster(cl);
-        if (nxt >= 0xFFF8 || nxt==0) break; cl = nxt;
-    }
-    return (int32_t)read;
+    return -1; // empty path or root
 }
 
 

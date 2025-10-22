@@ -38,6 +38,11 @@ namespace kos {
             // PCI config space access (read-only): returns a 32-bit value right-shifted by (offset&3)*8
             // Equivalent to reading dword at (offset & ~3) then shifting to align the requested byte/word
             uint32_t (*pci_cfg_read)(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+
+            // New: read a file into buffer. Returns bytes read or -1 on error.
+            int32_t (*readfile)(const int8_t* path, uint8_t* outBuf, uint32_t maxLen);
+            // New: execute an ELF at path with argv and cmdline. Returns 0 on success, negative on failure.
+            int32_t (*exec)(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline);
         };
 
         // Access to the API table (placed by the kernel at a fixed address)
@@ -81,6 +86,14 @@ namespace kos {
     // Kernel-side utilities exposed here for convenience so users can include a single header
     void SetArgs(int argc, const int8_t** argv, const int8_t* cmdline);
     void SetCwd(const int8_t* path);
+
+    // Kernel-side helpers (if needed) to call into API
+    static inline int32_t readfile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
+        return table()->readfile ? table()->readfile(path, outBuf, maxLen) : -1;
+    }
+    static inline int32_t exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
+        return table()->exec ? table()->exec(path, argc, argv, cmdline) : -1;
+    }
 
     }
 }

@@ -7,7 +7,10 @@
 #include <console/threaded_shell.hpp>
 #include <drivers/keyboard.hpp>
 #include <lib/string.hpp>
+#include <lib/elfloader.hpp>
+#include <lib/sysapi.hpp>
 #include <memory/heap.hpp>
+#include <fs/filesystem.hpp>
 
 using namespace kos::process;
 using namespace kos::console;
@@ -28,7 +31,7 @@ struct CommandContext {
 ThreadManager::ThreadManager() 
     : thread_registry(nullptr), thread_count(0), system_thread_count(0), 
       user_thread_count(0), main_thread(nullptr), shell_thread(nullptr),
-      idle_thread(nullptr), threading_initialized(false) {
+    idle_thread(nullptr), threading_initialized(false) {
     
     manager_mutex = new Mutex();
 
@@ -236,6 +239,7 @@ void ThreadManager::AddThreadEntry(Thread* thread, SystemThreadType type,
     entry->description = description;
     entry->parent_id = parent_id;
     entry->is_system = is_system;
+    entry->pid = 0; // default: no PID unless assigned by SpawnProcess
     entry->next = thread_registry;
     
     thread_registry = entry;
@@ -344,6 +348,115 @@ void ThreadManager::TerminateAllThreads() {
     Logger::Log("Terminated all threads");
 }
 
+// --- User process spawning (ELF) ---
+
+// Context passed to the process trampoline
+struct ProcLaunchCtx {
+    char path[160];
+    char name[32];
+};
+
+extern kos::fs::Filesystem* g_fs_ptr;
+
+// Simple global slot to pass ProcLaunchCtx into the next spawned process thread
+namespace kos { namespace process {
+static ProcLaunchCtx* g_pl_ctx_slot = nullptr;
+ProcLaunchCtx* set_proc_launch_ctx_slot(ProcLaunchCtx* v) {
+    ProcLaunchCtx* prev = g_pl_ctx_slot;
+    g_pl_ctx_slot = v;
+    return prev;
+}
+}} // namespace kos::process
+
+static void elf_process_trampoline() {
+    // Retrieve current thread id to resolve registry entry and free context after
+    Thread* cur = g_scheduler ? g_scheduler->GetCurrentTask() : nullptr;
+    // We embedded the context pointer at the top of the stack space just before the stack base
+    // Simpler: store context in thread description via registry lookup; here, we find it by thread id
+    // For simplicity, we pass the context pointer via a static TLS-like slot
+    ProcLaunchCtx* ctx = g_pl_ctx_slot;
+    g_pl_ctx_slot = nullptr;
+    if (!ctx) {
+        Logger::Log("Spawn: missing context");
+        SchedulerAPI::ExitThread();
+        return;
+    }
+
+    const int8_t* argv0v[1];
+    const int8_t* argv0 = (const int8_t*)(ctx->name[0] ? ctx->name : ctx->path);
+    argv0v[0] = argv0;
+    kos::sys::SetArgs(1, argv0v, (const int8_t*)ctx->path);
+
+    static uint8_t elfBuf[256*1024];
+    int32_t n = g_fs_ptr ? g_fs_ptr->ReadFile((const int8_t*)ctx->path, elfBuf, sizeof(elfBuf)) : -1;
+    if (n <= 0) {
+        TTY::Write((const int8_t*)"spawn: not found: "); TTY::Write((const int8_t*)ctx->path); TTY::PutChar('\n');
+        // free ctx
+        Heap::Free(ctx);
+        SchedulerAPI::ExitThread();
+        return;
+    }
+    bool ok = kos::lib::ELFLoader::LoadAndExecute(elfBuf, (uint32_t)n);
+    // free ctx after return
+    Heap::Free(ctx);
+    (void)ok;
+    SchedulerAPI::ExitThread();
+}
+
+// PID allocator (separate from scheduler thread IDs)
+static uint32_t s_next_pid = 1;
+
+uint32_t ThreadManager::SpawnProcess(const char* elf_path, const char* name, uint32_t* out_pid,
+                                     uint32_t stack_size, ThreadPriority priority, uint32_t parent_id) {
+    if (!g_scheduler || !elf_path || !*elf_path) return 0;
+    // Prepare launch context
+    ProcLaunchCtx* ctx = (ProcLaunchCtx*)Heap::Alloc(sizeof(ProcLaunchCtx));
+    if (!ctx) return 0;
+    // Copy path and optional name
+    int i = 0; while (elf_path[i] && i < (int)sizeof(ctx->path)-1) { ctx->path[i] = elf_path[i]; ++i; } ctx->path[i] = 0;
+    ctx->name[0] = 0;
+    if (name && *name) {
+        int j = 0; while (name[j] && j < (int)sizeof(ctx->name)-1) { ctx->name[j] = name[j]; ++j; } ctx->name[j] = 0;
+    }
+
+    // Use a slot to pass ctx to the new thread just before creation
+    extern ProcLaunchCtx* set_proc_launch_ctx_slot(ProcLaunchCtx*);
+    auto prev = set_proc_launch_ctx_slot(ctx);
+    (void)prev;
+    Thread* thread = g_scheduler->CreateTask((void*)elf_process_trampoline, stack_size, priority,
+                                             (name && *name) ? name : "proc");
+    if (!thread) {
+        // clear slot and free ctx
+        (void)set_proc_launch_ctx_slot(nullptr);
+        Heap::Free(ctx);
+        return 0;
+    }
+
+    LockGuard lock(*manager_mutex);
+    // Assign PID (first spawn -> PID 1)
+    uint32_t pid = s_next_pid++;
+    AddThreadEntry(thread, THREAD_USER_PROCESS, (name && *name) ? name : "proc", parent_id, false);
+    // Set pid on the entry we just added (head of list)
+    if (thread_registry && thread_registry->thread == thread) {
+        thread_registry->pid = pid;
+    } else {
+        // Fallback: find and set
+        ThreadEntry* e = FindThreadEntry(thread->task_id);
+        if (e) e->pid = pid;
+    }
+    if (out_pid) *out_pid = pid;
+    if (Logger::IsDebugEnabled()) {
+        Logger::LogKV("Spawned process", (name && *name) ? name : elf_path);
+    }
+    return thread->task_id;
+}
+
+uint32_t ThreadManager::GetPid(uint32_t thread_id) {
+    LockGuard lock(*manager_mutex);
+    ThreadEntry* e = FindThreadEntry(thread_id);
+    return e ? e->pid : 0;
+}
+
 // System thread implementations
 
 extern "C" void kernel_main_thread() {
@@ -449,6 +562,12 @@ namespace kos::process::ThreadManagerAPI {
                                const char* description) {
         if (!g_thread_manager) return 0;
         return g_thread_manager->CreateSystemThread(entry_point, stack_size, priority, type, description);
+    }
+    
+    uint32_t SpawnProcess(const char* elf_path, const char* name, uint32_t* out_pid,
+                          uint32_t stack_size, ThreadPriority priority, uint32_t parent_id) {
+        if (!g_thread_manager) return 0;
+        return g_thread_manager->SpawnProcess(elf_path, name, out_pid, stack_size, priority, parent_id);
     }
     
     bool TerminateThread(uint32_t thread_id) {
