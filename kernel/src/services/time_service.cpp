@@ -1,15 +1,16 @@
 #include <services/time_service.hpp>
 #include <console/logger.hpp>
-#include <hardware/rtc.hpp>
+#include <arch/x86/hardware/rtc/rtc.hpp>
 
 using namespace kos::console;
+using namespace kos::arch::x86::hardware::rtc;
 
 namespace kos { 
     namespace services {
 
 void TimeService::Tick() {
     if (!Logger::IsDebugEnabled()) return;
-    kos::hardware::DateTime dt; kos::hardware::RTC::Read(dt);
+    DateTime dt; RTC::Read(dt);
     Logger::Log("[time service] tick");
 }
 

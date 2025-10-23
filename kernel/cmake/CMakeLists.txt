@@ -43,6 +43,8 @@ set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_handler.cpp
     ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp
     ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp
+    # CMOS Real-Time Clock implementation (needed by logger/time_service)
+    ${KOS_ROOT_DIR}/arch/x86/hardware/rtc/rtc.cpp
 )
 
 # Exclude deprecated demos and commands
