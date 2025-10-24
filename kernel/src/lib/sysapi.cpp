@@ -84,8 +84,13 @@ extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
 
 // Read a file into buffer; returns bytes read or -1
 extern "C" int32_t sys_readfile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
-    if (!g_fs_ptr || !path || !outBuf || maxLen == 0) return -1;
-    return g_fs_ptr->ReadFile(path, outBuf, maxLen);
+    if (!g_fs_ptr || !outBuf || maxLen == 0) return -1;
+    // Resolve relative path against current working directory and normalize
+    int8_t absBuf[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    const int8_t* in = (path && path[0]) ? path : (const int8_t*)"/";
+    normalize_abs_path(in, cwd, absBuf, (int)sizeof(absBuf));
+    return g_fs_ptr->ReadFile(absBuf, outBuf, maxLen);
 }
 
 // Execute an ELF32 by path with argv; returns 0 on success

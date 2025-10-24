@@ -3,7 +3,7 @@
 #include <drivers/keyboard.hpp>
 using namespace kos::common;
 using namespace kos::drivers;
-using namespace kos::hardware;
+
 
 
 KeyboardEventHandler::KeyboardEventHandler()

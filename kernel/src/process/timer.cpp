@@ -5,7 +5,6 @@
 #include <console/tty.hpp>
 
 using namespace kos::process;
-using namespace kos::hardware;
 using namespace kos::console;
 
 // PIT implementation

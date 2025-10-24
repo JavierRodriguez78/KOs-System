@@ -3,11 +3,12 @@
 
 #include <common/types.hpp>
 #include <drivers/blockdevice.hpp>
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port8bit.hpp>  
+#include <arch/x86/hardware/port/port16bit.hpp>
 
 using namespace kos::common;
 using namespace kos::drivers;
-using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::port;
 
 namespace kos { 
     namespace drivers {

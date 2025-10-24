@@ -1,10 +1,10 @@
 #include <arch/x86/hardware/rtc/rtc.hpp>
 #include <arch/x86/hardware/rtc/rtc_constants.hpp>
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port8bit.hpp>
 
 using namespace kos::common;
 using namespace kos::arch::x86::hardware::rtc;
-using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::port;
 
 // CMOS ports
 static Port8Bit cmosAddress(CMOS_ADDRESS_PORT);

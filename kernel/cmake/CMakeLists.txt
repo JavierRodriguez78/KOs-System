@@ -43,6 +43,12 @@ set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_handler.cpp
     ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp
     ${KOS_ROOT_DIR}/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp
+    # x86 I/O port access implementations (required by many drivers)
+    ${KOS_ROOT_DIR}/arch/x86/hardware/port/port.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/port/port8bit.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/port/port8bitslow.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/port/port16bit.cpp
+    ${KOS_ROOT_DIR}/arch/x86/hardware/port/port32bit.cpp
     # CMOS Real-Time Clock implementation (needed by logger/time_service)
     ${KOS_ROOT_DIR}/arch/x86/hardware/rtc/rtc.cpp
 )
@@ -124,9 +130,10 @@ add_app(free)
 add_app(lshw)
 add_app(clear)
 add_app(init)
+add_app(cat)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

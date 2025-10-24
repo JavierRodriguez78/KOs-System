@@ -5,7 +5,7 @@
 
 #include <memory/gdt.hpp>
 #include <common/types.hpp>
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port.hpp>
 #include <console/tty.hpp>
 
 // Forward declaration to avoid circular include with interrupt_manager.hpp
@@ -23,7 +23,6 @@ namespace kos {
 
 using namespace kos::common;
 using namespace kos::console;
-using namespace kos::hardware;
 using namespace kos::arch::x86::hardware::interrupts;
 
 namespace kos

@@ -3,10 +3,10 @@
 
 #include <common/types.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
-#include <hardware/port.hpp>
+
 
 using namespace kos::common;
-using namespace kos::hardware;
+
 
 namespace kos {
     namespace process {

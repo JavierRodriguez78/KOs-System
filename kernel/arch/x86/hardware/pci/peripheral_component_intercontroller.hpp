@@ -4,7 +4,7 @@
 #define __KOS__ARCH__X86__HARDWARE__PCI__PERIPHERALCOMPONENTINTERCONTROLLER_H
 
 
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port32bit.hpp>
 #include <drivers/driver.hpp>
 #include <common/types.hpp>
 #include <console/tty.hpp>
@@ -12,7 +12,7 @@
 
 using namespace kos::common;
 using namespace kos::drivers;
-using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::port;
 using namespace kos::console;
 
 namespace kos

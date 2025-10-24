@@ -2,7 +2,6 @@
 #include <drivers/ata_constants.hpp>
 
 using namespace kos::drivers;
-using namespace kos::hardware;
 using namespace kos::common;
 
 ATADriver::ATADriver(ATADriver::Bus bus, ATADriver::Drive drive)

@@ -7,7 +7,8 @@
 
 #include <memory/gdt.hpp>
 #include <common/types.hpp>
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port.hpp>
+#include <arch/x86/hardware/port/port8bitslow.hpp>
 #include <console/tty.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_constants.hpp>
 
@@ -27,7 +28,7 @@ namespace kos {
 
 using namespace kos::common;
 using namespace kos::console;
-using namespace kos::hardware;
+using namespace kos::arch::x86::hardware::port;
 
 
 namespace kos

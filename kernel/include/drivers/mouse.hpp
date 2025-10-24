@@ -3,12 +3,13 @@
 
 #include <common/types.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
-#include <hardware/port.hpp>
+#include <arch/x86/hardware/port/port.hpp>
+#include <arch/x86/hardware/port/port8bit.hpp>
 #include <drivers/driver.hpp>
 
 using namespace kos::common;
-using namespace kos::hardware;
 using namespace kos::arch::x86::hardware::interrupts;
+using namespace kos::arch::x86::hardware::port;
 
 namespace kos{
     namespace drivers{

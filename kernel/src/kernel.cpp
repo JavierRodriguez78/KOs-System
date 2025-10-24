@@ -38,7 +38,6 @@
 using namespace kos;
 using namespace kos::common;
 using namespace kos::drivers;
-using namespace kos::hardware;
 using namespace kos::arch::x86::hardware::pci;
 using namespace kos::console;
 using namespace kos::fs;

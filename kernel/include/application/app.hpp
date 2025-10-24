@@ -7,5 +7,6 @@ extern "C" void app_ls();
 extern "C" void app_mkdir();
 extern "C" void app_pwd();
 extern "C" void app_clear();
+extern "C" void app_cat();
 
 #endif // KOS_INCLUDE_APPLICATION_APP_HPP
