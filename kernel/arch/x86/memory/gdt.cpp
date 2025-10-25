@@ -1,17 +1,17 @@
-//View GlobalDescritorTable https://wiki.osdev.org/Global_Descriptor_Table
+//View GlobalDescriptorTable https://wiki.osdev.org/Global_Descriptor_Table
 
-#include "memory/gdt.hpp"
+#include <arch/x86/memory/gdt.hpp>
+#include <arch/x86/memory/gdt_constants.hpp>
 
 
-using namespace kos;
 using namespace kos::common;
+using namespace kos::arch::x86::memory;
 
 
-GlobalDescriptorTable::GlobalDescriptorTable()
-    : nullSegmentSelector(0, 0, 0),
+GlobalDescriptorTable::GlobalDescriptorTable():nullSegmentSelector(0, 0, 0),
         unusedSegmentSelector(0, 0, 0),
-        codeSegmentSelector(0, 64*1024*1024, 0x9A),
-        dataSegmentSelector(0, 64*1024*1024, 0x92)
+        codeSegmentSelector(0, GDT_SEGMENT_LIMIT, GDT_CODE_SEGMENT_TYPE),
+        dataSegmentSelector(0, GDT_SEGMENT_LIMIT, GDT_DATA_SEGMENT_TYPE)
 {
     uint32_t i[2];
     i[1] = (uint32_t)this;
@@ -37,10 +37,10 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint3
 {
     uint8_t* target = (uint8_t*)this;
 
-    if (limit <= 65536)
+    if (limit <= GDT_LIMIT_16BIT_MAX)
     {
         // 16-bit address space
-        target[6] = 0x40;
+        target[6] = GDT_FLAG_16BIT;
     }
     else
     {
@@ -55,12 +55,12 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint3
         // compensate this by decreasing a higher bit (and might have up to
         // 4095 wasted bytes behind the used memory)
 
-        if((limit & 0xFFF) != 0xFFF)
-            limit = (limit >> 12)-1;
+        if((limit & GDT_PAGE_MASK) != GDT_PAGE_MASK)
+            limit = (limit >> GDT_PAGE_SHIFT)-1;
         else
-            limit = limit >> 12;
+            limit = limit >> GDT_PAGE_SHIFT;
 
-        target[6] = 0xC0;
+        target[6] = GDT_FLAG_32BIT;
     }
 
     // Encode the limit
@@ -98,8 +98,8 @@ uint32_t GlobalDescriptorTable::SegmentDescriptor::Limit()
     result = (result << 8) + target[1];
     result = (result << 8) + target[0];
 
-    if((target[6] & 0xC0) == 0xC0)
-        result = (result << 12) | 0xFFF;
+    if((target[6] & GDT_FLAG_32BIT) == GDT_FLAG_32BIT)
+        result = (result << GDT_PAGE_SHIFT) | GDT_PAGE_MASK;
 
     return result;
 }

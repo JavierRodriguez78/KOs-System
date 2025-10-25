@@ -51,6 +51,8 @@ set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/port/port32bit.cpp
     # CMOS Real-Time Clock implementation (needed by logger/time_service)
     ${KOS_ROOT_DIR}/arch/x86/hardware/rtc/rtc.cpp
+    # x86 GDT implementation (memory management)
+    ${KOS_ROOT_DIR}/arch/x86/memory/gdt.cpp
 )
 
 # Exclude deprecated demos and commands

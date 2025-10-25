@@ -5,13 +5,15 @@
 #ifndef __KOS__ARCH__X86__HARDWARE__INTERRUPTS__INTERRUPTMANAGER_H
 #define __KOS__ARCH__X86__HARDWARE__INTERRUPTS__INTERRUPTMANAGER_H
 
-#include <memory/gdt.hpp>
+
 #include <common/types.hpp>
 #include <arch/x86/hardware/port/port.hpp>
 #include <arch/x86/hardware/port/port8bitslow.hpp>
 #include <console/tty.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_constants.hpp>
+#include <arch/x86/memory/gdt.hpp>
 
+using namespace kos::arch::x86::memory;
 
 // Forward declare to break header cycle; full definition in interrupt_handler.hpp
 namespace kos { 
@@ -156,7 +158,7 @@ namespace kos
                             * @param hardwareInterruptOffset Offset for hardware interrupts
                             * @param globalDescriptorTable Pointer to GDT
                             */
-                            InterruptManager(uint16_t hardwareInterruptOffset, kos::GlobalDescriptorTable* globalDescriptorTable);
+                            InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescriptorTable* globalDescriptorTable);
                             
                             /**
                              * @brief Destructor: Cleans up resources   

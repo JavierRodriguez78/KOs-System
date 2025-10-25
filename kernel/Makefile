@@ -442,6 +442,32 @@ init.elf/fast:
 .PHONY : init.elf/fast
 
 #=============================================================================
+# Target rules for targets named cat_obj
+
+# Build rule for target.
+cat_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cat_obj
+.PHONY : cat_obj
+
+# fast build rule for target.
+cat_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/cat_obj.dir/build.make kernel/cmake/CMakeFiles/cat_obj.dir/build
+.PHONY : cat_obj/fast
+
+#=============================================================================
+# Target rules for targets named cat.elf
+
+# Build rule for target.
+cat.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cat.elf
+.PHONY : cat.elf
+
+# fast build rule for target.
+cat.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/cat.elf.dir/build.make kernel/cmake/CMakeFiles/cat.elf.dir/build
+.PHONY : cat.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -567,6 +593,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... apps"
+	@echo "... cat.elf"
 	@echo "... cd.elf"
 	@echo "... clear.elf"
 	@echo "... debug"
@@ -588,6 +615,7 @@ help:
 	@echo "... qemu"
 	@echo "... qemu-vvfat"
 	@echo "... app_support_objs"
+	@echo "... cat_obj"
 	@echo "... cd_obj"
 	@echo "... clear_obj"
 	@echo "... echo_obj"

@@ -1,5 +1,4 @@
 #include <common/types.hpp>
-#include <memory/gdt.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>

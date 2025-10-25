@@ -3,7 +3,7 @@
 #ifndef __KOS__ARCH__X86__HARDWARE__INTERRUPTS__INTERRUPTHANDLER_H
 #define __KOS__ARCH__X86__HARDWARE__INTERRUPTS__INTERRUPTHANDLER_H
 
-#include <memory/gdt.hpp>
+
 #include <common/types.hpp>
 #include <arch/x86/hardware/port/port.hpp>
 #include <console/tty.hpp>
