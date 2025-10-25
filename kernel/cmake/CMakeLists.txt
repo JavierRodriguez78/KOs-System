@@ -247,6 +247,28 @@ add_custom_command(
 add_custom_target(diskimg DEPENDS ${DISK_IMG})
 
 # -----------------------
+# Optional: Convert raw disk.img to VirtualBox VDI
+# Requires: VBoxManage available in PATH
+# Usage: make vdi
+# -----------------------
+set(DISK_VDI ${KOS_ROOT_DIR}/disk.vdi)
+
+add_custom_command(
+    OUTPUT ${DISK_VDI}
+    COMMAND ${CMAKE_COMMAND} -E echo "Converting raw disk image to VDI: ${DISK_IMG} -> ${DISK_VDI}"
+    COMMAND /bin/sh -c "if command -v VBoxManage >/dev/null 2>&1; then \
+            VBoxManage convertfromraw ${DISK_IMG} ${DISK_VDI} --format VDI; \
+        else \
+            echo 'VBoxManage not found. Install VirtualBox or ensure VBoxManage is in PATH.'; \
+            exit 1; \
+        fi"
+    DEPENDS ${DISK_IMG}
+    VERBATIM
+)
+
+add_custom_target(vdi DEPENDS ${DISK_VDI})
+
+# -----------------------
 # Doxygen documentation
 # -----------------------
 find_package(Doxygen QUIET)
