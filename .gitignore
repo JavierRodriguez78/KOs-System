@@ -50,3 +50,4 @@ build/
 
 # Disk image
 /kernel/disk.img
+/kernel/disk.vdi

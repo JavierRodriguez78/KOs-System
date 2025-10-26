@@ -94,3 +94,14 @@ void* String::memset(void* s, int c, uint32_t n) {
     }
     return s;
 }
+
+
+
+int8_t* String::strncpy(int8_t* dest, const int8_t* src, uint32_t n) {
+    uint32_t i = 0;
+    for (; i < n - 1 && src[i]; ++i) {
+        dest[i] = src[i];
+    }
+    dest[i] = '\0';
+    return dest;
+}
