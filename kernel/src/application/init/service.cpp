@@ -14,7 +14,7 @@ using namespace kos::lib;
 using namespace kos::process;
 
 // Access global filesystem selected during hardware init (defined in kernel.cpp)
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 
 namespace kos { namespace services {
 
@@ -138,7 +138,7 @@ static int32_t exec_argv(const int8_t** argv, int32_t argc) {
     }
     // Load file and execute
     static uint8_t elfBuf[256*1024];
-    int32_t rn = g_fs_ptr ? g_fs_ptr->ReadFile(path, elfBuf, sizeof(elfBuf)) : -1;
+    int32_t rn = kos::fs::g_fs_ptr ? kos::fs::g_fs_ptr->ReadFile(path, elfBuf, sizeof(elfBuf)) : -1;
     if (rn <= 0) {
         TTY::Write((const int8_t*)"initd: not found: "); TTY::Write(path); TTY::PutChar('\n');
         return -1;
@@ -246,13 +246,13 @@ static void supervisor_thread() {
 // svc.NAME.restartsec=2000
 // svc.NAME.enabled=on|off
 static bool parse_services_cfg() {
-    if (!g_fs_ptr) return false;
+    if (!kos::fs::g_fs_ptr) return false;
     const uint32_t MAX_CFG = 8192;
     uint8_t* buf = (uint8_t*)kos::memory::Heap::Alloc(MAX_CFG);
     if (!buf) return false;
     int32_t n = -1; const int8_t* usedPath = nullptr;
     for (unsigned i = 0; i < sizeof(svc_cfg_paths)/sizeof(svc_cfg_paths[0]); ++i) {
-        n = g_fs_ptr->ReadFile(svc_cfg_paths[i], buf, MAX_CFG - 1);
+    n = kos::fs::g_fs_ptr->ReadFile(svc_cfg_paths[i], buf, MAX_CFG - 1);
         if (n > 0) { usedPath = svc_cfg_paths[i]; break; }
     }
     if (n <= 0) { kos::memory::Heap::Free(buf); return false; }
@@ -343,7 +343,7 @@ static bool run_rc_local() {
     int32_t n = -1;
     const int8_t* usedPath = nullptr;
     for (unsigned i = 0; i < sizeof(rc_paths)/sizeof(rc_paths[0]); ++i) {
-        n = g_fs_ptr->ReadFile(rc_paths[i], buf, MAX_RC - 1);
+    n = kos::fs::g_fs_ptr->ReadFile(rc_paths[i], buf, MAX_RC - 1);
         if (n > 0) { usedPath = rc_paths[i]; break; }
     }
     if (n <= 0) {
@@ -388,7 +388,7 @@ static bool run_rc_local() {
 }
 
 bool InitDService::Start() {
-    if (!g_fs_ptr) {
+    if (!kos::fs::g_fs_ptr) {
         // No filesystem: nothing to run
         Logger::Log("InitD: no filesystem; skipping rc.local");
         return true; // don't block boot
@@ -399,7 +399,7 @@ bool InitDService::Start() {
     bool user_init_present = false;
     {
         uint8_t test[1];
-        int32_t t = g_fs_ptr->ReadFile((const int8_t*)"/bin/init.elf", test, 1);
+    int32_t t = kos::fs::g_fs_ptr->ReadFile((const int8_t*)"/bin/init.elf", test, 1);
         user_init_present = (t > 0);
         if (user_init_present) {
             Logger::Log("InitD: /bin/init.elf present; will run services manager if configured, skipping rc.local fallback");

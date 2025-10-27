@@ -559,6 +559,19 @@ diskimg/fast:
 .PHONY : diskimg/fast
 
 #=============================================================================
+# Target rules for targets named vdi
+
+# Build rule for target.
+vdi: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdi
+.PHONY : vdi
+
+# fast build rule for target.
+vdi/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/vdi.dir/build.make kernel/cmake/CMakeFiles/vdi.dir/build
+.PHONY : vdi/fast
+
+#=============================================================================
 # Target rules for targets named docs
 
 # Build rule for target.
@@ -614,6 +627,7 @@ help:
 	@echo "... pwd.elf"
 	@echo "... qemu"
 	@echo "... qemu-vvfat"
+	@echo "... vdi"
 	@echo "... app_support_objs"
 	@echo "... cat_obj"
 	@echo "... cd_obj"

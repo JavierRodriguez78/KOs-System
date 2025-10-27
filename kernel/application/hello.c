@@ -2,6 +2,7 @@
 #include <lib/libc/stdio.h>
 #include <lib/libc/stdint.h>
 #include "app.h"
+#include "app_log.h"
 
 static void print_ascii_logo(void) {
 	const char* art[] = {
@@ -19,12 +20,12 @@ static void print_ascii_logo(void) {
 static void print_info_lines(void) {
 	const int8_t* cmd = kos_cmdline();
 	int32_t ac = kos_argc();
-	kos_printf((const int8_t*)"OS:       %s\n", (const int8_t*)"KOS");
-	kos_printf((const int8_t*)"Kernel:   %s\n", (const int8_t*)"dev");
-	kos_printf((const int8_t*)"Build:    %s %s\n", (const int8_t*)__DATE__, (const int8_t*)__TIME__);
-	kos_printf((const int8_t*)"Shell:    %s\n", (const int8_t*)"KOS Shell");
-	kos_printf((const int8_t*)"Cmdline:  %s\n", cmd ? cmd : (const int8_t*)"(none)");
-	kos_printf((const int8_t*)"Args:     %d\n", (unsigned)ac);
+	app_log((const int8_t*)"OS:       %s\n", (const int8_t*)"KOS");
+	app_log((const int8_t*)"Kernel:   %s\n", (const int8_t*)"dev");
+	app_log((const int8_t*)"Build:    %s %s\n", (const int8_t*)__DATE__, (const int8_t*)__TIME__);
+	app_log((const int8_t*)"Shell:    %s\n", (const int8_t*)"KOS Shell");
+	app_log((const int8_t*)"Cmdline:  %s\n", cmd ? cmd : (const int8_t*)"(none)");
+	app_log((const int8_t*)"Args:     %d\n", (unsigned)ac);
 }
 
 void app_hello(void) {

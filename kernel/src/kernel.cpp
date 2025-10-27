@@ -151,9 +151,20 @@ static FAT16 g_fs16_p0s(&g_ata_p0s);
 static FAT16 g_fs16_p1m(&g_ata_p1m);
 static FAT16 g_fs16_p1s(&g_ata_p1s);
 
-Filesystem* g_fs_ptr = 0;
+namespace kos {
+namespace fs {
+extern Filesystem* g_fs_ptr;
+}
+}
 
 // Global service instances (file-scope to avoid thread-safe static guards)
+
+// Stubs for C++ runtime functions required for static initialization and exit handlers
+extern "C" int __cxa_guard_acquire(char* g) { return !*g; }
+extern "C" void __cxa_guard_release(char* g) { *g = 1; }
+extern "C" void __cxa_guard_abort(char*) {}
+extern "C" int atexit(void (*)(void)) { return 0; }
+
 static BannerService g_banner_service;
 static TimeService g_time_service;
 static kos::services::WindowManager g_window_manager;

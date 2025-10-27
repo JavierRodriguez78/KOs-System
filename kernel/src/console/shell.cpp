@@ -31,7 +31,7 @@ namespace kos {
     } 
 }
 
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 
 // (logo printer now lives in src/console/logo.cpp)
 
@@ -529,9 +529,9 @@ void Shell::ExecuteCommand(const int8_t* command) {
             elfPath[baseLen+2] = 'l'; 
             elfPath[baseLen+3] = 'f'; 
             elfPath[baseLen+4] = 0;
-            if (g_fs_ptr) {
+            if (kos::fs::g_fs_ptr) {
                 static uint8_t elfBuf[256*1024]; // 256 KB buffer for apps
-                int32_t n = g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
+                int32_t n = kos::fs::g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
                 if (n > 0) {
                     tty.Write((int8_t*)"Loading ELF ");
                     tty.Write(elfPath);

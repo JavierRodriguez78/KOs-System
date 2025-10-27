@@ -5,6 +5,7 @@
 #include <services/service.hpp>
 #include <process/thread_manager.hpp>
 #include <console/logger.hpp>
+#include <fs/filesystem.hpp>
 
 using namespace kos::common;
 
@@ -53,6 +54,11 @@ namespace kos {
         namespace ServiceAPI {
             bool StartManagerThread();
         }
+
+        // Helper to access the global filesystem pointer
+    typedef kos::fs::Filesystem Filesystem;
+    // Filesystem accessor is defined at global scope, not as a member function
+    // Remove declaration from here to avoid overload ambiguity
 
     } // namespace services
 } // namespace kos

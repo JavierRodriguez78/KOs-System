@@ -5,8 +5,23 @@
 
 using namespace kos::lib;
 
+int32_t String::strcmp(const char* a, const char* b) {
+    while (*a && (*a == *b)) {
+        a++;
+        b++;
+    }
+    return (int32_t)((unsigned char)*a) - (int32_t)((unsigned char)*b);
+}
 
 
+
+char* String::strcat(char* dest, const char* src) {
+    char* d = dest;
+    while (*d) ++d; // move to end of dest
+    while (*src) *d++ = *src++;
+    *d = '\0';
+    return dest;
+}
 int32_t String::strcmp(const uint8_t* a, const uint8_t* b){
     while(*a && (*a == *b)){
         a++;

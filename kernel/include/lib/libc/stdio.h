@@ -3,6 +3,7 @@
 
 #include <lib/libc/stdint.h>
 #include <stdarg.h>
+#include <lib/libc/stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,7 +94,7 @@ static inline int32_t kos_exec(const int8_t* path, int32_t argc, const int8_t** 
 #define KOS_LS_FLAG_LONG  (1u << 0)  // Show long listing: attrs, size, date
 #define KOS_LS_FLAG_ALL   (1u << 1)  // Include hidden and dot entries
 
-static inline void kos__print_uint32(unsigned int v, unsigned int base, int upper, int width, int padZero) {
+static inline void kos__print_uint32(size_t v, size_t base, int upper, int width, int padZero) {
     char buf[32];
     const char* digs = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     int i = 0;
@@ -123,22 +124,22 @@ static inline void kos_vprintf(const int8_t* fmt, va_list ap) {
             }
             case 'd': case 'i': {
                 int v = va_arg(ap, int);
-                if (v < 0) { kos_putc('-'); kos__print_uint32((unsigned int)(-v), 10, 0, width, padZero); }
-                else kos__print_uint32((unsigned int)v, 10, 0, width, padZero);
+                if (v < 0) { kos_putc('-'); kos__print_uint32((size_t)(-v), 10, 0, width, padZero); }
+                else kos__print_uint32((size_t)v, 10, 0, width, padZero);
                 break;
             }
             case 'u': {
-                unsigned int v = va_arg(ap, unsigned int);
+                size_t v = va_arg(ap, size_t);
                 kos__print_uint32(v, 10, 0, width, padZero);
                 break;
             }
             case 'x': {
-                unsigned int v = va_arg(ap, unsigned int);
+                size_t v = va_arg(ap, size_t);
                 kos__print_uint32(v, 16, 0, width, padZero);
                 break;
             }
             case 'X': {
-                unsigned int v = va_arg(ap, unsigned int);
+                size_t v = va_arg(ap, size_t);
                 kos__print_uint32(v, 16, 1, width, padZero);
                 break;
             }

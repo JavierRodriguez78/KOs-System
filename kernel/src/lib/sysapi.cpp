@@ -11,7 +11,7 @@ using namespace kos::sys;
 using namespace kos::console;
 using namespace kos::common;
 
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 static uint32_t g_list_flags = 0; // flags used by listdir_ex
 
 // Forward declaration for path normalization used by sys_listdir and sys_chdir
@@ -20,7 +20,7 @@ static void normalize_abs_path(const int8_t* inPath, const int8_t* cwd, int8_t* 
 extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
-extern "C" void sys_listroot() { if (g_fs_ptr) g_fs_ptr->ListRoot(); }
+extern "C" void sys_listroot() { if (kos::fs::g_fs_ptr) kos::fs::g_fs_ptr->ListRoot(); }
 extern "C" void sys_clear() { TTY::Clear(); }
 // PCI config read helper: mediates access to PCI config space ports
 extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
@@ -37,7 +37,7 @@ extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t functi
     return val >> shift;
 }
 extern "C" void sys_listdir(const int8_t* path) {
-    if (!g_fs_ptr) return;
+    if (!kos::fs::g_fs_ptr) return;
     // Resolve relative path against current working directory and normalize
     int8_t absBuf[160];
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
@@ -45,21 +45,21 @@ extern "C" void sys_listdir(const int8_t* path) {
     normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
     // Treat any form of root ("/" or only slashes) as ListRoot
     bool isRoot = (absBuf[0] == '/') && (absBuf[1] == 0);
-    if (isRoot) { g_fs_ptr->ListRoot(); return; }
+    if (isRoot) { kos::fs::g_fs_ptr->ListRoot(); return; }
     // If the path doesn't exist as a directory, report a clear error up-front
-    if (!g_fs_ptr->DirExists(absBuf)) {
+    if (!kos::fs::g_fs_ptr->DirExists(absBuf)) {
         // As a safety net, if it somehow normalizes to root but DirExists disagrees, still list root
-        if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); return; }
+    if (absBuf[0] == '/' && absBuf[1] == 0) { kos::fs::g_fs_ptr->ListRoot(); return; }
         TTY::Write((const int8_t*)"ls: path not found: ");
         TTY::Write(absBuf);
         TTY::PutChar('\n');
         return;
     }
-    g_fs_ptr->ListDir(absBuf);
+    kos::fs::g_fs_ptr->ListDir(absBuf);
 }
 
 extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
-    if (!g_fs_ptr) return;
+    if (!kos::fs::g_fs_ptr) return;
     // Unify: -l implies -a, so include ALL when LONG is set
     if (flags & 1u) flags |= (1u<<1);
     g_list_flags = flags;
@@ -68,37 +68,37 @@ extern "C" void sys_listdir_ex(const int8_t* path, uint32_t flags) {
     const int8_t* use = path && path[0] ? path : cwd;
     normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
     // Root always lists root
-    if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
+    if (absBuf[0] == '/' && absBuf[1] == 0) { kos::fs::g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
     // Optional safety: if DirExists says no for '/', still list root
-    if (!g_fs_ptr->DirExists(absBuf)) {
-        if (absBuf[0] == '/' && absBuf[1] == 0) { g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
+    if (!kos::fs::g_fs_ptr->DirExists(absBuf)) {
+    if (absBuf[0] == '/' && absBuf[1] == 0) { kos::fs::g_fs_ptr->ListRoot(); g_list_flags = 0; return; }
         TTY::Write((const int8_t*)"ls: path not found: ");
         TTY::Write(absBuf);
         TTY::PutChar('\n');
         g_list_flags = 0;
         return;
     }
-    g_fs_ptr->ListDir(absBuf);
+    kos::fs::g_fs_ptr->ListDir(absBuf);
     g_list_flags = 0;
 }
 
 // Read a file into buffer; returns bytes read or -1
 extern "C" int32_t sys_readfile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) {
-    if (!g_fs_ptr || !outBuf || maxLen == 0) return -1;
+    if (!kos::fs::g_fs_ptr || !outBuf || maxLen == 0) return -1;
     // Resolve relative path against current working directory and normalize
     int8_t absBuf[160];
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     const int8_t* in = (path && path[0]) ? path : (const int8_t*)"/";
     normalize_abs_path(in, cwd, absBuf, (int)sizeof(absBuf));
-    return g_fs_ptr->ReadFile(absBuf, outBuf, maxLen);
+    return kos::fs::g_fs_ptr->ReadFile(absBuf, outBuf, maxLen);
 }
 
 // Execute an ELF32 by path with argv; returns 0 on success
 extern "C" int32_t sys_exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
-    if (!g_fs_ptr || !path) return -1;
+    if (!kos::fs::g_fs_ptr || !path) return -1;
     // Load file
     static uint8_t elfBuf[256*1024];
-    int32_t n = g_fs_ptr->ReadFile(path, elfBuf, sizeof(elfBuf));
+    int32_t n = kos::fs::g_fs_ptr->ReadFile(path, elfBuf, sizeof(elfBuf));
     if (n <= 0) {
         TTY::Write((const int8_t*)"exec: not found: "); TTY::Write(path); TTY::PutChar('\n');
         return -1;
@@ -109,13 +109,13 @@ extern "C" int32_t sys_exec(const int8_t* path, int32_t argc, const int8_t** arg
     return 0;
 }
 extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
-    if (g_fs_ptr) {
+    if (kos::fs::g_fs_ptr) {
         // Resolve relative paths against current working directory and normalize (handle ., .., duplicate slashes)
         int8_t absBuf[160];
         const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
         const int8_t* in = path && path[0] ? path : (const int8_t*)"/";
         normalize_abs_path(in, cwd, absBuf, (int)sizeof(absBuf));
-        return g_fs_ptr->Mkdir(absBuf, parents);
+    return kos::fs::g_fs_ptr->Mkdir(absBuf, parents);
     }
     TTY::Write((const int8_t*)"mkdir: no filesystem mounted\n");
     return -1;
@@ -210,7 +210,7 @@ extern "C" int32_t sys_chdir(const int8_t* path) {
     const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
     normalize_abs_path(path ? path : (const int8_t*)"/", cwd, absBuf, (int)sizeof(absBuf));
     // Validate directory exists using filesystem if available
-    if (g_fs_ptr && !g_fs_ptr->DirExists(absBuf)) {
+    if (kos::fs::g_fs_ptr && !kos::fs::g_fs_ptr->DirExists(absBuf)) {
         // Do not print here; let the caller decide how to report errors
         return -1;
     }

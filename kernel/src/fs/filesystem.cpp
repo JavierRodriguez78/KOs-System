@@ -26,4 +26,14 @@ namespace kos{
             return nullptr;
         };
     }
+
+    // Stub for WriteFile in base Filesystem (does nothing)
+    int32_t Filesystem::WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) {
+        (void)path;
+        (void)data;
+        (void)len;
+        return -1;
+    }
 }
+
+namespace kos { namespace fs { Filesystem* g_fs_ptr = nullptr; } }

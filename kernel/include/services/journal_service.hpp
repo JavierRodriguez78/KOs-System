@@ -16,17 +16,22 @@ namespace kos {
                 JournalService();
                 ~JournalService() override;
 
+                const char* Name() const override { return "JOURNAL"; }
                 bool Start() override;
                 void Stop() override;
                 void log(const char* message);
+                void Tick() override;
 
             private:
                 void sendToSocket(const char* message);
+                void readFromSocket();
+                void persistLog(const char* message);
                 static constexpr int LOG_BUFFER_SIZE = 128;
                 static constexpr int LOG_ENTRY_SIZE = 256;
                 char logBuffer[LOG_BUFFER_SIZE][LOG_ENTRY_SIZE];
                 int logCount;
                 kos::lib::Socket* journalSocket;
+                int logFileFd;
         };
     } // namespace services
 } // namespace kos

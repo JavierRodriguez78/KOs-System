@@ -19,7 +19,7 @@ using namespace kos::lib;
 using namespace kos::memory;
 
 // Filesystem access for loading external apps
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 
 // Global threaded shell instance
 ThreadedShell* kos::console::g_threaded_shell = nullptr;
@@ -278,9 +278,9 @@ void ThreadedShell::ExecuteCommand() {
             int baseLen = kos::lib::String::strlen(path);
             kos::lib::String::memmove(elfPath, path, (uint32_t)baseLen);
             elfPath[baseLen] = '.'; elfPath[baseLen+1] = 'e'; elfPath[baseLen+2] = 'l'; elfPath[baseLen+3] = 'f'; elfPath[baseLen+4] = 0;
-            if (g_fs_ptr) {
+            if (kos::fs::g_fs_ptr) {
                 static uint8_t elfBuf[256*1024];
-                int32_t n = g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
+                int32_t n = kos::fs::g_fs_ptr->ReadFile(elfPath, elfBuf, sizeof(elfBuf));
                 if (n > 0) {
                     // Pass args to app and execute
                     kos::sys::SetArgs(argc, argv, (const int8_t*)input_buffer);

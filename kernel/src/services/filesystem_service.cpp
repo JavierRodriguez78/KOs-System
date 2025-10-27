@@ -5,14 +5,14 @@
 using namespace kos::console;
 
 // Access global filesystem selected during hardware init (defined in kernel.cpp)
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 
 namespace kos {
     namespace services {
 
 bool FilesystemService::Start() {
     Logger::Log("FilesystemService: starting");
-    if (!g_fs_ptr) {
+    if (!kos::fs::g_fs_ptr) {
         Logger::Log("FilesystemService: no filesystem present (skipping)");
         return false; // keep as failure so other services can react accordingly
     }
@@ -23,10 +23,12 @@ bool FilesystemService::Start() {
         (const int8_t*)"/HOME",
         (const int8_t*)"/ETC",
         (const int8_t*)"/ETC/INIT.D",
+        (const int8_t*)"/VAR",
+        (const int8_t*)"/VAR/LOG",
     };
     for (unsigned i = 0; i < sizeof(dirs)/sizeof(dirs[0]); ++i) {
-        if (!g_fs_ptr->DirExists(dirs[i])) {
-            int32_t rc = g_fs_ptr->Mkdir(dirs[i], /*parents*/1);
+    if (!kos::fs::g_fs_ptr->DirExists(dirs[i])) {
+            int32_t rc = kos::fs::g_fs_ptr->Mkdir(dirs[i], /*parents*/1);
             Logger::LogKV("FilesystemService: mkdir", (rc == 0) ? "ok" : "fail");
         }
     }

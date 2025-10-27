@@ -1,4 +1,13 @@
 #include <fs/fat16.hpp>
+
+using namespace kos::fs;
+
+int32_t FAT16::WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) {
+    // TODO: Implement actual FAT16 file writing logic
+    // For now, just return -1 to indicate not implemented
+    return -1;
+}
+#include <fs/fat16.hpp>
 #include <console/tty.hpp>
 #include <lib/string.hpp>
 #include <lib/stdio.hpp>

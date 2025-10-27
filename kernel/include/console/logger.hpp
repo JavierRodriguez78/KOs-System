@@ -29,11 +29,14 @@ namespace kos {
                 static inline bool IsDebugEnabled() { return s_debugEnabled; }
                 // Prints: [YYYY-MM-DD HH:MM:SS] message\n
                 static void Log(const char* msg) {
-                    kos::arch::x86::hardware::rtc::DateTime dt; kos::arch::x86::hardware::rtc   ::RTC::Read(dt);
+                    kos::arch::x86::hardware::rtc::DateTime dt; kos::arch::x86::hardware::rtc::RTC::Read(dt);
                     printTs(dt);
                     TTY::Write((const int8_t*)" ");
                     TTY::Write((const int8_t*)msg);
                     TTY::PutChar('\n');
+                    // Forward log to JournalService for journald-like persistence
+                    extern void LogToJournal(const char* message);
+                    LogToJournal(msg);
                 }
 
                 // Debug-level logs (printed only if s_debugEnabled)
@@ -61,6 +64,9 @@ namespace kos {
                     TTY::Write((const int8_t*)": ");
                     TTY::Write((const int8_t*)value);
                     TTY::PutChar('\n');
+                    // Forward log to JournalService
+                    extern void LogToJournalKV(const char* key, const char* value);
+                    LogToJournalKV(key, value);
                 }
 
                 static void LogRaw(const char* msg) {
@@ -70,32 +76,31 @@ namespace kos {
                 // Linux-like status at end of the line: [ OK ] or [FAIL]
                 // Usage: LogStatus("Initializing ...", true/false)
                 static void LogStatus(const char* msg, bool ok) {
-                    DateTime dt;
-                    RTC::Read(dt);
-                    printTs(dt);
-                    TTY::Write((const int8_t*)" ");
-                    TTY::Write((const int8_t*)msg);
-                    // Compute current column: timestamp (21) + 1 space + msg length
-                    int col = 21 + 1 + (int)strlen(msg);
-                    int pad = STATUS_COL - col;
-                    if (pad < 1) pad = 1;
-                    for (int i = 0; i < pad; ++i) TTY::PutChar(' ');
-                    // Save default color (assume light grey on black is 0x07)
-                    if (ok) {
-                        // Bright Green (10)
-                        TTY::Write((const int8_t*)" [");
-                        TTY::SetColor(10, 0); // bright green on black
-                        TTY::Write((const int8_t*)" OK ");
-                        TTY::SetAttr(0x07);
-                        TTY::Write((const int8_t*)"]\n");
-                    } else {
-                        // Bright Red (12)
-                        TTY::Write((const int8_t*)" [");
-                        TTY::SetColor(12, 0); // bright red on black
-                        TTY::Write((const int8_t*)"FAIL");
-                        TTY::SetAttr(0x07);
-                        TTY::Write((const int8_t*)"]\n");
-                    }
+                        DateTime dt;
+                        RTC::Read(dt);
+                        printTs(dt);
+                        TTY::Write((const int8_t*)" ");
+                        TTY::Write((const int8_t*)msg);
+                        int col = 21 + 1 + (int)strlen(msg);
+                        int pad = STATUS_COL - col;
+                        if (pad < 1) pad = 1;
+                        for (int i = 0; i < pad; ++i) TTY::PutChar(' ');
+                        if (ok) {
+                            TTY::Write((const int8_t*)" [");
+                            TTY::SetColor(10, 0);
+                            TTY::Write((const int8_t*)" OK ");
+                            TTY::SetAttr(0x07);
+                            TTY::Write((const int8_t*)"]\n");
+                        } else {
+                            TTY::Write((const int8_t*)" [");
+                            TTY::SetColor(12, 0);
+                            TTY::Write((const int8_t*)"FAIL");
+                            TTY::SetAttr(0x07);
+                            TTY::Write((const int8_t*)"]\n");
+                        }
+                        // Forward status log to JournalService
+                        extern void LogToJournalStatus(const char* msg, bool ok);
+                        LogToJournalStatus(msg, ok);
                 }
 
             private:

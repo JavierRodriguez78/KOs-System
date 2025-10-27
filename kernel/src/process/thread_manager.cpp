@@ -356,7 +356,7 @@ struct ProcLaunchCtx {
     char name[32];
 };
 
-extern kos::fs::Filesystem* g_fs_ptr;
+// Use fully qualified name for global filesystem pointer
 
 // Simple global slot to pass ProcLaunchCtx into the next spawned process thread
 namespace kos { namespace process {
@@ -388,7 +388,7 @@ static void elf_process_trampoline() {
     kos::sys::SetArgs(1, argv0v, (const int8_t*)ctx->path);
 
     static uint8_t elfBuf[256*1024];
-    int32_t n = g_fs_ptr ? g_fs_ptr->ReadFile((const int8_t*)ctx->path, elfBuf, sizeof(elfBuf)) : -1;
+    int32_t n = kos::fs::g_fs_ptr ? kos::fs::g_fs_ptr->ReadFile((const int8_t*)ctx->path, elfBuf, sizeof(elfBuf)) : -1;
     if (n <= 0) {
         TTY::Write((const int8_t*)"spawn: not found: "); TTY::Write((const int8_t*)ctx->path); TTY::PutChar('\n');
         // free ctx
