@@ -22,7 +22,14 @@ namespace kos{
                 // Text attribute (fg|bg)
                 static uint8_t attr; 
             public:
+                /*
+                * @brief Constructor for the VGA class.
+                */
                 VGA();
+                
+                /*
+                * @brief Destructor for the VGA class.
+                */
                 ~VGA();
             
                 /**
@@ -82,7 +89,6 @@ namespace kos{
                     return ((bg & 0x0F) << 4) | (fg & 0x0F);
                 }
         };
-
     }
 }
 

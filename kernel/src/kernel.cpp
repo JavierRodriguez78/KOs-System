@@ -10,7 +10,7 @@
 #include <console/tty.hpp>
 #include <console/logger.hpp>
 #include <console/shell.hpp>
-#include <drivers/ata.hpp>
+#include <drivers/ata/ata.hpp>
 #include <fs/fat16.hpp>
 #include <fs/fat32.hpp>
 #include <fs/filesystem.hpp>
@@ -37,6 +37,7 @@
 using namespace kos;
 using namespace kos::common;
 using namespace kos::drivers;
+using namespace kos::drivers::ata;
 using namespace kos::arch::x86::hardware::pci;
 using namespace kos::console;
 using namespace kos::fs;

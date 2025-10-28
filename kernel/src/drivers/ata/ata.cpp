@@ -1,7 +1,7 @@
-#include <drivers/ata.hpp>
-#include <drivers/ata_constants.hpp>
+#include <drivers/ata/ata.hpp>
+#include <drivers/ata/ata_constants.hpp>
 
-using namespace kos::drivers;
+using namespace kos::drivers::ata;
 using namespace kos::common;
 
 ATADriver::ATADriver(ATADriver::Bus bus, ATADriver::Drive drive)
@@ -37,6 +37,7 @@ void ATADriver::SelectDrive() {
         (void)controlPort.Read();
     } 
 }
+
 bool ATADriver::Identify() {
     // Select drive
     SelectDrive();
