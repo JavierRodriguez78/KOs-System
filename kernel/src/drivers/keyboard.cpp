@@ -138,7 +138,10 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
         }
 
         switch(key)
+            
         {
+            // Backspace
+            case 0x0E: handler->OnKeyDown('\b'); break; 
             // Numeric Keys (main row)
             case 0x02: handler->OnKeyDown('1'); break;
             case 0x03: handler->OnKeyDown('2'); break;

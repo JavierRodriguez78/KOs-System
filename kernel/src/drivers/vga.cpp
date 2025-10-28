@@ -33,14 +33,23 @@ using namespace kos::common;
     }
 
     void VGA::PutChar(int8_t c){
-        if(c =='\n'){
-            x=0; 
+        if (c == '\n') {
+            x = 0;
             y++;
-        }else{
-            VideoMemory[y * 80+x] = ((uint16_t)attr << 8) | (uint8_t)c;
+        } else if (c == '\b') {
+            // Handle backspace: move cursor back, overwrite with space, move back again
+            if (x > 0) {
+                x--;
+            } else if (y > 0) {
+                y--;
+                x = VGA_WIDTH - 1;
+            }
+            VideoMemory[y * VGA_WIDTH + x] = ((uint16_t)attr << 8) | ' ';
+        } else {
+            VideoMemory[y * VGA_WIDTH + x] = ((uint16_t)attr << 8) | (uint8_t)c;
             x++;
-            if (x>=VGA_WIDTH) { 
-                x=0; 
+            if (x >= VGA_WIDTH) {
+                x = 0;
                 y++;
             }
         }
