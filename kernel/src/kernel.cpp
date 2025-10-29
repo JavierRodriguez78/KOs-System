@@ -3,7 +3,8 @@
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>
 #include <drivers/driver.hpp>
-#include <drivers/keyboard.hpp>
+#include <drivers/keyboard/keyboard.hpp>
+#include <drivers/keyboard/keyboard_driver.hpp>
 #include <drivers/mouse.hpp>
 #include <drivers/vga.hpp>
 #include <ui/input.hpp>

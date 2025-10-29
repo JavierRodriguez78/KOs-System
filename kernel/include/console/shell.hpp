@@ -4,11 +4,14 @@
 #include <common/types.hpp>
 #include <lib/string.hpp>
 #include <console/tty.hpp>
-#include <drivers/keyboard.hpp>
+#include <drivers/keyboard/keyboard.hpp>
+#include <drivers/keyboard/keyboard_handler.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
 using namespace kos::lib;
+using namespace kos::drivers::keyboard;
+
 
 namespace kos{
     namespace console{
@@ -27,7 +30,7 @@ namespace kos{
             void ExecuteCommand(const int8_t* command); // New overload to execute given command
         };
 
-        class ShellKeyboardHandler : public kos::drivers::KeyboardEventHandler{
+        class ShellKeyboardHandler : public KeyboardEventHandler{
             
             public:
 

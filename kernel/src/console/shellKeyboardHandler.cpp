@@ -1,7 +1,7 @@
 #include <console/shell.hpp>
 #include <console/threaded_shell.hpp>
 #include <console/tty.hpp>
-#include <drivers/keyboard.hpp>
+#include <drivers/keyboard/keyboard.hpp>
 #include <lib/stdio.hpp>
 
 

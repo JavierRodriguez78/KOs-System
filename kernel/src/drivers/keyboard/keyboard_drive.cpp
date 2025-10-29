@@ -1,38 +1,13 @@
-//View https://wiki.osdev.org/PS/2_Keyboard
-
-#include <drivers/keyboard.hpp>
-using namespace kos::common;
-using namespace kos::drivers;
-
-
-
-KeyboardEventHandler::KeyboardEventHandler()
-{
-
-};
-
-void KeyboardEventHandler::OnKeyDown(char)
-{
-
-};
-
-void KeyboardEventHandler::OnKeyUp(char)
-{
-
-};
-
-
+#include <drivers/keyboard/keyboard_driver.hpp>
+using namespace kos::drivers::keyboard;
 
 
 KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
-:InterruptHandler(manager, 0x21),
-dataport(0x60),
-commandport(0x64)
-{
-   
-   this->handler = handler;
-
+:InterruptHandler(manager, 0x21),dataport(0x60),commandport(0x64){
+    this->handler = handler;
 };
+
+
 KeyboardDriver::~KeyboardDriver()
 {
 
@@ -202,4 +177,3 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 
     return esp;
 };
-

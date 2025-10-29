@@ -5,7 +5,7 @@
 #include <console/tty.hpp>
 #include <console/shell.hpp>
 #include <console/threaded_shell.hpp>
-#include <drivers/keyboard.hpp>
+#include <drivers/keyboard/keyboard.hpp>
 #include <lib/string.hpp>
 #include <lib/elfloader.hpp>
 #include <lib/sysapi.hpp>

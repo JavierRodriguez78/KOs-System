@@ -2,7 +2,7 @@
 #include <console/shell.hpp>
 #include <console/tty.hpp>
 #include <lib/string.hpp>
-#include <drivers/keyboard.hpp>
+#include <drivers/keyboard/keyboard.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/elfloader.hpp>
 // sys API utilities are declared in stdio.hpp
