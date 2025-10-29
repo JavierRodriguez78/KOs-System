@@ -1,8 +1,9 @@
 #include <console/tty.hpp>
-#include <drivers/vga.hpp>
+#include <drivers/vga/vga.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
+using namespace kos::drivers::vga;
 
     
     VGA TTY::vga;

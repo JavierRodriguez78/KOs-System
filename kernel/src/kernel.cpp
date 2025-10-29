@@ -5,8 +5,8 @@
 #include <drivers/driver.hpp>
 #include <drivers/keyboard/keyboard.hpp>
 #include <drivers/keyboard/keyboard_driver.hpp>
-#include <drivers/mouse.hpp>
-#include <drivers/vga.hpp>
+#include <drivers/mouse/mouse_driver.hpp>   
+#include <drivers/vga/vga.hpp>
 #include <ui/input.hpp>
 #include <console/tty.hpp>
 #include <console/logger.hpp>

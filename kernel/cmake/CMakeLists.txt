@@ -96,7 +96,7 @@ add_custom_command(TARGET kernel_bin POST_BUILD
 add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
-    ${KOS_ROOT_DIR}/src/drivers/vga.cpp
+    ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)

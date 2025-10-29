@@ -1,10 +1,12 @@
+#pragma once
 #ifndef  __KOS__CONSOLE__KEYBOARD_H
 #define  __KOS__CONSOLE__KEYBOARD_H
 #include <common/types.hpp>
-#include <drivers/vga.hpp>
+#include <drivers/vga/vga.hpp>
 
 using namespace kos::common;
 using namespace kos::drivers;
+using namespace kos::drivers::vga;  
 
 namespace kos {
     namespace console {

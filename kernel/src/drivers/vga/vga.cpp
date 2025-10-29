@@ -1,9 +1,9 @@
-#include <drivers/vga.hpp>
-#include <drivers/vga_constants.hpp>
+#include <drivers/vga/vga.hpp>
+#include <drivers/vga/vga_constants.hpp>
 
 using namespace kos::drivers;
 using namespace kos::common;
-
+using namespace kos::drivers::vga;
 
 uint16_t* VGA::VideoMemory = (uint16_t*)VGA_TEXT_BUFFER;
 uint8_t VGA::x = 0;

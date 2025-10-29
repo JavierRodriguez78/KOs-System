@@ -1,12 +1,13 @@
 #include <console/logo.hpp>
 #include <console/tty.hpp>
-#include <drivers/vga.hpp>
 #include <common/logo.h>
 #include <graphics/framebuffer.hpp>
 #include <process/scheduler.hpp>
+#include <drivers/vga/vga.hpp>
 
 using namespace kos::console;
 using namespace kos::process;
+using namespace kos::drivers::vga;
 
 
 namespace kos { 
@@ -96,7 +97,7 @@ namespace kos {
                         if ((x % xStep) == 0) {
                             uint8_t fg = nearestVGAColor(pix[0], pix[1], pix[2]);
                             // Set foreground color; background black
-                            TTY::SetAttr(kos::drivers::VGA::MakeAttr(fg, 0));
+                            TTY::SetAttr(VGA::MakeAttr(fg, 0));
                             TTY::PutChar((int8_t)0xDB); // full block (CP437 219)
                             ++xInRow;
                         }
