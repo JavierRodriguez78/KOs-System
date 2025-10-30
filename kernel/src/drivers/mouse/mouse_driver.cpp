@@ -1,17 +1,19 @@
 //View https://wiki.osdev.org/Mouse_Input
 
 #include <drivers/mouse/mouse_driver.hpp>
+#include <drivers/mouse/mouse_constants.hpp>
 #include <console/logger.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
 using namespace kos::drivers;
+using namespace kos::drivers::mouse;
 
 
 MouseDriver::MouseDriver(InterruptManager* manager, MouseEventHandler* handler)
-: InterruptHandler(manager, 0x2C),
-dataport(0x60),
-commandport(0x64)
+: InterruptHandler(manager, MOUSE_IRQ_VECTOR),
+dataport(MOUSE_DATA_PORT),
+commandport(MOUSE_COMMAND_PORT)
 {
     this->handler = handler;
 }
@@ -22,12 +24,12 @@ MouseDriver::~MouseDriver()
     
 static inline void wait_write(Port8Bit& cmd) {
     // Wait until input buffer is clear (bit1 == 0)
-    for (int i = 0; i < 100000; ++i) { if ((cmd.Read() & 0x02) == 0) break; }
+    for (int i = 0; i < MOUSE_WAIT_MAX_ITERATIONS; ++i) { if ((cmd.Read() & MOUSE_STATUS_INPUT_BUFFER) == 0) break; }
 }
     
 static inline void wait_read(Port8Bit& cmd) {
     // Wait until output buffer is full (bit0 == 1)
-    for (int i = 0; i < 100000; ++i) { if (cmd.Read() & 0x01) break; }
+    for (int i = 0; i < MOUSE_WAIT_MAX_ITERATIONS; ++i) { if (cmd.Read() & MOUSE_STATUS_OUTPUT_BUFFER) break; }
 }
 
 void MouseDriver::Activate()
@@ -37,32 +39,32 @@ void MouseDriver::Activate()
 
     // Enable auxiliary device
     wait_write(commandport);
-    commandport.Write(0xA8);
+    commandport.Write(MOUSE_CMD_ENABLE_AUX);
 
     // Read Controller Command Byte
     wait_write(commandport);
-    commandport.Write(0x20);
+    commandport.Write(MOUSE_CMD_READ_BYTE);
     wait_read(commandport);
     uint8_t status = dataport.Read();
 
     // Enable mouse IRQ (bit1) and ensure mouse port is enabled (clear disable bit5)
-    status |= 0x02;
-    status &= ~(uint8_t)0x20;
+    status |= MOUSE_ENABLE_IRQ12_BIT;
+    status &= ~(uint8_t)MOUSE_DISABLE_PORT2_BIT;
     // Optionally ensure keyboard IRQ as well (bit0)
     // status |= 0x01;
     // Write Controller Command Byte back
     wait_write(commandport);
-    commandport.Write(0x60);
+    commandport.Write(MOUSE_CMD_WRITE_BYTE);
     wait_write(commandport);
     dataport.Write(status);
 
     // Tell mouse: Set Defaults (0xF6), then Enable Data Reporting (0xF4)
-    wait_write(commandport); commandport.Write(0xD4);
-    wait_write(commandport); dataport.Write(0xF6);
+    wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
+    wait_write(commandport); dataport.Write(MOUSE_CMD_SET_DEFAULTS);
     wait_read(commandport); (void)dataport.Read(); // ACK
 
-    wait_write(commandport); commandport.Write(0xD4);
-    wait_write(commandport); dataport.Write(0xF4);
+    wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
+    wait_write(commandport); dataport.Write(MOUSE_CMD_ENABLE_DATA_REPORTING);
     wait_read(commandport); (void)dataport.Read(); // ACK
 
     if (Logger::IsDebugEnabled())
@@ -74,7 +76,7 @@ void MouseDriver::Activate()
         // Check if output buffer has data (bit0). We don't require AUX flag (bit5)
         // because we're already servicing IRQ12, so the byte is for the mouse.
         uint8_t status = commandport.Read();
-        if ((status & 0x01) == 0)
+        if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0)
             return esp;
 
         buffer[offset] = dataport.Read();
@@ -87,7 +89,7 @@ void MouseDriver::Activate()
         if(offset == 0)
         {
             // Ensure packet is aligned: bit3 of first byte should always be 1
-            if ((buffer[0] & 0x08) == 0) {
+            if ((buffer[0] & MOUSE_SYNC_BIT) == 0) {
                 // Desync; reset packet assembly
                 offset = 0;
                 return esp;
@@ -98,8 +100,8 @@ void MouseDriver::Activate()
             {
                 handler->OnMouseMove(dx, -dy);
             }
-           
-           for(uint8_t i = 0; i < 3; i++)
+
+           for(uint8_t i = 0; i < MOUSE_PACKET_SIZE; i++)
             {
                 uint8_t mask = (1u << i);
                 bool wasDown = (buttons & mask) != 0;

@@ -5,7 +5,7 @@
 
 
 #include <arch/x86/hardware/port/port32bit.hpp>
-#include <drivers/driver.hpp>
+#include <drivers/driver_manager.hpp>
 #include <common/types.hpp>
 #include <console/tty.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.hpp>
