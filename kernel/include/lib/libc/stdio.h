@@ -37,6 +37,8 @@ typedef struct ApiTableC {
     int32_t (*readfile)(const int8_t* path, uint8_t* outBuf, uint32_t maxLen);
     // Execute ELF image by path with argv and full cmdline. Returns 0 on success, negative on failure.
     int32_t (*exec)(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline);
+    // Get process info (for 'top', etc.)
+    int32_t (*get_process_info)(char* buffer, int32_t maxlen);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -62,6 +64,7 @@ static inline int32_t kos_chdir(const int8_t* path) {
 }
 
 static inline int32_t kos_argc(void) { return kos_sys_table()->get_argc ? kos_sys_table()->get_argc() : 0; }
+int snprintf(char *str, size_t size, const char *format, ...);
 static inline const int8_t* kos_argv(int32_t index) { return kos_sys_table()->get_arg ? kos_sys_table()->get_arg(index) : (const int8_t*)0; }
 static inline const int8_t* kos_cmdline(void) { return kos_sys_table()->cmdline; }
 static inline const int8_t* kos_cwd(void) { return kos_sys_table()->cwd; }

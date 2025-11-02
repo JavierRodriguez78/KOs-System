@@ -66,6 +66,7 @@ add_library(kernel_objs OBJECT
     ${KERNEL_CPP_SOURCES}
     ${KERNEL_ASM_SOURCES}
     ${ARCH_X86_SOURCES}
+    ${KOS_ROOT_DIR}/src/libc/stdio.c
 )
 target_compile_options(kernel_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
 target_include_directories(kernel_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
@@ -97,6 +98,7 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
+    ${KOS_ROOT_DIR}/src/libc/stdio.c
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
@@ -133,9 +135,10 @@ add_app(lshw)
 add_app(clear)
 add_app(init)
 add_app(cat)
+add_app(top)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

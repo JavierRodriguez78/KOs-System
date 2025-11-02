@@ -1,3 +1,4 @@
+     
 #ifndef __KOS__PROCESS__SCHEDULER_H
 #define __KOS__PROCESS__SCHEDULER_H
 
@@ -82,8 +83,12 @@ namespace kos {
             Thread* GetCurrentTask() const { return current_task; }
             bool IsSchedulingEnabled() const { return scheduling_enabled; }
 
-            // Context switching (implemented in assembly)
-            // static void SwitchContext(CPUContext* old_context, CPUContext* new_context);
+            // Public accessor for ready queues
+            Thread* GetReadyQueue(int prio) const { return ready_queues[prio]; }
+            Thread* GetReadyQueueTail(int prio) const { return ready_queue_tails[prio]; }    
+
+            // Public accessor for sleeping tasks
+            Thread* GetSleepingTasks() const { return sleeping_tasks; }
         };
 
         // Global scheduler instance

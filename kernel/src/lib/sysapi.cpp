@@ -1,3 +1,4 @@
+
 #include <lib/stdio.hpp>
 #include <console/tty.hpp>
 #include <fs/filesystem.hpp>
@@ -16,6 +17,17 @@ static uint32_t g_list_flags = 0; // flags used by listdir_ex
 
 // Forward declaration for path normalization used by sys_listdir and sys_chdir
 static void normalize_abs_path(const int8_t* inPath, const int8_t* cwd, int8_t* outBuf, int outSize);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int ps_service_getinfo(char* buffer, int maxlen);
+#ifdef __cplusplus
+}
+#endif
+extern "C" int sys_get_process_info(char* buffer, int maxlen) {
+    return ps_service_getinfo(buffer, maxlen);
+}
 
 extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }

@@ -64,3 +64,10 @@ namespace kos {
 } // namespace kos
 
 #endif // KOS_SERVICES_SERVICE_MANAGER_HPP
+#ifdef __cplusplus
+extern "C" {
+#endif
+int ps_service_getinfo(char* buffer, int maxlen);
+#ifdef __cplusplus
+}
+#endif
