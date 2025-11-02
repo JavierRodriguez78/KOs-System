@@ -1,10 +1,7 @@
-// Prototypes for application command entrypoints (shared between kernel and standalone builds)
+// Deprecated shim: use <application/app.hpp> from kernel/include instead.
 #ifndef KOS_APPLICATION_APP_HPP
 #define KOS_APPLICATION_APP_HPP
 
-extern "C" void app_hello();
-extern "C" void app_echo();
-extern "C" void app_ls();
-extern "C" void app_pwd();
+#include <application/app.hpp>
 
 #endif // KOS_APPLICATION_APP_HPP

@@ -61,6 +61,11 @@ list(REMOVE_ITEM KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/process/scheduler_demo.cpp
 )
 
+# Exclude deprecated/disabled service API stub (real implementation lives in service_manager.cpp)
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/services/service_api_stub.cpp
+)
+
 # Build kernel objects into an OBJECT library
 add_library(kernel_objs OBJECT
     ${KERNEL_CPP_SOURCES}
@@ -99,6 +104,7 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
     ${KOS_ROOT_DIR}/src/libc/stdio.c
+    ${KOS_ROOT_DIR}/src/libc/tokenize.c
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)

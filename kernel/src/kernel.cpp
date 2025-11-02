@@ -33,6 +33,7 @@
 #include <services/filesystem_service.hpp>
 #include <lib/elfloader.hpp>
 #include <application/init/service.hpp>
+#include <common/panic.hpp>
 
 
 using namespace kos;
@@ -211,6 +212,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
                 Logger::SetDebugEnabled(true);
                 // Print a one-time info message so users know it's active
                 Logger::Log("Debug mode enabled via boot param");
+            }
+            if (contains(cmd, "panic=reboot") || contains(cmd, "reboot_on_panic")) {
+                kos::kernel::SetPanicReboot(true);
+                Logger::Log("Panic: reboot-on-panic enabled via boot param");
             }
         }
     }

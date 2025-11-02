@@ -1,6 +1,7 @@
 #include <memory/paging.hpp>
 #include <memory/pmm.hpp>
 #include <console/logger.hpp>
+#include <common/panic.hpp>
 
 // Linker-provided section boundary symbols (global C linkage)
 extern "C" {
@@ -44,6 +45,8 @@ static PageTableEntry* ensureTable(uint32_t vaddr, bool create, bool user=false)
         do {
             frame = PMM::AllocFrame();
             if (frame == 0) return nullptr;  // Out of memory
+            // Frame returned by PMM must be page-aligned
+            KASSERT((frame & (PAGE_SIZE - 1)) == 0);
             
             // If frame is in identity-mapped region (< 64MB), we can use it
             if (frame < 64*1024*1024) {
@@ -60,7 +63,7 @@ static PageTableEntry* ensureTable(uint32_t vaddr, bool create, bool user=false)
             return nullptr;
         }
         
-        PageTableEntry* v = (PageTableEntry*)frame; // Safe: frame < 64MB, so identity-mapped
+    PageTableEntry* v = (PageTableEntry*)frame; // Safe: frame < 64MB, so identity-mapped
         for (int i = 0; i < 1024; ++i) v[i].value = 0;
         uint32_t pdeFlags = (Paging::Present | Paging::RW);
         if (user) pdeFlags |= Paging::User;
@@ -80,6 +83,8 @@ static PageTableEntry* ensureTable(uint32_t vaddr, bool create, bool user=false)
 void Paging::MapPage(virt_addr_t vaddr, phys_addr_t paddr, uint32_t flags)
 {
     uint32_t va = (uint32_t)vaddr;
+    // Invariants: physical address must be aligned
+    KASSERT(((uint32_t)paddr & (PAGE_SIZE - 1)) == 0);
     uint32_t pdi = pde_index(va);
     PageTableEntry* pt = ensureTable(va, true, (flags & User) != 0);
     if (!pt) return;

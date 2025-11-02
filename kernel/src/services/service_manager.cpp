@@ -206,14 +206,15 @@ static void service_manager_thread() {
     }
 }
 
-namespace ServiceAPI {
+// Implement the public API in the proper namespace as declared in the header
+namespace kos { namespace services { namespace ServiceAPI {
     bool StartManagerThread() {
         if (!g_thread_manager) return false;
         uint32_t tid = ThreadManagerAPI::CreateSystemThread((void*)service_manager_thread,
             THREAD_SYSTEM_SERVICE, 4096, PRIORITY_LOW, "service-manager");
         return tid != 0;
     }
-}
+} } }
 
 // ...existing code...
 

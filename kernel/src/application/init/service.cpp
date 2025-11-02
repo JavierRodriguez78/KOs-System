@@ -3,6 +3,7 @@
 #include <console/tty.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/string.hpp>
+#include <lib/tokenize.hpp>
 #include <lib/stdio.hpp>
 #include <lib/elfloader.hpp>
 #include <lib/sysapi.hpp>
@@ -79,41 +80,7 @@ static InitUnit* find_unit(const char* name) {
     return nullptr;
 }
 
-// Split a comma-separated list in-place; returns number of items and fills arr with pointers into the buffer.
-static int split_csv(int8_t* buf, const char** arr, int maxItems) {
-    if (!buf) return 0;
-    int n = 0; int8_t* p = buf;
-    // trim leading spaces
-    while (*p == ' ' || *p == '\t' || *p == '\r') ++p;
-    while (*p && n < maxItems) {
-        // mark start
-        arr[n++] = (const char*)p;
-        // scan to comma or end
-        while (*p && *p != ',' && *p != '\n' && *p != '\r') ++p;
-        if (!*p) break;
-        *p++ = 0;
-        // skip spaces
-        while (*p == ' ' || *p == '\t') ++p;
-    }
-    return n;
-}
-
-// Split a line into argv tokens separated by spaces (no quotes/escapes). Returns argc.
-static int split_args(int8_t* line, const int8_t** argv, int maxArgs) {
-    int argc = 0;
-    int8_t* p = line;
-    // Trim leading spaces
-    while (*p == ' ' || *p == '\t') ++p;
-    while (*p && argc < maxArgs) {
-        argv[argc++] = p;
-        // advance to next space or end
-        while (*p && *p != ' ' && *p != '\t') ++p;
-        if (!*p) break;
-        *p++ = 0;
-        while (*p == ' ' || *p == '\t') ++p; // skip spaces
-    }
-    return argc;
-}
+// Tokenization helpers are now shared in kos::lib (see <lib/tokenize.hpp>)
 
 // Execute one service command (argv[0..argc-1]); builds path if needed and calls exec
 static int32_t exec_argv(const int8_t** argv, int32_t argc) {

@@ -4,6 +4,7 @@
 #include <lib/string.hpp>
 #include <memory/pmm.hpp>
 #include <memory/paging.hpp>
+#include <common/panic.hpp>
 
 using namespace kos::lib;
 using namespace kos::common;
@@ -74,6 +75,8 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
             Paging::UnmapPage(vpage + off);
             pa = PMM::AllocFrame();
             if (!pa) { TTY::Write((int8_t*)"ELF: OOM frames\n"); return false; }
+            // Kernel invariant: PMM must return page-aligned frames
+            KASSERT((pa & (PAGE_SIZE - 1)) == 0);
             
             if (Logger::IsDebugEnabled()) {
                 // Debug: Check if physical frame is in valid range
@@ -140,6 +143,8 @@ bool ELFLoader::LoadAndExecute(const uint8_t* image, uint32_t size) {
             uint8_t* pagePtr = (uint8_t*)(vpage + off);
             for (int j = 0; j < PAGE_SIZE; j++) pagePtr[j] = 0;
         }
+        // Invariant: mapping must be present for the destination address now
+        KASSERT(kos::memory::Paging::GetPhys((uintptr_t)dst) != 0);
         
         // Flush TLB to ensure mappings are visible before copying
         kos::memory::Paging::FlushAll();

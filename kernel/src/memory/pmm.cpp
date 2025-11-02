@@ -1,5 +1,6 @@
 #include <memory/pmm.hpp>
 #include <console/logger.hpp>
+#include <common/panic.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -109,7 +110,10 @@ phys_addr_t PMM::AllocFrame()
         if (!bget(f)) {
             bset(f);
             if (g_freeFrames) --g_freeFrames;
-            return (phys_addr_t)f * PAGE_SIZE;
+            phys_addr_t pa = (phys_addr_t)f * PAGE_SIZE;
+            // Invariant: PMM allocations must be page-aligned
+            KASSERT((pa & (PAGE_SIZE - 1)) == 0);
+            return pa;
         }
     }
     return 0;
@@ -117,6 +121,8 @@ phys_addr_t PMM::AllocFrame()
 
 void PMM::FreeFrame(phys_addr_t addr)
 {
+    // Invariant: freeing must be page-aligned
+    KASSERT(((uint32_t)addr & (PAGE_SIZE - 1)) == 0);
     uint32_t f = (uint32_t)(addr / PAGE_SIZE);
     if (f < g_frameCap && bget(f)) { bclr(f); ++g_freeFrames; }
 }
