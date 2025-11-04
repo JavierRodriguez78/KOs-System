@@ -468,6 +468,32 @@ cat.elf/fast:
 .PHONY : cat.elf/fast
 
 #=============================================================================
+# Target rules for targets named top_obj
+
+# Build rule for target.
+top_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 top_obj
+.PHONY : top_obj
+
+# fast build rule for target.
+top_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/top_obj.dir/build.make kernel/cmake/CMakeFiles/top_obj.dir/build
+.PHONY : top_obj/fast
+
+#=============================================================================
+# Target rules for targets named top.elf
+
+# Build rule for target.
+top.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 top.elf
+.PHONY : top.elf
+
+# fast build rule for target.
+top.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/top.elf.dir/build.make kernel/cmake/CMakeFiles/top.elf.dir/build
+.PHONY : top.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -627,6 +653,7 @@ help:
 	@echo "... pwd.elf"
 	@echo "... qemu"
 	@echo "... qemu-vvfat"
+	@echo "... top.elf"
 	@echo "... vdi"
 	@echo "... app_support_objs"
 	@echo "... cat_obj"
@@ -642,6 +669,7 @@ help:
 	@echo "... memtest_obj"
 	@echo "... mkdir_obj"
 	@echo "... pwd_obj"
+	@echo "... top_obj"
 .PHONY : help
 
 

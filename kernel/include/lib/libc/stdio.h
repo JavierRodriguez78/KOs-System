@@ -19,6 +19,10 @@ typedef struct ApiTableC {
     void (*listdir_ex)(const int8_t* path, uint32_t flags);
     // Clear text screen
     void (*clear)();
+    // Set raw text attribute (VGA attr byte: (bg<<4)|fg)
+    void (*set_attr)(uint8_t attr);
+    // Set foreground/background color using 0..15 VGA palette indices
+    void (*set_color)(uint8_t fg, uint8_t bg);
     int32_t (*get_argc)();
     const int8_t* (*get_arg)(int32_t index);
     const int8_t* cmdline;
@@ -52,6 +56,8 @@ static inline void kos_listroot(void) { if (kos_sys_table()->listroot) kos_sys_t
 static inline void kos_listdir(const int8_t* path) { if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
 static inline void kos_listdir_ex(const int8_t* path, uint32_t flags) { if (kos_sys_table()->listdir_ex) kos_sys_table()->listdir_ex(path, flags); else if (kos_sys_table()->listdir) kos_sys_table()->listdir(path); }
 static inline void kos_clear(void) { if (kos_sys_table()->clear) kos_sys_table()->clear(); }
+static inline void kos_set_attr(uint8_t a) { if (kos_sys_table()->set_attr) kos_sys_table()->set_attr(a); }
+static inline void kos_set_color(uint8_t fg, uint8_t bg) { if (kos_sys_table()->set_color) kos_sys_table()->set_color(fg, bg); }
 
 static inline int32_t kos_mkdir(const int8_t* path, int32_t parents) {
     if (kos_sys_table()->mkdir) return kos_sys_table()->mkdir(path, parents);
@@ -65,6 +71,7 @@ static inline int32_t kos_chdir(const int8_t* path) {
 
 static inline int32_t kos_argc(void) { return kos_sys_table()->get_argc ? kos_sys_table()->get_argc() : 0; }
 int snprintf(char *str, size_t size, const char *format, ...);
+int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 static inline const int8_t* kos_argv(int32_t index) { return kos_sys_table()->get_arg ? kos_sys_table()->get_arg(index) : (const int8_t*)0; }
 static inline const int8_t* kos_cmdline(void) { return kos_sys_table()->cmdline; }
 static inline const int8_t* kos_cwd(void) { return kos_sys_table()->cwd; }

@@ -1,0 +1,21 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/console/shellKeyboardHandler.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/console/shellKeyboardHandler.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/shell.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/string.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/stdint.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stddef.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/keyboard/keyboard.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port8bit.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/keyboard/keyboard_handler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/threaded_shell.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/sync.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/scheduler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stdio.hpp \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h

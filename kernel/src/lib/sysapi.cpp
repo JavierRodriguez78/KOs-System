@@ -34,6 +34,8 @@ extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
 extern "C" void sys_listroot() { if (kos::fs::g_fs_ptr) kos::fs::g_fs_ptr->ListRoot(); }
 extern "C" void sys_clear() { TTY::Clear(); }
+extern "C" void sys_set_attr(uint8_t a) { TTY::SetAttr(a); }
+extern "C" void sys_set_color(uint8_t fg, uint8_t bg) { TTY::SetColor(fg, bg); }
 // PCI config read helper: mediates access to PCI config space ports
 extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
     using namespace kos::arch::x86::hardware::pci;
@@ -292,7 +294,10 @@ extern "C" void InitSysApi() {
     t->listdir_ex = &sys_listdir_ex;
     t->clear = &sys_clear;
     // IMPORTANT: follow the exact struct field order declared in headers
-    // After 'clear', the order is: get_argc, get_arg, cmdline, mkdir, chdir, cwd
+    // After 'clear', expose color controls, then args and paths
+    t->set_attr = &sys_set_attr;
+    t->set_color = &sys_set_color;
+    // Then: get_argc, get_arg, cmdline, mkdir, chdir, cwd
     t->get_argc = &sys_get_argc;
     t->get_arg  = &sys_get_arg;
     // Initialize cmdline and cwd buffers within API page
@@ -312,4 +317,6 @@ extern "C" void InitSysApi() {
     // New APIs
     t->readfile = &sys_readfile;
     t->exec = &sys_exec;
+    // Process info provider for tools like 'top'
+    t->get_process_info = &sys_get_process_info;
 }

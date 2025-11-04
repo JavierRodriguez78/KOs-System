@@ -35,6 +35,8 @@ namespace kos {
             void (*listdir_ex)(const int8_t* path, uint32_t flags);
             // Clear text screen
             void (*clear)();
+                void (*set_attr)(uint8_t attr);
+                void (*set_color)(uint8_t fg, uint8_t bg);
             // Argument passing support
             int32_t (*get_argc)();
             const int8_t* (*get_arg)(int32_t index);

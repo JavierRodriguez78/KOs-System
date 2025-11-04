@@ -1,0 +1,21 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/process/timer.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/timer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_handler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/scheduler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port8bitslow.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port8bit.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/memory/gdt.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/memory/gdt_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/logger.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/rtc/rtc.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/string.h

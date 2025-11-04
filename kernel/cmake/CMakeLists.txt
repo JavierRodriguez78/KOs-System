@@ -37,6 +37,17 @@ file(GLOB_RECURSE KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/*.cpp
 )
 
+# Ensure libc is C-only: exclude any stray C++ sources under src/lib/libc
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/lib/libc/string.cpp
+    ${KOS_SRC_DIR}/lib/libc/stdint.cpp
+)
+
+# Exclude app-only C-ABI journaling shim from kernel (kernel provides its own C symbol)
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/console/log_to_journal_c.cpp
+)
+
 # Arch-specific sources (not under src/)
 set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_manager.cpp
@@ -71,6 +82,7 @@ add_library(kernel_objs OBJECT
     ${KERNEL_CPP_SOURCES}
     ${KERNEL_ASM_SOURCES}
     ${ARCH_X86_SOURCES}
+    ${KOS_ROOT_DIR}/src/lib/libc/string.c
     ${KOS_ROOT_DIR}/src/libc/stdio.c
 )
 target_compile_options(kernel_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
@@ -101,7 +113,9 @@ add_custom_command(TARGET kernel_bin POST_BUILD
 # Minimal support objects that apps link against
 add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
-    ${KOS_ROOT_DIR}/src/lib/libc/string.cpp
+    ${KOS_ROOT_DIR}/src/console/log_to_journal.cpp
+    ${KOS_ROOT_DIR}/src/console/log_to_journal_c.cpp
+    ${KOS_ROOT_DIR}/src/lib/libc/string.c
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
     ${KOS_ROOT_DIR}/src/libc/stdio.c
     ${KOS_ROOT_DIR}/src/libc/tokenize.c

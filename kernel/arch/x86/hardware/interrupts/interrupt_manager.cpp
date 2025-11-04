@@ -3,6 +3,7 @@
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_constants.hpp>
+#include <common/panic.hpp>
 using namespace kos::common;
 using namespace kos::arch::x86::hardware::interrupts;
 
@@ -238,8 +239,28 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
     }
     else if(interrupt != hardwareInterruptOffset)
     {
-        // Exception handling diagnostics for #UD (0x06)
-        if (interrupt == 0x06) {
+        // Exception handling diagnostics for #DE (0x00) and #UD (0x06)
+        if (interrupt == 0x00) {
+            // Divide-by-zero fault
+            uint32_t* s = (uint32_t*)esp;
+            const bool hasErrCode = false; // #DE has no error code
+            const uint32_t baseWords = 4 /*segs*/ + 8 /*pusha*/;
+            const uint32_t errAdj = hasErrCode ? 1u : 0u;
+            uint32_t eip = s[baseWords + errAdj];
+            uint32_t cs  = s[baseWords + errAdj + 1];
+            uint32_t fl  = s[baseWords + errAdj + 2];
+
+            TTY::Write((int8_t*)"#DE Divide-by-zero at ");
+            print_hex32(eip);
+            TTY::Write((int8_t*)" CS=");
+            print_hex32(cs);
+            TTY::Write((int8_t*)" EFLAGS=");
+            print_hex32(fl);
+            TTY::PutChar('\n');
+            // Stop the system to avoid re-faulting endlessly
+            kos::kernel::Panic("Divide-by-zero at EIP=%p", (void*)eip);
+        }
+        else if (interrupt == 0x06) {
             // Stack layout at entry of our stub (top -> bottom):
             // [gs][fs][es][ds] (16 bytes)
             // [edi][esi][ebp][esp_dump][ebx][edx][ecx][eax] (pusha: 32 bytes)

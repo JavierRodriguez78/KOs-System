@@ -1,10 +1,8 @@
 #include <lib/libc/stdio.h>
 #include <stdarg.h>
 
-// Minimal snprintf implementation for KOS
-int snprintf(char *str, size_t size, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
+// Minimal vsnprintf/snprintf implementation for KOS
+int vsnprintf(char *str, size_t size, const char *format, va_list args) {
     int written = 0;
     const char *f = format;
     char *out = str;
@@ -14,25 +12,35 @@ int snprintf(char *str, size_t size, const char *format, ...) {
             ++f;
             if (*f == 's') {
                 const char *s = va_arg(args, const char *);
-                while (*s && left > 0) { *out++ = *s++; --left; ++written; }
-            } else if (*f == 'd' || *f == 'u') {
+                while (s && *s && left > 0) { *out++ = *s++; --left; ++written; }
+            } else if (*f == 'd' || *f == 'i' || *f == 'u') {
+                unsigned int uv;
                 int v = va_arg(args, int);
+                if (*f == 'd' || *f == 'i') {
+                    if (v < 0) { if (left > 0) { *out++ = '-'; --left; ++written; } uv = (unsigned int)(-v); }
+                    else uv = (unsigned int)v;
+                } else {
+                    uv = (unsigned int)v;
+                }
                 char buf[16];
                 int len = 0;
-                if (*f == 'd' && v < 0) { *out++ = '-'; v = -v; --left; ++written; }
-                do { buf[len++] = '0' + (v % 10); v /= 10; } while (v && len < 15);
+                do { buf[len++] = '0' + (uv % 10u); uv /= 10u; } while (uv && len < 15);
                 for (int i = len-1; i >= 0 && left > 0; --i) { *out++ = buf[i]; --left; ++written; }
             } else if (*f == 'x' || *f == 'X') {
                 unsigned int v = va_arg(args, unsigned int);
+                const char* digs = (*f == 'X') ? "0123456789ABCDEF" : "0123456789abcdef";
                 char buf[16];
                 int len = 0;
-                do { buf[len++] = "0123456789abcdef"[v % 16]; v /= 16; } while (v && len < 15);
+                do { buf[len++] = digs[v & 0xF]; v >>= 4; } while (v && len < 15);
                 for (int i = len-1; i >= 0 && left > 0; --i) { *out++ = buf[i]; --left; ++written; }
             } else if (*f == 'c') {
                 char c = (char)va_arg(args, int);
-                *out++ = c; --left; ++written;
+                if (left > 0) { *out++ = c; --left; ++written; }
+            } else if (*f == '%') {
+                if (left > 0) { *out++ = '%'; --left; ++written; }
             } else {
-                *out++ = '%'; --left; ++written;
+                // Unknown specifier: print as literal
+                if (left > 0) { *out++ = '%'; --left; ++written; }
                 if (left > 0) { *out++ = *f; --left; ++written; }
             }
             ++f;
@@ -41,6 +49,13 @@ int snprintf(char *str, size_t size, const char *format, ...) {
         }
     }
     if (size) *out = '\0';
-    va_end(args);
     return written;
+}
+
+int snprintf(char *str, size_t size, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int ret = vsnprintf(str, size, format, args);
+    va_end(args);
+    return ret;
 }
