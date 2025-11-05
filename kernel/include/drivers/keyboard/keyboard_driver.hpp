@@ -62,6 +62,9 @@ namespace kos
                     TTY tty;
                     // Tracks whether the previous byte was the extended 0xE0 prefix
                     bool e0Prefix = false;
+                    // Modifier state
+                    bool ctrlLeft = false;
+                    bool ctrlRight = false;
             };
     
         }   // namespace keyboard

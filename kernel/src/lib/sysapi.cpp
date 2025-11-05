@@ -29,6 +29,30 @@ extern "C" int sys_get_process_info(char* buffer, int maxlen) {
     return ps_service_getinfo(buffer, maxlen);
 }
 
+// --- Simple app-facing key queue ---
+// Keys offered by keyboard handler are enqueued here so apps can poll them.
+static volatile int g_app_key_head = 0;
+static volatile int g_app_key_tail = 0;
+static int8_t g_app_key_buf[256];
+
+extern "C" void sys_offer_key(int8_t c) {
+    int next_tail = (g_app_key_tail + 1) & 0xFF;
+    if (next_tail == g_app_key_head) {
+        // Buffer full: drop key
+        return;
+    }
+    g_app_key_buf[g_app_key_tail] = c;
+    g_app_key_tail = next_tail;
+}
+
+extern "C" int32_t sys_key_poll(int8_t* out) {
+    if (g_app_key_head == g_app_key_tail) return 0;
+    int8_t c = g_app_key_buf[g_app_key_head];
+    g_app_key_head = (g_app_key_head + 1) & 0xFF;
+    if (out) *out = c;
+    return 1;
+}
+
 extern "C" void sys_putc(int8_t c) { TTY::PutChar(c); }
 extern "C" void sys_puts(const int8_t* s) { TTY::Write(s); }
 extern "C" void sys_hex(uint8_t v) { TTY::WriteHex(v); }
@@ -319,4 +343,6 @@ extern "C" void InitSysApi() {
     t->exec = &sys_exec;
     // Process info provider for tools like 'top'
     t->get_process_info = &sys_get_process_info;
+    // App key polling
+    t->key_poll = &sys_key_poll;
 }

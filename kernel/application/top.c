@@ -75,6 +75,14 @@ int top_main(int argc, char** argv) {
     (void)argc; (void)argv;
     char buffer[4096];
     while (1) {
+        // Fast-path: if Ctrl+C was pressed between refreshes, exit immediately
+        int8_t pending;
+        while (kos_key_poll(&pending)) {
+            if (pending == 3) { // ETX
+                kos_puts("^C\n");
+                return 0;
+            }
+        }
         kos_clear();
         kos_set_attr(ATTR_HDR);
         kos_puts("KOS top v3 - Process List\n");
@@ -137,11 +145,26 @@ int top_main(int argc, char** argv) {
             *p = saved;
             if (*p == '\n' || *p == '\r') ++p;
             if (*p == '\n' && saved == '\r') ++p; // handle CRLF
+
+            // Allow abort during long listings
+            int8_t ch_line;
+            if (kos_key_poll(&ch_line) && ch_line == 3) {
+                kos_puts("^C\n");
+                return 0;
+            }
         }
 
         kos_puts("\nPress Ctrl+C to exit\n");
-        // Crude delay ~ refresh ~10Hz
-        for (volatile int i = 0; i < 5000000; ++i) { }
+        // Poll a bit longer for Ctrl+C, checking frequently
+        // (busy-wait due to lack of sleep API)
+        for (int slice = 0; slice < 50; ++slice) {
+            for (volatile int spin = 0; spin < 80000; ++spin) { /* brief delay */ }
+            int8_t ch;
+            if (kos_key_poll(&ch) && ch == 3) { // Ctrl+C (ETX)
+                kos_puts("^C\n");
+                return 0;
+            }
+        }
     }
     return 0;
 }

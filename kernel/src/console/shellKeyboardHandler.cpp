@@ -9,6 +9,8 @@ using namespace kos::common;
 using namespace kos::console;
 
 
+extern "C" void sys_offer_key(int8_t c);
+
 
 ShellKeyboardHandler::ShellKeyboardHandler(){
 };
@@ -21,6 +23,8 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 extern Shell* g_shell;
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
+    // Offer key to app-facing queue so applications can poll (non-blocking)
+    sys_offer_key(c);
     // First, see if stdio scanf is actively reading input
     if (kos::sys::TryDeliverKey(c)) {
         return; // consumed by scanf/input reader

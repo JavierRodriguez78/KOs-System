@@ -43,6 +43,8 @@ typedef struct ApiTableC {
     int32_t (*exec)(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline);
     // Get process info (for 'top', etc.)
     int32_t (*get_process_info)(char* buffer, int32_t maxlen);
+    // Non-blocking key poll: returns 1 and writes to *out if a key is available, 0 otherwise
+    int32_t (*key_poll)(int8_t* out);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -98,6 +100,12 @@ static inline int32_t kos_readfile(const int8_t* path, uint8_t* outBuf, uint32_t
 static inline int32_t kos_exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
     if (kos_sys_table()->exec) return kos_sys_table()->exec(path, argc, argv, cmdline);
     return -1;
+}
+
+// Non-blocking key poll for apps
+static inline int32_t kos_key_poll(int8_t* out) {
+    if (kos_sys_table()->key_poll) return kos_sys_table()->key_poll(out);
+    return 0;
 }
 
 // Flags for kos_listdir_ex

@@ -89,19 +89,39 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
     if(handler == 0)
         return esp;
 
-    // Handle extended scancode prefix 0xE0 (for keys like keypad '/').
+    // Handle extended scancode prefix 0xE0 (for extended keys like right Ctrl, keypad '/').
     if (key == 0xE0) {
         e0Prefix = true;
         return esp;
     }
 
-    // Break (key release) codes are >= 0x80; we only process make codes here.
+    // Handle key release (break) codes to maintain modifier state
+    if (key & 0x80) {
+        uint8_t code = key & 0x7F;
+        if (e0Prefix) {
+            // Extended releases
+            if (code == 0x1D) { // Right Ctrl release
+                ctrlRight = false;
+            }
+            e0Prefix = false;
+        } else {
+            if (code == 0x1D) { // Left Ctrl release
+                ctrlLeft = false;
+            }
+        }
+        return esp;
+    }
+
+    // Make (key press) codes are < 0x80
     if(key < 0x80)
     {
         // If previous byte was 0xE0, handle extended mappings
         if (e0Prefix) {
             e0Prefix = false;
             switch (key) {
+                case 0x1D: // Right Ctrl press
+                    ctrlRight = true;
+                    break;
                 case 0x35: handler->OnKeyDown('/'); break; // Keypad '/' (E0 35)
                 case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-' (E0 4A) on some layouts
                 default:
@@ -112,66 +132,83 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             return esp;
         }
 
+        int8_t ch = 0;
         switch(key)
-            
         {
             // Backspace
-            case 0x0E: handler->OnKeyDown('\b'); break; 
+            case 0x0E: ch = '\b'; break; 
             // Numeric Keys (main row)
-            case 0x02: handler->OnKeyDown('1'); break;
-            case 0x03: handler->OnKeyDown('2'); break;
-            case 0x04: handler->OnKeyDown('3'); break;
-            case 0x05: handler->OnKeyDown('4'); break;
-            case 0x06: handler->OnKeyDown('5'); break;
-            case 0x07: handler->OnKeyDown('6'); break;
-            case 0x08: handler->OnKeyDown('7'); break;
-            case 0x09: handler->OnKeyDown('8'); break;
-            case 0x0A: handler->OnKeyDown('9'); break;
-            case 0x0B: handler->OnKeyDown('0'); break;
-            case 0x0C: handler->OnKeyDown('-'); break; // Main row '-'
+            case 0x02: ch = '1'; break;
+            case 0x03: ch = '2'; break;
+            case 0x04: ch = '3'; break;
+            case 0x05: ch = '4'; break;
+            case 0x06: ch = '5'; break;
+            case 0x07: ch = '6'; break;
+            case 0x08: ch = '7'; break;
+            case 0x09: ch = '8'; break;
+            case 0x0A: ch = '9'; break;
+            case 0x0B: ch = '0'; break;
+            case 0x0C: ch = '-'; break; // Main row '-'
 
-            case 0x10: handler->OnKeyDown('q'); break;
-            case 0x11: handler->OnKeyDown('w'); break;
-            case 0x12: handler->OnKeyDown('e'); break;
-            case 0x13: handler->OnKeyDown('r'); break;
-            case 0x14: handler->OnKeyDown('t'); break;
-            case 0x15: handler->OnKeyDown('z'); break;
-            case 0x16: handler->OnKeyDown('u'); break;
-            case 0x17: handler->OnKeyDown('i'); break;
-            case 0x18: handler->OnKeyDown('o'); break;
-            case 0x19: handler->OnKeyDown('p'); break;
+            case 0x10: ch = 'q'; break;
+            case 0x11: ch = 'w'; break;
+            case 0x12: ch = 'e'; break;
+            case 0x13: ch = 'r'; break;
+            case 0x14: ch = 't'; break;
+            case 0x15: ch = 'z'; break;
+            case 0x16: ch = 'u'; break;
+            case 0x17: ch = 'i'; break;
+            case 0x18: ch = 'o'; break;
+            case 0x19: ch = 'p'; break;
 
-            case 0x1E: handler->OnKeyDown('a'); break;
-            case 0x1F: handler->OnKeyDown('s'); break;
-            case 0x20: handler->OnKeyDown('d'); break;
-            case 0x21: handler->OnKeyDown('f'); break;
-            case 0x22: handler->OnKeyDown('g'); break;
-            case 0x23: handler->OnKeyDown('h'); break;
-            case 0x24: handler->OnKeyDown('j'); break;
-            case 0x25: handler->OnKeyDown('k'); break;
-            case 0x26: handler->OnKeyDown('l'); break;
+            case 0x1E: ch = 'a'; break;
+            case 0x1F: ch = 's'; break;
+            case 0x20: ch = 'd'; break;
+            case 0x21: ch = 'f'; break;
+            case 0x22: ch = 'g'; break;
+            case 0x23: ch = 'h'; break;
+            case 0x24: ch = 'j'; break;
+            case 0x25: ch = 'k'; break;
+            case 0x26: ch = 'l'; break;
 
-            case 0x2C: handler->OnKeyDown('y'); break;
-            case 0x2D: handler->OnKeyDown('x'); break;
-            case 0x2E: handler->OnKeyDown('c'); break;
-            case 0x2F: handler->OnKeyDown('v'); break;
-            case 0x30: handler->OnKeyDown('b'); break;
-            case 0x31: handler->OnKeyDown('n'); break;
-            case 0x32: handler->OnKeyDown('m'); break;
-            case 0x33: handler->OnKeyDown(','); break;
-            case 0x34: handler->OnKeyDown('.'); break;
-            case 0x35: handler->OnKeyDown('-'); break; // Map to '-' per layout
-            case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-'
+            case 0x2C: ch = 'y'; break;
+            case 0x2D: ch = 'x'; break;
+            case 0x2E: ch = 'c'; break;
+            case 0x2F: ch = 'v'; break;
+            case 0x30: ch = 'b'; break;
+            case 0x31: ch = 'n'; break;
+            case 0x32: ch = 'm'; break;
+            case 0x33: ch = ','; break;
+            case 0x34: ch = '.'; break;
+            case 0x35: ch = '-'; break; // Map to '-' per layout
+            case 0x4A: ch = '-'; break; // Keypad '-'
 
-            case 0x1C: handler->OnKeyDown('\n'); break;
-            case 0x39: handler->OnKeyDown(' '); break;
+            case 0x1C: ch = '\n'; break;
+            case 0x39: ch = ' '; break;
+
+            case 0x1D: // Left Ctrl press
+                ctrlLeft = true;
+                break;
 
             default:
             {
                 tty.Write("KEYBOARD 0X");
                 tty.WriteHex(key);
-                break;
+                break; // ch remains 0
             }
+        }
+
+        // If we obtained a character, apply Ctrl mapping if needed and deliver
+        if (ch) {
+            if ((ctrlLeft || ctrlRight)) {
+                // Map letters to control codes 1..26
+                if (ch >= 'a' && ch <= 'z') {
+                    ch = (int8_t)(ch - 'a' + 1);
+                } else if (ch >= 'A' && ch <= 'Z') {
+                    ch = (int8_t)(ch - 'A' + 1);
+                }
+            }
+            handler->OnKeyDown(ch);
         }
     }
 

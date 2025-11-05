@@ -94,6 +94,30 @@ void Shell::Run() {
 }
 
 void Shell::InputChar(int8_t c) {
+    // Handle control characters (Ctrl+[A-Z] -> 1..26)
+    if (c > 0 && c < 32) {
+        switch (c) {
+            case 3: // Ctrl+C: cancel current line
+                tty.Write("^C\n");
+                bufferIndex = 0;
+                PrintPrompt();
+                return;
+            case 12: // Ctrl+L: clear screen
+                tty.Clear();
+                PrintPrompt();
+                // Optionally reprint current buffer (omitted for simplicity)
+                return;
+            case 21: // Ctrl+U: kill line
+                while (bufferIndex > 0) {
+                    bufferIndex--;
+                    tty.Write("\b \b");
+                }
+                return;
+            default:
+                // Ignore other control chars in shell (do not echo)
+                return;
+        }
+    }
     if (c == '\n' || c == '\r') {
         tty.PutChar('\n');
         buffer[bufferIndex] = 0;

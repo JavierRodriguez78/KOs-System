@@ -64,6 +64,8 @@ namespace kos {
             int32_t (*exec)(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline);
             // Get process info (for 'top', etc.)
             int32_t (*get_process_info)(char* buffer, int32_t maxlen);
+            // Non-blocking key poll for apps: returns 1 if a key was read into *out, 0 otherwise
+            int32_t (*key_poll)(int8_t* out);
         };
 
         /*
@@ -182,6 +184,7 @@ namespace kos {
     static inline int32_t exec(const int8_t* path, int32_t argc, const int8_t** argv, const int8_t* cmdline) {
         return table()->exec ? table()->exec(path, argc, argv, cmdline) : -1;
     }
+    // No inline wrapper for key_poll on kernel side (apps use libc header)
     
     /*
     * @brief Format a string and store it in a buffer.
