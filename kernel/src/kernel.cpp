@@ -7,6 +7,8 @@
 #include <drivers/keyboard/keyboard_driver.hpp>
 #include <drivers/mouse/mouse_driver.hpp>   
 #include <drivers/vga/vga.hpp>
+#include <drivers/net/rtl8139/rtl8139.hpp>
+#include <drivers/net/e1000/e1000.hpp>
 #include <ui/input.hpp>
 #include <console/tty.hpp>
 #include <console/logger.hpp>
@@ -47,6 +49,8 @@ using namespace kos::memory;
 using namespace kos::gfx;
 using namespace kos::process;
 using namespace kos::services;
+using namespace kos::drivers::net::e1000;
+using namespace kos::drivers::net::rtl8139;
 
 
 class MouseToConsole: public MouseEventHandler
@@ -280,6 +284,12 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     // In graphics mode, route mouse events to UI input
     MouseDriver mouse(&interrupts, &g_mouse_ui_handler);
     drvManager.AddDriver(&mouse);
+
+    // Add scaffold NIC drivers; they will self-probe for matching PCI devices
+    Rtl8139Driver nic_rtl8139;
+    E1000Driver   nic_e1000;
+    drvManager.AddDriver(&nic_rtl8139);
+    drvManager.AddDriver(&nic_e1000);
 
     PeripheralComponentIntercontroller PCIController;
     PCIController.SelectDrivers(&drvManager);

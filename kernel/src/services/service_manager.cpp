@@ -1,5 +1,10 @@
 #include <services/service_manager.hpp>
 #include <services/journal_service.hpp>
+#include <services/banner_service.hpp>
+#include <services/time_service.hpp>
+#include <services/filesystem_service.hpp>
+#include <services/network_manager.hpp>
+#include <application/init/service.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/string.hpp>
 #include <lib/libc/string.h>
@@ -73,10 +78,17 @@ uint32_t ServiceManager::s_boot_ms = 0;
 
 // Register built-in services here
 static void RegisterBuiltinServices() {
+    // To avoid duplicate registrations with kernel.cpp, we only register
+    // services that are NOT already registered by the kernel main:
+    // - Kernel registers: FS, BANNER, TIME, INITD (and WindowManager)
+    // - ServiceManager registers: JOURNAL and NETWORK only
+
     static JournalService journalService;
     g_journal_service = &journalService;
     ServiceManager::Register(&journalService);
-    // Add other services as needed
+
+    static NetworkManagerService networkService;
+    ServiceManager::Register(&networkService);
 }
 
 

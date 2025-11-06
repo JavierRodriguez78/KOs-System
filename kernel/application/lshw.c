@@ -99,6 +99,44 @@ static void print_pci_devices(void) {
     }
 }
 
+// Decode a few known network devices for nicer lshw output
+static const char* decode_net_name(uint16_t vendor, uint16_t device) {
+    if (vendor == 0x8086 && device == 0x100E) return "Intel 82540EM (e1000)"; // QEMU/VirtualBox
+    // Add more pairs here as you add drivers
+    return "Unknown NIC";
+}
+
+static void print_net_devices(void) {
+    kos_puts((const int8_t*)"Network adapters:\n");
+    int found = 0;
+    for (uint8_t bus = 0; bus < 8; ++bus) {
+        for (uint8_t dev = 0; dev < 32; ++dev) {
+            uint8_t functions = 1;
+            uint8_t header_type = (uint8_t)pci_config_read(bus, dev, 0, 0x0E);
+            if (header_type & 0x80) functions = 8;
+            for (uint8_t fn = 0; fn < functions; ++fn) {
+                uint16_t vendor = (uint16_t)pci_config_read(bus, dev, fn, 0x00);
+                if (vendor == 0xFFFF) { if (fn == 0) break; else continue; }
+                uint16_t device = (uint16_t)pci_config_read(bus, dev, fn, 0x02);
+                uint8_t class_id = (uint8_t)pci_config_read(bus, dev, fn, 0x0B);
+                if (class_id != 0x02) continue; // 0x02 = Network Controller
+                uint8_t subclass = (uint8_t)pci_config_read(bus, dev, fn, 0x0A);
+                uint8_t int_line = (uint8_t)pci_config_read(bus, dev, fn, 0x3C);
+                uint32_t bar0 = (uint32_t)pci_config_read(bus, dev, fn, 0x10);
+                const char* name = decode_net_name(vendor, device);
+                // Determine BAR type and base
+                int is_io = (bar0 & 0x1) ? 1 : 0;
+                uint32_t base = is_io ? (bar0 & 0xFFFFFFFCu) : (bar0 & 0xFFFFFFF0u);
+                kos_printf((const int8_t*)"  %02X:%02X.%u  %s  vendor=%04X device=%04X subclass=%02X  IRQ=%u\n",
+                           bus, dev, fn, (const int8_t*)name, vendor, device, subclass, int_line);
+                kos_printf((const int8_t*)"    BAR0: %s @ 0x%X\n", is_io ? (const int8_t*)"I/O" : (const int8_t*)"MMIO", base);
+                found = 1;
+            }
+        }
+    }
+    if (!found) kos_puts((const int8_t*)"  (none)\n");
+}
+
 static void print_memory_info(void) {
     uint32_t total_frames = kos_get_total_frames();
     uint32_t free_frames = kos_get_free_frames();
@@ -120,6 +158,8 @@ void app_lshw(void) {
     print_cpuid_info();
     kos_puts((const int8_t*)"\n");
     print_memory_info();
+    kos_puts((const int8_t*)"\n");
+    print_net_devices();
     kos_puts((const int8_t*)"\n");
     print_pci_devices();
 }

@@ -156,9 +156,10 @@ add_app(clear)
 add_app(init)
 add_app(cat)
 add_app(top)
+add_app(ping)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
@@ -205,6 +206,13 @@ add_custom_target(qemu-vvfat
     USES_TERMINAL
 )
 
+# Read-only QEMU run (avoids write-lock on disk.img). Good for quick boot/log checks.
+add_custom_target(qemu-ro
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    DEPENDS iso
+    USES_TERMINAL
+)
+
 add_custom_target(debug
     COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso
@@ -239,8 +247,8 @@ add_custom_command(
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/HOME || true; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC || true; \
                 MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/bin/*.elf ::/BIN || true; \
-                if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
-                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ::/ETC/ || true; \
+                if ls ${KOS_ROOT_DIR}/disk/etc/*.CFG >/dev/null 2>&1; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/*.CFG ::/ETC/ 2>/dev/null || true; \
                 fi; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC/INIT.D || true; \
                 if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
@@ -252,8 +260,8 @@ add_custom_command(
                 sudo mount -o loop ${DISK_IMG} ${KOS_ROOT_DIR}/.diskmnt; \
                 sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/BIN ${KOS_ROOT_DIR}/.diskmnt/HOME ${KOS_ROOT_DIR}/.diskmnt/ETC; \
                 sudo cp ${KOS_ROOT_DIR}/disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
-                if [ -f ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ]; then \
-                    sudo cp ${KOS_ROOT_DIR}/disk/etc/SERVICES.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/; \
+                if ls ${KOS_ROOT_DIR}/disk/etc/*.CFG >/dev/null 2>&1; then \
+                    sudo cp ${KOS_ROOT_DIR}/disk/etc/*.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/ 2>/dev/null || true; \
                 fi; \
                 sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D; \
                 if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
