@@ -19,7 +19,7 @@ namespace services {
 extern kos::fs::Filesystem* get_fs();
 }
 }
-JournalService::JournalService() : logCount(0), journalSocket(nullptr), logFileFd(-1) {}
+JournalService::JournalService() : logCount(0), journalSocket(nullptr), logFileFd(-1), logSeq(0) { fsReady = false; pendingFlush = false; }
 
 JournalService::~JournalService() {
     Stop();
@@ -35,18 +35,19 @@ JournalService::~JournalService() {
 }
 
 bool JournalService::Start() {
-    if (journalSocket) {
-        journalSocket->closeSocket();
-        delete journalSocket;
-        journalSocket = nullptr;
-    }
+    if (journalSocket) { journalSocket->closeSocket(); delete journalSocket; journalSocket = nullptr; }
     journalSocket = new kos::lib::Socket(kos::lib::SocketDomain::UNIX, kos::lib::SocketType::DGRAM, kos::lib::SocketProtocol::DEFAULT);
     bool ok = journalSocket->connect("/run/systemd/journal/socket");
-    // Open log file for appending (pseudo code, replace with your FS API)
-    // logFileFd = fs_open("/var/log/system.log", O_WRONLY | O_CREAT | O_APPEND);
-    // If using your Filesystem class:
-    // auto fs = get_fs();
-    // if (fs) logFileFd = fs->OpenFile("/var/log/system.log", FS_WRITE | FS_APPEND | FS_CREATE);
+    // If FS is available, set ready and create dirs
+    fsReady = (kos::services::get_fs() != nullptr);
+    if (fsReady) {
+        ensureLogDir();
+        openLogFile();
+        if (pendingFlush) { Flush(); pendingFlush = false; }
+    } else {
+        pendingFlush = true;
+    }
+    log("JournalService started");
     return ok;
 }
 
@@ -64,13 +65,37 @@ void JournalService::Stop() {
 }
 
 void JournalService::log(const char* message) {
+    if (!message) return;
     if (logCount < LOG_BUFFER_SIZE) {
-        kos::lib::String::strncpy(reinterpret_cast<int8_t*>(logBuffer[logCount]), reinterpret_cast<const int8_t*>(message), LOG_ENTRY_SIZE - 1);
-        logBuffer[logCount][LOG_ENTRY_SIZE - 1] = '\0';
+        kos::lib::String::strncpy((int8_t*)logBuffer[logCount], (const int8_t*)message, LOG_ENTRY_SIZE - 1);
+        logBuffer[logCount][LOG_ENTRY_SIZE - 1] = 0;
         ++logCount;
     }
     sendToSocket(message);
     persistLog(message);
+}
+
+void JournalService::Flush() {
+    for (int i = 0; i < logCount; ++i) {
+        persistLog(logBuffer[i]);
+    }
+}
+
+void JournalService::Rotate() {
+    // Simple rotation: append sequence number into rotated file name
+    ++logSeq;
+    char rotated[64];
+    // /var/log/system.log.N
+    const char* base = "/var/log/system.log";
+    int bi=0; for (; base[bi] && bi < (int)sizeof(rotated)-1; ++bi) rotated[bi] = base[bi];
+    rotated[bi++]='.';
+    // convert seq to decimal
+    uint32_t n = logSeq; char rev[16]; int ri=0; if(n==0){rev[ri++]='0';} while(n && ri<16){ rev[ri++]=char('0'+(n%10)); n/=10; }
+    while(ri) rotated[bi++] = rev[--ri];
+    rotated[bi]=0;
+    // For simplicity, we just write a rotation marker line to new file and continue writing there
+    openLogFile(); // reopen (placeholder; current fs API doesn't maintain file descriptors)
+    writeRaw("--- log rotated ---");
 }
 
 // setupSocket and closeSocket are now handled by the Socket class
@@ -96,11 +121,31 @@ void JournalService::readFromSocket() {
 }
 
 void JournalService::persistLog(const char* message) {
-    auto fs = get_fs();
-    if (fs) {
-        fs->WriteFile("/var/log/system.log", (const uint8_t*)message, kos::lib::String::strlen(message));
-        fs->WriteFile("/var/log/system.log", (const uint8_t*)"\n", 1);
+    if (!message) return;
+    if (kos::services::get_fs()) {
+        fsReady = true;
+        ensureLogDir();
+        writeRaw(message);
+    } else {
+        pendingFlush = true;
     }
+}
+
+void JournalService::ensureLogDir() {
+    auto fs = get_fs(); if (!fs) return;
+    // Minimal: attempt to create /var and /var/log (ignore failures)
+    fs->Mkdir((const int8_t*)"/var", 1);
+    fs->Mkdir((const int8_t*)"/var/log", 1);
+}
+
+void JournalService::openLogFile() {
+    // Placeholder: Filesystem lacks open/append; we emulate by appending via WriteFile writes.
+}
+
+void JournalService::writeRaw(const char* line) {
+    auto fs = get_fs(); if (!fs) return;
+    fs->WriteFile((const int8_t*)"/var/log/system.log", (const uint8_t*)line, kos::lib::String::strlen(line));
+    fs->WriteFile((const int8_t*)"/var/log/system.log", (const uint8_t*)"\n", 1);
 }
 
 void JournalService::Tick() {

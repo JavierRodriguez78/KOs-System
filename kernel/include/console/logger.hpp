@@ -23,12 +23,19 @@ namespace kos {
                 static const int STATUS_COL = 70;
                 // Global debug flag
                 static bool s_debugEnabled;
+                // When true, suppress output to TTY (used to hide boot logs from GUI terminal)
+                static bool s_mutedTTY;
 
                 // Enable/disable debug logging
                 static inline void SetDebugEnabled(bool en) { s_debugEnabled = en; }
                 static inline bool IsDebugEnabled() { return s_debugEnabled; }
                 // Prints: [YYYY-MM-DD HH:MM:SS] message\n
                 static void Log(const char* msg) {
+                    if (s_mutedTTY) { // Still forward to journal, but skip TTY
+                        extern void LogToJournal(const char* message);
+                        LogToJournal(msg);
+                        return;
+                    }
                     kos::arch::x86::hardware::rtc::DateTime dt; kos::arch::x86::hardware::rtc::RTC::Read(dt);
                     printTs(dt);
                     TTY::Write((const int8_t*)" ");
@@ -56,6 +63,11 @@ namespace kos {
                 }
 
                 static void LogKV(const char* key, const char* value) {
+                    if (s_mutedTTY) {
+                        extern void LogToJournalKV(const char* key, const char* value);
+                        LogToJournalKV(key, value);
+                        return;
+                    }
                     DateTime dt; 
                     RTC::Read(dt);
                     printTs(dt);
@@ -70,12 +82,18 @@ namespace kos {
                 }
 
                 static void LogRaw(const char* msg) {
+                    if (s_mutedTTY) return;
                     TTY::Write((const int8_t*)msg);
                 }
 
                 // Linux-like status at end of the line: [ OK ] or [FAIL]
                 // Usage: LogStatus("Initializing ...", true/false)
                 static void LogStatus(const char* msg, bool ok) {
+                        if (s_mutedTTY) {
+                            extern void LogToJournalStatus(const char* msg, bool ok);
+                            LogToJournalStatus(msg, ok);
+                            return;
+                        }
                         DateTime dt;
                         RTC::Read(dt);
                         printTs(dt);
@@ -104,6 +122,8 @@ namespace kos {
                 }
 
             private:
+            public: // control API (kept simple)
+            static inline void MuteTTY(bool m) { s_mutedTTY = m; }
             static void write2(uint8_t v) {
                 char b[3];
                 b[0] = '0' + (v / 10);

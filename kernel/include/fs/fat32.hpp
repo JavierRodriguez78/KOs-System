@@ -30,6 +30,10 @@ namespace kos {
             virtual void DebugInfo(); // print cached BPB/layout values
             virtual void ListDir(const int8_t* path) override;
             virtual bool DirExists(const int8_t* path) override;
+            // Append-oriented WriteFile implementation. Each call appends 'len' bytes to
+            // an existing file or creates a new file if it does not exist. Uses 8.3 short
+            // names only. Returns number of bytes appended or -1 on failure.
+            virtual int32_t WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) override;
 
         private:
             BlockDevice* dev;
@@ -55,6 +59,10 @@ namespace kos {
             bool AddEntryToDirCluster(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, bool isDir);
             void PackShortName11(const int8_t* name83, uint8_t out11[11], bool& okIs83, bool upperOnly = true);
             bool InitDirCluster(uint32_t newDirCluster, uint32_t parentCluster);
+            // Helper to locate a short 8.3 entry inside a directory cluster chain and
+            // return the cluster that contains the entry plus the byte offset inside that cluster.
+            bool FindShortEntryWithOffset(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t& outClusterContaining, uint32_t& outEntryOffset, uint32_t& outStartCluster, uint32_t& outFileSize, uint8_t& outAttr);
+            bool AddFileEntryToDir(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, uint32_t initialSize);
         public:
             virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) override;
             virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;

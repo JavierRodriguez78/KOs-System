@@ -61,3 +61,22 @@ cmake --build build --target docs
 - Linking is done directly with `ld` to respect the custom script `linker.ld`.
 - ASM files are assembled in 32-bit mode.
 - If your host toolchain prefixes (e.g., `i686-elf-`), adjust commands in `CMakeLists.txt` accordingly.
+
+## Graphical terminal
+
+When booted with the framebuffer (graphics) entry, the Window Manager now creates a "Terminal" window at startup and mirrors all TTY output into it. The classic text-mode shell continues to run, but its output/input are visible and interactive inside this window:
+
+- Output: Anything written via `TTY::Write/PutChar` is also drawn using a tiny 8x8 bitmap font inside the terminal window.
+- Input: Keyboard events are still delivered to the shell through the existing keyboard handler; echoed characters appear in the terminal.
+
+Tips:
+- The window can be dragged by its title bar; z-order is handled by click-to-focus.
+- If you boot without framebuffer, the system behaves as before in text mode.
+ - Keyboard input now respects window focus: click inside the Terminal window (anywhere on it) to give it focus; only the focused window receives shell input.
+
+### Terminal usability updates
+- Focus highlight: the focused window draws an accent bar below the title bar.
+- Readability: the terminal defaults to an 8x16 font for taller, clearer text.
+- Scrollback: use PageUp/PageDown to navigate history in the terminal window.
+  - PageUp/PageDown are handled from the keyboard driver via extended scancodes (E0 49 / E0 51).
+  - While scrolled back, the cursor is rendered only when visible in the current viewport.

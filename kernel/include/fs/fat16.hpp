@@ -31,6 +31,7 @@ namespace kos {
                 virtual bool DirExists(const int8_t* path) override;
                 virtual void DebugInfo();
                 virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) override;
+                // Append-oriented write: appends 'len' bytes to file or creates it if missing.
                 virtual int32_t WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) override;
                 virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;
 
@@ -59,6 +60,10 @@ namespace kos {
                 bool InitDirCluster(uint32_t newCluster, uint32_t parentCluster);
                 bool AddEntryToRoot(const uint8_t shortName11[11], uint32_t startCluster, bool isDir);
                 void PackShortName11(const int8_t* name83, uint8_t out11[11], bool& okIs83, bool upperOnly = true);
+        bool AddFileEntryToDir(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, uint32_t initialSize);
+        bool FindShortEntryWithOffset(uint32_t dirCluster, const uint8_t shortName11[11], bool atRoot,
+                          uint32_t& outClusterContaining, uint32_t& outEntryOffset,
+                          uint32_t& outStartCluster, uint32_t& outFileSize, uint8_t& outAttr);
         };
     }
 }

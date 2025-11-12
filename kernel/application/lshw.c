@@ -102,6 +102,12 @@ static void print_pci_devices(void) {
 // Decode a few known network devices for nicer lshw output
 static const char* decode_net_name(uint16_t vendor, uint16_t device) {
     if (vendor == 0x8086 && device == 0x100E) return "Intel 82540EM (e1000)"; // QEMU/VirtualBox
+    if (vendor == 0x10EC) {
+        if (device == 0x8139) return "Realtek RTL8139";
+        if (device == 0x8169) return "Realtek RTL8169";
+        if (device == 0x8168) return "Realtek RTL8168/8111";
+        if (device == 0x8136) return "Realtek RTL8101/8102 FE";
+    }
     // Add more pairs here as you add drivers
     return "Unknown NIC";
 }

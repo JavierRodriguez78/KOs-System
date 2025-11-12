@@ -21,6 +21,9 @@ namespace kos {
                 // Color helpers
                 static void SetColor(uint8_t fg, uint8_t bg);
                 static void SetAttr(uint8_t a);
+                // Discard any pre-initialization buffered output so a fresh
+                // graphical terminal session can start without boot logs.
+                static void DiscardPreinitBuffer();
             private:
                 static VGA vga;
         };

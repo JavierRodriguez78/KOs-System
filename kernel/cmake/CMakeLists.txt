@@ -122,6 +122,7 @@ add_library(app_support_objs OBJECT
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
+target_compile_definitions(app_support_objs PRIVATE KOS_BUILD_APPS=1)
 
 function(add_app NAME)
     # Build the app object (C apps)
@@ -195,7 +196,7 @@ add_custom_command(TARGET iso POST_BUILD
 # QEMU helpers
 # -----------------------
 add_custom_target(qemu
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${KOS_ROOT_DIR}/disk.img,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso diskimg
     USES_TERMINAL
 )
@@ -208,7 +209,7 @@ add_custom_target(qemu-vvfat
 
 # Read-only QEMU run (avoids write-lock on disk.img). Good for quick boot/log checks.
 add_custom_target(qemu-ro
-    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -hda ${KOS_ROOT_DIR}/disk.img -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${KOS_ROOT_DIR}/disk.img,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )

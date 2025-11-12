@@ -32,6 +32,9 @@ namespace kos{
                 uint8_t buttons;
                 // Mouse event handler
                 MouseEventHandler* handler;
+                // Polling buffer for fallback mode
+                uint8_t pbuf[3];
+                uint8_t poff = 0;
         
                 public:
                     /*
@@ -57,6 +60,9 @@ namespace kos{
                     @ brief Activate the mouse driver.
                     */  
                     virtual void Activate();
+
+            // Fallback polling when IRQ12 doesn't fire. Non-blocking; processes at most one packet.
+            void PollOnce();
             };
         }
     }

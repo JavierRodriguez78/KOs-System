@@ -365,6 +365,178 @@ bool FAT32::InitDirCluster(uint32_t newDirCluster, uint32_t parentCluster) {
     return WriteCluster(newDirCluster, cl);
 }
 
+bool FAT32::FindShortEntryWithOffset(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t& outClusterContaining, uint32_t& outEntryOffset, uint32_t& outStartCluster, uint32_t& outFileSize, uint8_t& outAttr) {
+    outClusterContaining = 0; outEntryOffset = 0; outStartCluster = 0; outFileSize = 0; outAttr = 0;
+    uint8_t* clBuf = (uint8_t*)0x36000; // scratch
+    uint32_t cluster = dirCluster;
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    while (cluster >= 2 && cluster < 0x0FFFFFF8) {
+        if (!ReadCluster(cluster, clBuf)) return false;
+        for (uint32_t off = 0; off < bytesPerCluster; off += 32) {
+            uint8_t fb = clBuf[off]; if (fb == 0x00) break; if (fb == 0xE5) continue; uint8_t attr = clBuf[off + 11]; if (attr == 0x0F) continue;
+            bool match = true;
+            for (int i = 0; i < 11; ++i) { if (clBuf[off + i] != shortName11[i]) { match = false; break; } }
+            if (match) {
+                outClusterContaining = cluster;
+                outEntryOffset = off;
+                outAttr = attr;
+                uint16_t lo = (uint16_t)clBuf[off + 26] | ((uint16_t)clBuf[off + 27] << 8);
+                uint16_t hi = (uint16_t)clBuf[off + 20] | ((uint16_t)clBuf[off + 21] << 8);
+                outStartCluster = ((uint32_t)hi << 16) | lo;
+                outFileSize = (uint32_t)clBuf[off + 28] | ((uint32_t)clBuf[off + 29] << 8) | ((uint32_t)clBuf[off + 30] << 16) | ((uint32_t)clBuf[off + 31] << 24);
+                return true;
+            }
+        }
+        uint32_t next = NextCluster(cluster);
+        if (next >= 0x0FFFFFF8 || next == 0) break;
+        cluster = next;
+    }
+    return false;
+}
+
+bool FAT32::AddFileEntryToDir(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, uint32_t initialSize) {
+    // Reuse directory writing logic similar to AddEntryToDirCluster (simplified for files)
+    uint8_t* cl = (uint8_t*)0x37000; // scratch
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    uint32_t cur = dirCluster;
+    while (true) {
+        if (!ReadCluster(cur, cl)) return false;
+        uint32_t off = 0;
+        for (; off < bytesPerCluster; off += 32) {
+            uint8_t fb = cl[off]; if (fb == 0x00 || fb == 0xE5) break; }
+        if (off < bytesPerCluster) {
+            for (int i = 0; i < 11; ++i) cl[off + i] = shortName11[i];
+            cl[off + 11] = 0x20; // ATTR: regular file
+            cl[off + 26] = (uint8_t)(startCluster & 0xFF);
+            cl[off + 27] = (uint8_t)((startCluster >> 8) & 0xFF);
+            cl[off + 20] = (uint8_t)((startCluster >> 16) & 0xFF);
+            cl[off + 21] = (uint8_t)((startCluster >> 24) & 0xFF);
+            uint32_t sz = initialSize;
+            cl[off + 28] = (uint8_t)(sz & 0xFF);
+            cl[off + 29] = (uint8_t)((sz >> 8) & 0xFF);
+            cl[off + 30] = (uint8_t)((sz >> 16) & 0xFF);
+            cl[off + 31] = (uint8_t)((sz >> 24) & 0xFF);
+            return WriteCluster(cur, cl);
+        }
+        // Extend directory if needed
+        uint32_t nxt = NextCluster(cur);
+        if (nxt >= 0x0FFFFFF8 || nxt == 0) {
+            uint32_t newCl = AllocateCluster(); if (newCl < 2) return false;
+            if (!UpdateFAT(cur, newCl)) return false;
+            if (!UpdateFAT(newCl, 0x0FFFFFF8)) return false;
+            uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+            for (uint8_t s=0; s < bpb.sectorsPerCluster; ++s) { if (!WriteSector(ClusterToLBA(newCl) + s, zero)) return false; }
+            cur = newCl;
+        } else {
+            cur = nxt;
+        }
+    }
+}
+
+int32_t FAT32::WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) {
+    if (!mountedFlag || !path || !data || len == 0) return -1;
+    if (path[0] != '/') return -1;
+    // Traverse directories to the parent directory of target file
+    uint32_t dirCl = bpb.rootCluster;
+    const int8_t* p = path + 1; // skip leading '/'
+    int8_t comp[13];
+    int8_t finalName[13]; finalName[0]=0;
+    while (*p) {
+        int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++; comp[ci]=0;
+        if (*p == '/') ++p; if (ci == 0) continue;
+        // Peek ahead to see if this is last component
+        const int8_t* q = p; while (*q == '/') ++q; bool isLast = (*q == 0);
+        // Uppercase for 8.3
+        for (int i=0; comp[i]; ++i) if (comp[i]>='a'&&comp[i]<='z') comp[i] -= ('a'-'A');
+        if (isLast) {
+            // This is file name
+            int fi=0; while (comp[fi] && fi < 12) { finalName[fi]=comp[fi]; ++fi; } finalName[fi]=0; break;
+        }
+        uint32_t childCl=0, childSz=0; if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) return -1; // parent dir missing
+        dirCl = childCl;
+    }
+    if (finalName[0]==0) return -1; // no file name
+    // Build short 11-byte name (upper-case); allow truncation.
+    uint8_t short11[11]; bool ok83=false; PackShortName11(finalName, short11, ok83, true); if(!ok83) return -1;
+    uint32_t entryCl=0, entryOff=0, startCl=0, fileSize=0; uint8_t attr=0;
+    bool exists = FindShortEntryWithOffset(dirCl, short11, entryCl, entryOff, startCl, fileSize, attr);
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    if (!exists) {
+        // Create new file: allocate first cluster
+        uint32_t newCl = AllocateCluster(); if (newCl < 2) return -1;
+        // Zero-init clusters needed
+        uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+        for (uint8_t s=0; s < bpb.sectorsPerCluster; ++s) { if (!WriteSector(ClusterToLBA(newCl) + s, zero)) return -1; }
+        if (!UpdateFAT(newCl, 0x0FFFFFF8)) return -1; // mark EOC
+        // Write initial data across cluster chain (allocate more clusters if needed)
+        uint32_t remaining = len; const uint8_t* src = data; uint32_t current = newCl;
+        while (remaining) {
+            uint8_t* buf = (uint8_t*)0x38000; // scratch
+            // Zero fresh buffer
+            for (uint32_t i=0;i<bytesPerCluster;++i) buf[i]=0;
+            uint32_t chunk = (remaining > bytesPerCluster) ? bytesPerCluster : remaining;
+            for (uint32_t i=0;i<chunk;++i) buf[i] = src[i];
+            if (!WriteCluster(current, buf)) return -1;
+            src += chunk; remaining -= chunk;
+            if (remaining) {
+                uint32_t nextCl = AllocateCluster(); if (nextCl < 2) return -1;
+                if (!UpdateFAT(current, nextCl)) return -1;
+                if (!UpdateFAT(nextCl, 0x0FFFFFF8)) return -1;
+                // Zero new cluster sectors
+                for (uint8_t s=0; s < bpb.sectorsPerCluster; ++s) { if (!WriteSector(ClusterToLBA(nextCl) + s, zero)) return -1; }
+                current = nextCl;
+            }
+        }
+        if (!AddFileEntryToDir(dirCl, short11, newCl, len)) return -1;
+        return (int32_t)len;
+    }
+    // Append to existing file
+    if (!(attr & 0x20)) return -1; // not a regular file
+    uint32_t lastCluster = startCl;
+    // Walk to end of cluster chain
+    while (true) {
+        uint32_t nxt = NextCluster(lastCluster);
+        if (nxt >= 0x0FFFFFF8 || nxt == 0) break;
+        lastCluster = nxt;
+    }
+    uint32_t offsetInLast = fileSize % bytesPerCluster;
+    uint32_t remaining = len; const uint8_t* src = data;
+    // If last cluster has space, read-modify-write
+    if (offsetInLast < bytesPerCluster && (fileSize > 0 || offsetInLast != 0)) {
+        uint8_t* buf = (uint8_t*)0x39000;
+        if (!ReadCluster(lastCluster, buf)) return -1;
+        uint32_t space = bytesPerCluster - offsetInLast;
+        uint32_t chunk = (remaining > space) ? space : remaining;
+        for (uint32_t i=0;i<chunk;++i) buf[offsetInLast + i] = src[i];
+        if (!WriteCluster(lastCluster, buf)) return -1;
+        src += chunk; remaining -= chunk; fileSize += chunk;
+        offsetInLast += chunk;
+    }
+    // Allocate new clusters if more data remains
+    while (remaining) {
+        uint32_t newCl = AllocateCluster(); if (newCl < 2) return -1;
+        if (!UpdateFAT(lastCluster, newCl)) return -1;
+        if (!UpdateFAT(newCl, 0x0FFFFFF8)) return -1;
+        uint8_t* buf = (uint8_t*)0x3A000;
+        // Zero-init
+        for (uint32_t i=0;i<bytesPerCluster;++i) buf[i]=0;
+        uint32_t chunk = (remaining > bytesPerCluster) ? bytesPerCluster : remaining;
+        for (uint32_t i=0;i<chunk;++i) buf[i] = src[i];
+        if (!WriteCluster(newCl, buf)) return -1;
+        src += chunk; remaining -= chunk; fileSize += chunk;
+        lastCluster = newCl;
+    }
+    // Update directory entry size and (low/high) cluster fields if they were zero (should not change start cluster for append)
+    uint8_t* dirBuf = (uint8_t*)0x3B000;
+    if (!ReadCluster(entryCl, dirBuf)) return -1;
+    dirBuf[entryOff + 28] = (uint8_t)(fileSize & 0xFF);
+    dirBuf[entryOff + 29] = (uint8_t)((fileSize >> 8) & 0xFF);
+    dirBuf[entryOff + 30] = (uint8_t)((fileSize >> 16) & 0xFF);
+    dirBuf[entryOff + 31] = (uint8_t)((fileSize >> 24) & 0xFF);
+    if (!WriteCluster(entryCl, dirBuf)) return -1;
+    return (int32_t)len;
+}
+
 bool FAT32::AddEntryToDirCluster(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, bool isDir) {
     uint8_t* cl = (uint8_t*)0x40000; // scratch
     uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;

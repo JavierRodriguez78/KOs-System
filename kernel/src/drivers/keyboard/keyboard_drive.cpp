@@ -122,6 +122,12 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                 case 0x1D: // Right Ctrl press
                     ctrlRight = true;
                     break;
+                case 0x49: // Page Up (E0 49)
+                    handler->OnKeyDown((char)0xF1); // internal code for PageUp
+                    break;
+                case 0x51: // Page Down (E0 51)
+                    handler->OnKeyDown((char)0xF2); // internal code for PageDown
+                    break;
                 case 0x35: handler->OnKeyDown('/'); break; // Keypad '/' (E0 35)
                 case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-' (E0 4A) on some layouts
                 default:

@@ -28,6 +28,12 @@ namespace kos {
             // Present backbuffer to the real framebuffer
             static void EndFrame();
 
+            // Draw a single 8x8 glyph into backbuffer at x,y with fg/bg colors (ARGB)
+            static void DrawGlyph8x8(uint32_t x, uint32_t y, const uint8_t glyph[8], uint32_t fgARGB, uint32_t bgARGB);
+
+            // Fill a rectangle in backbuffer with a solid color (clamped to screen)
+            static void FillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color);
+
         private:
             static bool s_ready;
             static uint32_t* s_backbuf; // backbuffer mapped to system RAM

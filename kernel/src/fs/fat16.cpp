@@ -3,9 +3,132 @@
 using namespace kos::fs;
 
 int32_t FAT16::WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) {
-    // TODO: Implement actual FAT16 file writing logic
-    // For now, just return -1 to indicate not implemented
-    return -1;
+    if (!mounted || !path || !data || len == 0) return -1;
+    if (path[0] != '/') return -1;
+    // Traverse components to reach parent directory of target file
+    const int8_t* p = path + 1;
+    bool atRoot = true;
+    uint32_t dirCl = 0; // valid when !atRoot
+    int8_t comp[13];
+    int8_t finalName[13]; finalName[0] = 0;
+    while (*p) {
+        int ci=0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+        comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
+        // peek ahead
+        const int8_t* q = p; while (*q == '/') ++q; bool isLast = (*q == 0);
+        for (int i=0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+        if (isLast) {
+            int fi=0; while (comp[fi] && fi < 12) { finalName[fi] = comp[fi]; ++fi; } finalName[fi] = 0; break;
+        }
+        uint32_t childCl=0, childSz=0; bool isDir=false; bool ok=false;
+        if (atRoot) ok = FindShortNameInRoot(comp, childCl, childSz, isDir);
+        else ok = FindShortNameInDirCluster(dirCl, comp, childCl, childSz, isDir);
+        if (!ok || !isDir) return -1;
+        dirCl = childCl; atRoot = false;
+    }
+    if (finalName[0] == 0) return -1;
+    uint8_t short11[11]; bool ok83=false; PackShortName11(finalName, short11, ok83, true); if (!ok83) return -1;
+    uint32_t entryCl=0, entryOff=0, startCl=0, fileSize=0; uint8_t attr=0;
+    bool exists = FindShortEntryWithOffset(dirCl, short11, atRoot, entryCl, entryOff, startCl, fileSize, attr);
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+
+    if (!exists) {
+        // Create new file
+        uint32_t newCl = AllocateCluster(); if (newCl < 2) return -1;
+        // Zero initialize sectors in new cluster
+        uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+        uint32_t base = ClusterToLBA(newCl);
+        for (uint8_t s=0; s<bpb.sectorsPerCluster; ++s) { if (!WriteSector(base + s, zero)) return -1; }
+        if (!UpdateFAT(newCl, 0xFFFF)) return -1; // EOC
+
+        // Write data across chain
+        uint32_t remaining = len; const uint8_t* src = data; uint32_t current = newCl;
+        while (remaining) {
+            uint8_t* buf = (uint8_t*)0x2A000;
+            for (uint32_t i=0;i<bytesPerCluster;++i) buf[i]=0;
+            uint32_t chunk = (remaining > bytesPerCluster) ? bytesPerCluster : remaining;
+            for (uint32_t i=0;i<chunk;++i) buf[i] = src[i];
+            if (!WriteCluster(current, buf)) return -1;
+            src += chunk; remaining -= chunk;
+            if (remaining) {
+                uint32_t nextCl = AllocateCluster(); if (nextCl < 2) return -1;
+                if (!UpdateFAT(current, (uint16_t)nextCl)) return -1;
+                if (!UpdateFAT(nextCl, 0xFFFF)) return -1;
+                // zero new cluster
+                base = ClusterToLBA(nextCl);
+                for (uint8_t s=0; s<bpb.sectorsPerCluster; ++s) { if (!WriteSector(base + s, zero)) return -1; }
+                current = nextCl;
+            }
+        }
+        // Add entry
+        if (atRoot) {
+            if (!AddEntryToRoot(short11, newCl, false)) return -1;
+        } else {
+            if (!AddFileEntryToDir(dirCl, short11, newCl, len)) return -1;
+        }
+        return (int32_t)len;
+    }
+
+    // Append to existing file
+    if (attr & 0x10) return -1; // is directory
+    uint32_t lastCl = startCl;
+    while (true) {
+        uint32_t nxt = NextCluster(lastCl);
+        if (nxt >= 0xFFF8 || nxt == 0) break;
+        lastCl = nxt;
+    }
+    uint32_t offsetInLast = fileSize % bytesPerCluster;
+    uint32_t remaining = len; const uint8_t* src = data;
+
+    if (offsetInLast) {
+        uint8_t* buf = (uint8_t*)0x2B000;
+        if (!ReadCluster(lastCl, buf)) return -1;
+        uint32_t space = bytesPerCluster - offsetInLast;
+        uint32_t chunk = (remaining > space) ? space : remaining;
+        for (uint32_t i=0;i<chunk;++i) buf[offsetInLast + i] = src[i];
+        if (!WriteCluster(lastCl, buf)) return -1;
+        src += chunk; remaining -= chunk; fileSize += chunk;
+    }
+
+    while (remaining) {
+        uint32_t newCl = AllocateCluster(); if (newCl < 2) return -1;
+        if (!UpdateFAT(lastCl, (uint16_t)newCl)) return -1;
+        if (!UpdateFAT(newCl, 0xFFFF)) return -1;
+        uint8_t* buf = (uint8_t*)0x2C000; for (uint32_t i=0;i<bytesPerCluster;++i) buf[i]=0;
+        uint32_t chunk = (remaining > bytesPerCluster) ? bytesPerCluster : remaining;
+        for (uint32_t i=0;i<chunk;++i) buf[i] = src[i];
+        if (!WriteCluster(newCl, buf)) return -1;
+        src += chunk; remaining -= chunk; fileSize += chunk; lastCl = newCl;
+    }
+
+    // Update directory entry size
+    if (atRoot) {
+        // Search and update in root directory sectors
+        uint8_t sec[512];
+        for (uint32_t s = 0; s < rootDirSectors; ++s) {
+            if (!ReadSector(rootDirLBA + s, sec)) return -1;
+            for (int i=0;i<512;i+=32) {
+                uint8_t fb = sec[i]; if (fb == 0x00) break; if (fb == 0xE5) continue; uint8_t attrb = sec[i+11]; if (attrb==0x0F) continue;
+                bool match=true; for (int j=0;j<11;++j) if (sec[i+j] != short11[j]) { match=false; break; }
+                if (match) {
+                    sec[i+28] = (uint8_t)(fileSize & 0xFF);
+                    sec[i+29] = (uint8_t)((fileSize >> 8) & 0xFF);
+                    sec[i+30] = (uint8_t)((fileSize >> 16) & 0xFF);
+                    sec[i+31] = (uint8_t)((fileSize >> 24) & 0xFF);
+                    return WriteSector(rootDirLBA + s, sec) ? (int32_t)len : -1;
+                }
+            }
+        }
+        return -1;
+    } else {
+        uint8_t* dirBuf = (uint8_t*)0x2D000;
+        if (!ReadCluster(entryCl, dirBuf)) return -1;
+        dirBuf[entryOff + 28] = (uint8_t)(fileSize & 0xFF);
+        dirBuf[entryOff + 29] = (uint8_t)((fileSize >> 8) & 0xFF);
+        dirBuf[entryOff + 30] = (uint8_t)((fileSize >> 16) & 0xFF);
+        dirBuf[entryOff + 31] = (uint8_t)((fileSize >> 24) & 0xFF);
+        return WriteCluster(entryCl, dirBuf) ? (int32_t)len : -1;
+    }
 }
 #include <fs/fat16.hpp>
 #include <console/tty.hpp>
@@ -333,6 +456,83 @@ bool FAT16::InitDirCluster(uint32_t newCluster, uint32_t parentCluster) {
     // For root parent in FAT16, parentCluster is 0 in '..'
     writeEntry(32, "..", parentCluster, true);
     return WriteSector(lba, sec);
+}
+
+bool FAT16::AddFileEntryToDir(uint32_t dirCluster, const uint8_t shortName11[11], uint32_t startCluster, uint32_t initialSize) {
+    uint8_t* cl = (uint8_t*)0x2E000;
+    uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    uint32_t cur = dirCluster;
+    while (true) {
+        if (!ReadCluster(cur, cl)) return false;
+        uint32_t off = 0;
+        for (; off < bytesPerCluster; off += 32) {
+            uint8_t fb = cl[off]; if (fb == 0x00 || fb == 0xE5) break; }
+        if (off < bytesPerCluster) {
+            for (int i=0;i<11;++i) cl[off+i] = shortName11[i];
+            cl[off+11] = 0x20; // file
+            cl[off+26] = (uint8_t)(startCluster & 0xFF);
+            cl[off+27] = (uint8_t)((startCluster >> 8) & 0xFF);
+            cl[off+28] = (uint8_t)(initialSize & 0xFF);
+            cl[off+29] = (uint8_t)((initialSize >> 8) & 0xFF);
+            cl[off+30] = (uint8_t)((initialSize >> 16) & 0xFF);
+            cl[off+31] = (uint8_t)((initialSize >> 24) & 0xFF);
+            return WriteCluster(cur, cl);
+        }
+        uint32_t nxt = NextCluster(cur);
+        if (nxt >= 0xFFF8 || nxt == 0) {
+            uint32_t newCl = AllocateCluster(); if (newCl < 2) return false;
+            if (!UpdateFAT(cur, (uint16_t)newCl)) return false;
+            if (!UpdateFAT(newCl, 0xFFFF)) return false;
+            // zero new cluster
+            uint8_t zero[512]; for (int i=0;i<512;++i) zero[i]=0;
+            uint32_t base = ClusterToLBA(newCl);
+            for (uint8_t s=0; s<bpb.sectorsPerCluster; ++s) { if (!WriteSector(base + s, zero)) return false; }
+            cur = newCl;
+        } else {
+            cur = nxt;
+        }
+    }
+}
+
+bool FAT16::FindShortEntryWithOffset(uint32_t dirCluster, const uint8_t shortName11[11], bool atRoot,
+                                     uint32_t& outClusterContaining, uint32_t& outEntryOffset,
+                                     uint32_t& outStartCluster, uint32_t& outFileSize, uint8_t& outAttr) {
+    outClusterContaining = 0; outEntryOffset = 0; outStartCluster = 0; outFileSize = 0; outAttr = 0;
+    if (atRoot) {
+        uint8_t sec[512];
+        for (uint32_t s=0; s<rootDirSectors; ++s) {
+            if (!ReadSector(rootDirLBA + s, sec)) return false;
+            for (int i=0;i<512;i+=32) {
+                uint8_t fb = sec[i]; if (fb == 0x00) return false; if (fb == 0xE5) continue; uint8_t attr = sec[i+11]; if (attr==0x0F) continue;
+                bool match = true; for (int j=0;j<11;++j) if (sec[i+j] != shortName11[j]) { match=false; break; }
+                if (match) {
+                    uint16_t cl = (uint16_t)sec[i+26] | ((uint16_t)sec[i+27] << 8);
+                    outClusterContaining = 0; // root special; we'll use sector write for size update
+                    outEntryOffset = (uint32_t)(s * 512 + i); // encode absolute offset for root updates
+                    outStartCluster = cl;
+                    outFileSize = (uint32_t)sec[i+28] | ((uint32_t)sec[i+29]<<8) | ((uint32_t)sec[i+30]<<16) | ((uint32_t)sec[i+31]<<24);
+                    outAttr = attr; return true;
+                }
+            }
+        }
+        return false;
+    }
+    uint8_t* cl = (uint8_t*)0x2E800; uint32_t cur = dirCluster; uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+    while (cur >= 2 && cur < 0xFFF8) {
+        if (!ReadCluster(cur, cl)) return false;
+        for (uint32_t off=0; off < bytesPerCluster; off += 32) {
+            uint8_t fb = cl[off]; if (fb == 0x00) break; if (fb == 0xE5) continue; uint8_t attr = cl[off+11]; if (attr==0x0F) continue;
+            bool match = true; for (int j=0;j<11;++j) if (cl[off+j] != shortName11[j]) { match=false; break; }
+            if (match) {
+                uint16_t clow = (uint16_t)cl[off+26] | ((uint16_t)cl[off+27] << 8);
+                outClusterContaining = cur; outEntryOffset = off; outAttr = attr; outStartCluster = clow;
+                outFileSize = (uint32_t)cl[off+28] | ((uint32_t)cl[off+29]<<8) | ((uint32_t)cl[off+30]<<16) | ((uint32_t)cl[off+31]<<24);
+                return true;
+            }
+        }
+        uint32_t nxt = NextCluster(cur); if (nxt >= 0xFFF8 || nxt == 0) break; cur = nxt;
+    }
+    return false;
 }
 
 bool FAT16::AddEntryToRoot(const uint8_t shortName11[11], uint32_t startCluster, bool isDir) {

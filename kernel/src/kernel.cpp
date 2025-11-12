@@ -9,6 +9,7 @@
 #include <drivers/vga/vga.hpp>
 #include <drivers/net/rtl8139/rtl8139.hpp>
 #include <drivers/net/e1000/e1000.hpp>
+#include <drivers/net/rtl8169/rtl8169.hpp>
 #include <ui/input.hpp>
 #include <console/tty.hpp>
 #include <console/logger.hpp>
@@ -51,6 +52,10 @@ using namespace kos::process;
 using namespace kos::services;
 using namespace kos::drivers::net::e1000;
 using namespace kos::drivers::net::rtl8139;
+using namespace kos::drivers::net::rtl8169;
+
+// Global mouse driver pointer for fallback polling (used by WindowManager)
+kos::drivers::mouse::MouseDriver* g_mouse_driver_ptr = nullptr;
 
 
 class MouseToConsole: public MouseEventHandler
@@ -188,15 +193,16 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     static TTY tty;
     tty.Clear();
 
-    // If a 32bpp framebuffer is available (set by GRUB), clear it to the desired wallpaper color at boot.
+    // If a 32bpp framebuffer is available (set by GRUB), clear to a neutral dark wallpaper color.
+    // This avoids the previous mint-green flash on boot and matches the compositor's wallpaper.
     if (kos::gfx::IsAvailable()) {
-        Logger::Log("Framebuffer (32bpp) detected; initializing graphics background to #66F1C2");
-        // ARGB 0xFF66F1C2 (R=0x66, G=0xF1, B=0xC2)
-        kos::gfx::Clear32(0xFF66F1C2u);
+        Logger::Log("Framebuffer (32bpp) detected; initializing graphics background to dark gray");
+        // ARGB 0xFF1E1E20
+        kos::gfx::Clear32(0xFF1E1E20u);
     }
 
-    // Parse Multiboot (v1) cmdline for debug flag before most logs
-    // Minimal multiboot info structure (we only need flags and cmdline)
+    // Parse Multiboot cmdline for debug and mouse settings (supports MB1 and MB2)
+    // Minimal multiboot v1 info structure (we only need flags and cmdline)
     struct MultibootInfoMinimal { uint32_t flags; uint32_t mem_lower; uint32_t mem_upper; uint32_t boot_device; uint32_t cmdline; };
     auto contains = [](const char* hay, const char* needle) -> bool {
         if (!hay || !needle) return false;
@@ -207,6 +213,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
         }
         return false;
     };
+    uint8_t mousePollMode = 2; // default always
+    // Multiboot v1: EAX=0x2BADB002, EBX=mb1 info
     if (multiboot_magic == 0x2BADB002 && multiboot_structure) {
         const MultibootInfoMinimal* mbi = (const MultibootInfoMinimal*)multiboot_structure;
         // flags bit 2 (1<<2) indicates cmdline present in multiboot v1
@@ -221,6 +229,64 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
                 kos::kernel::SetPanicReboot(true);
                 Logger::Log("Panic: reboot-on-panic enabled via boot param");
             }
+            // Parse mouse_poll=never|once|always
+            auto opt = cmd;
+            while (opt && *opt) {
+                if (*opt == 'm' && String::strcmp((const int8_t*)opt, (const int8_t*)"mouse_poll=", 11) == 0) {
+                    const char* val = opt + 11;
+                    if (String::strcmp((const int8_t*)val, (const int8_t*)"never", 5) == 0) mousePollMode = 0;
+                    else if (String::strcmp((const int8_t*)val, (const int8_t*)"once", 4) == 0) mousePollMode = 1;
+                    else if (String::strcmp((const int8_t*)val, (const int8_t*)"always", 6) == 0) mousePollMode = 2;
+                }
+                ++opt;
+            }
+            switch (mousePollMode) {
+                case 0: Logger::Log("Boot param: mouse_poll=never"); break;
+                case 1: Logger::Log("Boot param: mouse_poll=once"); break;
+                case 2: Logger::Log("Boot param: mouse_poll=always"); break;
+            }
+        }
+    } else if (multiboot_magic == 0x36d76289 && multiboot_structure) {
+        // Multiboot v2: EAX=0x36d76289, EBX=mb2 info; parse cmdline tag (type=1)
+        const uint8_t* p = (const uint8_t*)multiboot_structure;
+        // uint32_t total_size = *(const uint32_t*)p; (void)total_size;
+        p += 8; // skip total_size and reserved
+        while (true) {
+            struct Tag { uint32_t type; uint32_t size; };
+            const Tag* tag = (const Tag*)p;
+            if (tag->type == 0) break; // end
+            if (tag->type == 1) {
+                const char* cmd = (const char*)(p + sizeof(Tag));
+                if (contains(cmd, "debug") || contains(cmd, "log=debug")) {
+                    Logger::SetDebugEnabled(true);
+                    Logger::Log("Debug mode enabled via boot param (MB2)");
+                }
+                if (contains(cmd, "panic=reboot") || contains(cmd, "reboot_on_panic")) {
+                    kos::kernel::SetPanicReboot(true);
+                    Logger::Log("Panic: reboot-on-panic enabled via boot param (MB2)");
+                }
+                // Parse mouse_poll=never|once|always
+                auto opt = cmd;
+                while (opt && *opt) {
+                    if (*opt == 'm' && String::strcmp((const int8_t*)opt, (const int8_t*)"mouse_poll=", 11) == 0) {
+                        const char* val = opt + 11;
+                        if (String::strcmp((const int8_t*)val, (const int8_t*)"never", 5) == 0) mousePollMode = 0;
+                        else if (String::strcmp((const int8_t*)val, (const int8_t*)"once", 4) == 0) mousePollMode = 1;
+                        else if (String::strcmp((const int8_t*)val, (const int8_t*)"always", 6) == 0) mousePollMode = 2;
+                    }
+                    ++opt;
+                }
+                switch (mousePollMode) {
+                    case 0: Logger::Log("Boot param (MB2): mouse_poll=never"); break;
+                    case 1: Logger::Log("Boot param (MB2): mouse_poll=once"); break;
+                    case 2: Logger::Log("Boot param (MB2): mouse_poll=always"); break;
+                }
+                // Only one cmdline expected; stop after parsing
+                break;
+            }
+            // advance to next tag (8-byte aligned)
+            uint32_t size = tag->size;
+            p += (size + 7) & ~7u;
         }
     }
 
@@ -283,13 +349,17 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     // In graphics mode, route mouse events to UI input
     MouseDriver mouse(&interrupts, &g_mouse_ui_handler);
+    // Expose pointer for fallback polling path invoked by WindowManager
+    g_mouse_driver_ptr = &mouse;
     drvManager.AddDriver(&mouse);
 
     // Add scaffold NIC drivers; they will self-probe for matching PCI devices
     Rtl8139Driver nic_rtl8139;
     E1000Driver   nic_e1000;
+    Rtl8169Driver nic_rtl8169;
     drvManager.AddDriver(&nic_rtl8139);
     drvManager.AddDriver(&nic_e1000);
+    drvManager.AddDriver(&nic_rtl8169);
 
     PeripheralComponentIntercontroller PCIController;
     PCIController.SelectDrivers(&drvManager);
@@ -359,7 +429,11 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     ServiceManager::Register(&g_time_service);
     ServiceManager::Register(&g_window_manager);
     ServiceManager::Register(&g_initd_service);
+    Logger::Log("Kernel: services registered (FS, BANNER, TIME, WINMAN, INITD)");
+    // Apply mouse poll mode before WindowManager starts (service start will use static setter)
+    WindowManager::SetMousePollMode(mousePollMode);
     ServiceManager::InitAndStart();
+    Logger::Log("Kernel: services started");
     ServiceAPI::StartManagerThread();
 
     // If present, spawn /bin/init as the first userspace process (assign PID 1)
@@ -382,6 +456,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     if (ThreadedShellAPI::InitializeShell()) {
         Logger::LogStatus("Threaded shell initialized", true);
         ThreadedShellAPI::StartShell();
+        // Ensure a prompt appears in the new graphical terminal by simulating Enter once
+        ThreadedShellAPI::ProcessKeyInput('\n');
     } else {
         Logger::LogStatus("Failed to initialize threaded shell", false);
         // Fallback to original shell

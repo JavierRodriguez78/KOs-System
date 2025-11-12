@@ -494,6 +494,32 @@ top.elf/fast:
 .PHONY : top.elf/fast
 
 #=============================================================================
+# Target rules for targets named ping_obj
+
+# Build rule for target.
+ping_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ping_obj
+.PHONY : ping_obj
+
+# fast build rule for target.
+ping_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ping_obj.dir/build.make kernel/cmake/CMakeFiles/ping_obj.dir/build
+.PHONY : ping_obj/fast
+
+#=============================================================================
+# Target rules for targets named ping.elf
+
+# Build rule for target.
+ping.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ping.elf
+.PHONY : ping.elf
+
+# fast build rule for target.
+ping.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ping.elf.dir/build.make kernel/cmake/CMakeFiles/ping.elf.dir/build
+.PHONY : ping.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -544,6 +570,19 @@ qemu-vvfat: cmake_check_build_system
 qemu-vvfat/fast:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-vvfat.dir/build.make kernel/cmake/CMakeFiles/qemu-vvfat.dir/build
 .PHONY : qemu-vvfat/fast
+
+#=============================================================================
+# Target rules for targets named qemu-ro
+
+# Build rule for target.
+qemu-ro: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-ro
+.PHONY : qemu-ro
+
+# fast build rule for target.
+qemu-ro/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-ro.dir/build.make kernel/cmake/CMakeFiles/qemu-ro.dir/build
+.PHONY : qemu-ro/fast
 
 #=============================================================================
 # Target rules for targets named debug
@@ -650,8 +689,10 @@ help:
 	@echo "... lshw.elf"
 	@echo "... memtest.elf"
 	@echo "... mkdir.elf"
+	@echo "... ping.elf"
 	@echo "... pwd.elf"
 	@echo "... qemu"
+	@echo "... qemu-ro"
 	@echo "... qemu-vvfat"
 	@echo "... top.elf"
 	@echo "... vdi"
@@ -668,6 +709,7 @@ help:
 	@echo "... lshw_obj"
 	@echo "... memtest_obj"
 	@echo "... mkdir_obj"
+	@echo "... ping_obj"
 	@echo "... pwd_obj"
 	@echo "... top_obj"
 .PHONY : help

@@ -2,6 +2,7 @@
 
 #include <drivers/mouse/mouse_driver.hpp>
 #include <drivers/mouse/mouse_constants.hpp>
+#include <drivers/mouse/mouse_stats.hpp>
 #include <console/logger.hpp>
 
 using namespace kos::common;
@@ -36,39 +37,62 @@ void MouseDriver::Activate()
 {
     offset = 0;
     buttons = 0;
+    // Flush any pending output bytes from the controller to start clean
+    while (commandport.Read() & MOUSE_STATUS_OUTPUT_BUFFER) { (void)dataport.Read(); }
 
-    // Enable auxiliary device
+    // Enable auxiliary (mouse) device (unmask second PS/2 port)
     wait_write(commandport);
     commandport.Write(MOUSE_CMD_ENABLE_AUX);
 
-    // Read Controller Command Byte
+    // Read current controller command byte
     wait_write(commandport);
     commandport.Write(MOUSE_CMD_READ_BYTE);
     wait_read(commandport);
     uint8_t status = dataport.Read();
 
-    // Enable mouse IRQ (bit1) and ensure mouse port is enabled (clear disable bit5)
+    uint8_t originalStatus = status;
+
+    // Enable mouse IRQ (bit1) and ensure mouse clock enabled (clear disable bit5)
     status |= MOUSE_ENABLE_IRQ12_BIT;
     status &= ~(uint8_t)MOUSE_DISABLE_PORT2_BIT;
-    // Optionally ensure keyboard IRQ as well (bit0)
-    // status |= 0x01;
-    // Write Controller Command Byte back
+
+    // Write updated controller command byte back
     wait_write(commandport);
     commandport.Write(MOUSE_CMD_WRITE_BYTE);
     wait_write(commandport);
     dataport.Write(status);
 
-    // Tell mouse: Set Defaults (0xF6), then Enable Data Reporting (0xF4)
+    // Send Set Defaults (0xF6)
     wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
     wait_write(commandport); dataport.Write(MOUSE_CMD_SET_DEFAULTS);
-    wait_read(commandport); (void)dataport.Read(); // ACK
+    wait_read(commandport); uint8_t ack1 = dataport.Read();
 
+    // Enable Data Reporting (0xF4)
     wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
     wait_write(commandport); dataport.Write(MOUSE_CMD_ENABLE_DATA_REPORTING);
-    wait_read(commandport); (void)dataport.Read(); // ACK
+    wait_read(commandport); uint8_t ack2 = dataport.Read();
+
+    if (Logger::IsDebugEnabled()) {
+        // Logger::Log only accepts a single message string; build simple hex output manually
+        char msg[64];
+        msg[0] = 0;
+        // Show controller command byte change
+        const char* hex = "0123456789ABCDEF";
+        msg[0] = '['; msg[1] = 'M'; msg[2] = 'O'; msg[3] = 'U'; msg[4] = 'S'; msg[5] = 'E'; msg[6] = ']'; msg[7] = ' '; msg[8] = 'C'; msg[9] = 'f'; msg[10] = 'g'; msg[11] = ' '; msg[12] = 'o'; msg[13] = 'l'; msg[14] = 'd'; msg[15] = '=';
+        msg[16] = '0'; msg[17] = 'x'; msg[18] = hex[(originalStatus >> 4) & 0xF]; msg[19] = hex[originalStatus & 0xF];
+        msg[20] = ' '; msg[21] = 'n'; msg[22] = 'e'; msg[23] = 'w'; msg[24] = '='; msg[25] = '0'; msg[26] = 'x'; msg[27] = hex[(status >> 4) & 0xF]; msg[28] = hex[status & 0xF]; msg[29] = 0;
+        Logger::Log(msg);
+        char msg2[64];
+        msg2[0] = '['; msg2[1] = 'M'; msg2[2] = 'O'; msg2[3] = 'U'; msg2[4] = 'S'; msg2[5] = 'E'; msg2[6] = ']'; msg2[7] = ' '; msg2[8] = 'A'; msg2[9] = 'c'; msg2[10] = 'k'; msg2[11] = 's'; msg2[12] = ':'; msg2[13] = ' '; msg2[14] = 'F'; msg2[15] = '6'; msg2[16] = '='; msg2[17] = '0'; msg2[18] = 'x'; msg2[19] = hex[(ack1 >> 4) & 0xF]; msg2[20] = hex[ack1 & 0xF];
+        msg2[21] = ' '; msg2[22] = 'F'; msg2[23] = '4'; msg2[24] = '='; msg2[25] = '0'; msg2[26] = 'x'; msg2[27] = hex[(ack2 >> 4) & 0xF]; msg2[28] = hex[ack2 & 0xF]; msg2[29] = 0;
+        Logger::Log(msg2);
+    }
+
+    // Notify higher-level handler (e.g., to set initial position or state)
+    if (handler) handler->OnActivate();
 
     if (Logger::IsDebugEnabled())
-        Logger::Log("[MOUSE] PS/2 auxiliary device enabled and data reporting on");
+        Logger::Log("[MOUSE] PS/2 auxiliary device enabled; data reporting active");
     }
     
     uint32_t MouseDriver::HandleInterrupt(uint32_t esp)
@@ -113,11 +137,45 @@ void MouseDriver::Activate()
             }
             buttons = buffer[0];
 
+            // Increment diagnostic counter for overlay
+            ::kos::drivers::mouse::g_mouse_packets++;
+
             // Periodic debug to confirm movement/packets (every 64 packets)
             static uint32_t pkt = 0; ++pkt;
-            if ((pkt & 63u) == 0 && Logger::IsDebugEnabled()) {
+            if (pkt == 1) {
+                Logger::Log("[MOUSE] first packet received");
+            } else if ((pkt & 63u) == 0 && Logger::IsDebugEnabled()) {
                 Logger::Log("[MOUSE] pkt");
             }
         }
     return esp;
+}
+
+// Fallback polling logic when IRQ12 is not firing.
+// Reads one byte if available and assembles a packet; on full packet dispatches events.
+void MouseDriver::PollOnce() {
+    // Check if data available
+    uint8_t status = commandport.Read();
+    if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0) return; // nothing
+    uint8_t b = dataport.Read();
+    pbuf[poff] = b;
+    poff = (poff + 1) % 3;
+    if (poff != 0) return; // need full packet
+    // Sync bit check
+    if ((pbuf[0] & MOUSE_SYNC_BIT) == 0) { poff = 0; return; }
+    int dx = (int8_t)pbuf[1];
+    int dy = (int8_t)pbuf[2];
+    if (handler && (dx != 0 || dy != 0)) handler->OnMouseMove(dx, -dy);
+    for (uint8_t i=0;i<3;++i) {
+        uint8_t mask = (1u << i);
+        bool wasDown = (buttons & mask) != 0;
+        bool isDown  = (pbuf[0] & mask) != 0;
+        if (wasDown != isDown && handler) {
+            if (isDown) handler->OnMouseDown(i+1); else handler->OnMouseUp(i+1);
+        }
+    }
+    buttons = pbuf[0];
+    // Increment packet counter directly
+    ::kos::drivers::mouse::g_mouse_packets++;
+    static uint32_t fp = 0; if (++fp == 1) Logger::Log("[MOUSE] first packet (poll) received");
 }
