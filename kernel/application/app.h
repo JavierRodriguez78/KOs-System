@@ -11,6 +11,7 @@ void app_pwd(void);
 void app_clear(void);
 void app_free(void);
 void app_lshw(void);
-void app_cat(void);
+
+void app_reboot(void);
 
 #endif // KOS_APPLICATION_APP_H

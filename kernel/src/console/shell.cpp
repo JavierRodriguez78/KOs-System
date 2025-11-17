@@ -24,6 +24,24 @@ using namespace kos::process;
 // File-local TTY instance for output
 static TTY tty;
 
+// Local reboot helper (avoids kernel link on app_reboot)
+static inline void io_outb(uint16_t port, uint8_t val) {
+    __asm__ __volatile__("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+static inline uint8_t io_inb(uint16_t port) {
+    uint8_t ret; __asm__ __volatile__("inb %1, %0" : "=a"(ret) : "Nd"(port)); return ret;
+}
+static void shell_reboot_hw() {
+    // Wait until KBC input buffer empty
+    while (io_inb(0x64) & 0x02) { }
+    io_outb(0x64, 0xFE);
+    // Fallback: try triple-fault by loading null IDT
+    struct { uint16_t limit; uint32_t base; } __attribute__((packed)) null_idt = {0, 0};
+    __asm__ __volatile__("lidt %0\n\tint $0x03" : : "m"(null_idt));
+    // Halt if still running
+    for(;;) { __asm__ __volatile__("hlt"); }
+}
+
 // Optional filesystem access from shell
 namespace kos { 
     namespace fs { 
@@ -171,6 +189,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
         // Rewrite prog to "clear" and fall through to app execution
         prog = (const int8_t*)"clear";
     }
+
 
 
     // Built-in: show logo (text mode)
@@ -513,6 +532,7 @@ void Shell::ExecuteCommand(const int8_t* command) {
     tty.Write("  gfxinit        - Initialize graphics: clear and draw logo\n");
     tty.Write("  gfxclear [hex] - Clear framebuffer to RRGGBB (default black)\n");
         tty.Write("  lshw           - Hardware info: CPU, memory, PCI\n");
+    tty.Write("  reboot         - Run reboot stub (no hardware reset)\n");
         
         
         tty.Write("  ps             - Show scheduler statistics\n");
