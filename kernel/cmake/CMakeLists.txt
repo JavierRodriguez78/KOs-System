@@ -130,11 +130,11 @@ function(add_app NAME)
     target_include_directories(${NAME}_obj PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR}/application)
     target_compile_options(${NAME}_obj PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2 -ffreestanding -fno-builtin -fno-stack-protector)
 
-    # Link into disk/bin/<name>.elf using ld
-    set(APP_ELF ${KOS_ROOT_DIR}/disk/bin/${NAME}.elf)
+    # Link into disk/bin/<name>.elf using ld (disk is now at project root)
+    set(APP_ELF ${KOS_ROOT_DIR}/../disk/bin/${NAME}.elf)
     add_custom_command(
         OUTPUT ${APP_ELF}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${KOS_ROOT_DIR}/disk/bin
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${KOS_ROOT_DIR}/../disk/bin
         COMMAND ld -melf_i386 -e main -Ttext 0x01000000 -o ${APP_ELF} $<TARGET_OBJECTS:${NAME}_obj> $<TARGET_OBJECTS:app_support_objs>
         DEPENDS ${NAME}_obj app_support_objs
         VERBATIM
@@ -196,8 +196,10 @@ add_custom_command(TARGET iso POST_BUILD
 # -----------------------
 # QEMU helpers
 # -----------------------
+# Define disk image path early so qemu targets can reference it
+set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
 add_custom_target(qemu
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${KOS_ROOT_DIR}/disk.img,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso diskimg
     USES_TERMINAL
 )
@@ -210,7 +212,7 @@ add_custom_target(qemu-vvfat
 
 # Read-only QEMU run (avoids write-lock on disk.img). Good for quick boot/log checks.
 add_custom_target(qemu-ro
-    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${KOS_ROOT_DIR}/disk.img,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
@@ -231,10 +233,7 @@ add_custom_target(gdb
 )
 
 # -----------------------
-# FAT32 disk image (128MB) with /BIN and /HOME and apps copied in /BIN
-# Requires: dd, mkfs.vfat (dosfstools), mtools (mmd, mcopy)
-# -----------------------
-set(DISK_IMG ${KOS_ROOT_DIR}/disk.img)
+set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
 
 add_custom_command(
     OUTPUT ${DISK_IMG}
@@ -248,26 +247,26 @@ add_custom_command(
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/BIN || true; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/HOME || true; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC || true; \
-                MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/bin/*.elf ::/BIN || true; \
-                if ls ${KOS_ROOT_DIR}/disk/etc/*.CFG >/dev/null 2>&1; then \
-                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/*.CFG ::/ETC/ 2>/dev/null || true; \
+                MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/../disk/bin/*.elf ::/BIN || true; \
+                if ls ${KOS_ROOT_DIR}/../disk/etc/*.CFG >/dev/null 2>&1; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/../disk/etc/*.CFG ::/ETC/ 2>/dev/null || true; \
                 fi; \
                 MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/ETC/INIT.D || true; \
-                if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
-                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/disk/etc/init.d/* ::/ETC/INIT.D/ 2>/dev/null || true; \
+                if [ -d ${KOS_ROOT_DIR}/../disk/etc/init.d ]; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/../disk/etc/init.d/* ::/ETC/INIT.D/ 2>/dev/null || true; \
                 fi; \
             else \
                 echo 'mtools unavailable; using loop-mount (sudo)'; \
                 mkdir -p ${KOS_ROOT_DIR}/.diskmnt; \
                 sudo mount -o loop ${DISK_IMG} ${KOS_ROOT_DIR}/.diskmnt; \
                 sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/BIN ${KOS_ROOT_DIR}/.diskmnt/HOME ${KOS_ROOT_DIR}/.diskmnt/ETC; \
-                sudo cp ${KOS_ROOT_DIR}/disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
-                if ls ${KOS_ROOT_DIR}/disk/etc/*.CFG >/dev/null 2>&1; then \
-                    sudo cp ${KOS_ROOT_DIR}/disk/etc/*.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/ 2>/dev/null || true; \
+                sudo cp ${KOS_ROOT_DIR}/../disk/bin/*.elf ${KOS_ROOT_DIR}/.diskmnt/BIN/ 2>/dev/null || true; \
+                if ls ${KOS_ROOT_DIR}/../disk/etc/*.CFG >/dev/null 2>&1; then \
+                    sudo cp ${KOS_ROOT_DIR}/../disk/etc/*.CFG ${KOS_ROOT_DIR}/.diskmnt/ETC/ 2>/dev/null || true; \
                 fi; \
                 sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D; \
-                if [ -d ${KOS_ROOT_DIR}/disk/etc/init.d ]; then \
-                    sudo cp ${KOS_ROOT_DIR}/disk/etc/init.d/* ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D/ 2>/dev/null || true; \
+                if [ -d ${KOS_ROOT_DIR}/../disk/etc/init.d ]; then \
+                    sudo cp ${KOS_ROOT_DIR}/../disk/etc/init.d/* ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D/ 2>/dev/null || true; \
                 fi; \
                 sync; \
                 sudo umount ${KOS_ROOT_DIR}/.diskmnt; \
