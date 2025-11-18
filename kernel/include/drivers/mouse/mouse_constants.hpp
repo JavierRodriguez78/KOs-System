@@ -13,6 +13,7 @@ namespace kos::drivers::mouse {
     // Status bits
     constexpr uint8_t MOUSE_STATUS_OUTPUT_BUFFER = 0x01; // bit0
     constexpr uint8_t MOUSE_STATUS_INPUT_BUFFER  = 0x02; // bit1
+    constexpr uint8_t MOUSE_STATUS_AUX = 0x20;
 
     // Controller commands
     constexpr uint8_t MOUSE_CMD_ENABLE_AUX           = 0xA8;

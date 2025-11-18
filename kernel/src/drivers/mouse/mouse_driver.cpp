@@ -157,6 +157,7 @@ void MouseDriver::PollOnce() {
     // Check if data available
     uint8_t status = commandport.Read();
     if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0) return; // nothing
+    if ((status & MOUSE_STATUS_AUX) == 0) return; // nothing
     uint8_t b = dataport.Read();
     pbuf[poff] = b;
     poff = (poff + 1) % 3;
