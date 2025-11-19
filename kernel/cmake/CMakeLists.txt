@@ -199,13 +199,13 @@ add_custom_command(TARGET iso POST_BUILD
 # Define disk image path early so qemu targets can reference it
 set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
 add_custom_target(qemu
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
     DEPENDS iso diskimg
     USES_TERMINAL
 )
 
 add_custom_target(qemu-vvfat
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
