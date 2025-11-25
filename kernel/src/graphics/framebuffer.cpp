@@ -4,7 +4,6 @@ using namespace kos::common;
 
 namespace kos { 
     namespace gfx {
-
         static FramebufferInfo g_fb = {};
         static bool g_fb_ready = false;
 

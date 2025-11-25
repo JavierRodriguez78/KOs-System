@@ -60,7 +60,7 @@ EQUALS = =
 CMAKE_SOURCE_DIR = /mnt/e/proyectos/kos-system
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/e/proyectos/kos-system/kernel
+CMAKE_BINARY_DIR = /mnt/e/proyectos/KOs-System/kernel
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/kos-system/kernel/CMakeFiles /mnt/e/proyectos/kos-system/kernel//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles /mnt/e/proyectos/KOs-System/kernel//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/kos-system/kernel/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -520,6 +520,32 @@ ping.elf/fast:
 .PHONY : ping.elf/fast
 
 #=============================================================================
+# Target rules for targets named reboot_obj
+
+# Build rule for target.
+reboot_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 reboot_obj
+.PHONY : reboot_obj
+
+# fast build rule for target.
+reboot_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/reboot_obj.dir/build.make kernel/cmake/CMakeFiles/reboot_obj.dir/build
+.PHONY : reboot_obj/fast
+
+#=============================================================================
+# Target rules for targets named reboot.elf
+
+# Build rule for target.
+reboot.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 reboot.elf
+.PHONY : reboot.elf
+
+# fast build rule for target.
+reboot.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/reboot.elf.dir/build.make kernel/cmake/CMakeFiles/reboot.elf.dir/build
+.PHONY : reboot.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -694,6 +720,7 @@ help:
 	@echo "... qemu"
 	@echo "... qemu-ro"
 	@echo "... qemu-vvfat"
+	@echo "... reboot.elf"
 	@echo "... top.elf"
 	@echo "... vdi"
 	@echo "... app_support_objs"
@@ -711,6 +738,7 @@ help:
 	@echo "... mkdir_obj"
 	@echo "... ping_obj"
 	@echo "... pwd_obj"
+	@echo "... reboot_obj"
 	@echo "... top_obj"
 .PHONY : help
 

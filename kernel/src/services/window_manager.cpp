@@ -10,9 +10,10 @@
 #include <console/tty.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
 #include <drivers/mouse/mouse_driver.hpp>
+#include <kernel/globals.hpp>
 
-// Global mouse driver pointer provided by kernel.cpp (defined there)
-extern kos::drivers::mouse::MouseDriver* g_mouse_driver_ptr;
+// Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
+// Access it as `kos::g_mouse_driver_ptr`.
 
 using namespace kos::services;
 

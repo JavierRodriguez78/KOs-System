@@ -7,6 +7,7 @@
 #endif
 #include <drivers/keyboard/keyboard.hpp>
 #include <lib/stdio.hpp>
+#include <kernel/globals.hpp>
 
 
 using namespace kos::common;    
@@ -23,8 +24,6 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 
 };
 
-// Reference to the shell instances
-extern Shell* g_shell;
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
     // Offer key to app-facing queue so applications can poll (non-blocking)
@@ -65,8 +64,8 @@ void ShellKeyboardHandler::OnKeyDown(int8_t c){
         // Priority: threaded shell if available, otherwise fallback to original shell
         if (kos::console::g_threaded_shell) {
             kos::console::g_threaded_shell->OnKeyPressed(c);
-        } else if (g_shell) {
-            g_shell->InputChar(c);
+        } else if (kos::g_shell) {
+            kos::g_shell->InputChar(c);
         }
     }
 }

@@ -3,157 +3,169 @@
 
 using namespace kos::common;
 
-namespace kos { namespace sys {
+namespace kos { 
+    namespace sys {
 
-    static inline ApiTable* table_raw() {
-        return (ApiTable*)0x0007F000;
-    }
-
-    ApiTable* table() { return table_raw(); }
-
-    void putc(int8_t c) { if (table_raw()->putc) table_raw()->putc(c); }
-    void puts(const int8_t* s) { if (table_raw()->puts) table_raw()->puts(s); }
-    void hex(uint8_t v) { if (table_raw()->hex) table_raw()->hex(v); }
-    void listroot() { if (table_raw()->listroot) table_raw()->listroot(); }
-    void clear() { if (table_raw()->clear) table_raw()->clear(); }
-
-    int32_t argc() { return (table_raw()->get_argc) ? table_raw()->get_argc() : 0; }
-    const int8_t* argv(int32_t index) { return (table_raw()->get_arg) ? table_raw()->get_arg(index) : nullptr; }
-    const int8_t* cmdline() { return table_raw()->cmdline; }
-
-    static void print_uint(uint32_t v, uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
-        char buf[32];
-        const char* digs = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-        int i = 0;
-        if (v == 0) { buf[i++] = '0'; }
-        else {
-            while (v && i < (int)sizeof(buf)) { buf[i++] = digs[v % base]; v /= base; }
+        // Return raw pointer to system API table at fixed address
+        static inline ApiTable* table_raw() {
+            return (ApiTable*)0x0007F000;
         }
-        int total = i;
-        for (; total < padWidth; ++total) putc(padZero ? '0' : ' ');
-        while (i--) putc(buf[i]);
-    }
 
-    void vprintf(const int8_t* fmt, va_list ap) {
-        for (int i = 0; fmt && fmt[i]; ++i) {
-            if (fmt[i] != '%') { putc(fmt[i]); continue; }
-            bool padZero = false; int width = 0; ++i;
-            if (fmt[i] == '0') { padZero = true; ++i; }
-            while (fmt[i] >= '0' && fmt[i] <= '9') { width = width*10 + (fmt[i]-'0'); ++i; }
-            char spec = fmt[i];
-            switch (spec) {
-                case '%': putc('%'); break;
-                case 'c': putc((int8_t)va_arg(ap, int)); break;
-                case 's': {
-                    const int8_t* s = (const int8_t*)va_arg(ap, const char*);
-                    puts(s ? s : (const int8_t*)"(null)");
-                    break;
-                }
-                case 'd': case 'i': {
-                    int v = va_arg(ap, int);
-                    if (v < 0) { putc('-'); print_uint((uint32_t)(-v), 10, false, width, padZero); }
-                    else print_uint((uint32_t)v, 10, false, width, padZero);
-                    break;
-                }
-                case 'u': {
-                    uint32_t v = va_arg(ap, uint32_t);
-                    print_uint(v, 10, false, width, padZero);
-                    break;
-                }
-                case 'x': {
-                    uint32_t v = va_arg(ap, uint32_t);
-                    print_uint(v, 16, false, width, padZero);
-                    break;
-                }
-                case 'X': {
-                    uint32_t v = va_arg(ap, uint32_t);
-                    print_uint(v, 16, true, width, padZero);
-                    break;
-                }
-                case 'p': {
-                    uint32_t v = (uint32_t)va_arg(ap, void*);
-                    puts((const int8_t*)"0x");
-                    print_uint(v, 16, false, sizeof(void*)*2, true);
-                    break;
-                }
-                default:
-                    putc('%'); putc(spec);
-                    break;
-            }
-        }
-    }
+        // Return pointer to system API table
+        ApiTable* table() { return table_raw(); }
 
-    void printf(const int8_t* fmt, ...) {
-        va_list ap; va_start(ap, fmt); vprintf(fmt, ap); va_end(ap);
-    }
+        
+        void putc(int8_t c) { if (table_raw()->putc) table_raw()->putc(c); }
+          
+        void puts(const int8_t* s) { if (table_raw()->puts) table_raw()->puts(s); }
+        
+        void hex(uint8_t v) { if (table_raw()->hex) table_raw()->hex(v); }
+    
+        void listroot() { if (table_raw()->listroot) table_raw()->listroot(); }
+    
+        void clear() { if (table_raw()->clear) table_raw()->clear(); }
 
-    // Minimal snprintf implementation using vprintf logic
-    int snprintf(char *str, size_t size, const char *format, ...) {
-        if (!str || size == 0 || !format) return -1;
-        va_list ap;
-        va_start(ap, format);
-        size_t written = 0;
-        for (size_t i = 0; format[i] && written + 1 < size; ++i) {
-            if (format[i] != '%') {
-                str[written++] = format[i];
-                continue;
-            }
-            // Handle format specifier (only %s, %d, %u, %x, %c, %% for now)
-            ++i;
-            char spec = format[i];
+        int32_t argc() { return (table_raw()->get_argc) ? table_raw()->get_argc() : 0; }
+        
+        const int8_t* argv(int32_t index) { return (table_raw()->get_arg) ? table_raw()->get_arg(index) : nullptr; }
+        
+        const int8_t* cmdline() { return table_raw()->cmdline; }
+
+        static void print_uint(uint32_t v, uint32_t base, bool upper, int padWidth = 0, bool padZero = false) {
             char buf[32];
-            switch (spec) {
-                case '%': str[written++] = '%'; break;
-                case 'c': {
-                    int c = va_arg(ap, int);
-                    str[written++] = (char)c;
-                    break;
+            const char* digs = upper ? "0123456789ABCDEF" : "0123456789abcdef";
+            int i = 0;
+            if (v == 0) { 
+                buf[i++] = '0'; 
+            }
+            else {
+                while (v && i < (int)sizeof(buf)) { buf[i++] = digs[v % base]; v /= base; }
+            }
+            int total = i;
+            for (; total < padWidth; ++total) putc(padZero ? '0' : ' ');
+            while (i--) putc(buf[i]);
+        }
+
+        void vprintf(const int8_t* fmt, va_list ap) {
+            for (int i = 0; fmt && fmt[i]; ++i) {
+                if (fmt[i] != '%') { putc(fmt[i]); continue; }
+                bool padZero = false; int width = 0; ++i;
+                if (fmt[i] == '0') { padZero = true; ++i; }
+                while (fmt[i] >= '0' && fmt[i] <= '9') { width = width*10 + (fmt[i]-'0'); ++i; }
+                char spec = fmt[i];
+                switch (spec) {
+                    case '%': putc('%'); break;
+                    case 'c': putc((int8_t)va_arg(ap, int)); break;
+                    case 's': {
+                        const int8_t* s = (const int8_t*)va_arg(ap, const char*);
+                        puts(s ? s : (const int8_t*)"(null)");
+                        break;
+                    }
+                    case 'd': case 'i': {
+                        int v = va_arg(ap, int);
+                        if (v < 0) { putc('-'); print_uint((uint32_t)(-v), 10, false, width, padZero); }
+                        else print_uint((uint32_t)v, 10, false, width, padZero);
+                        break;
+                    }
+                    case 'u': {
+                        uint32_t v = va_arg(ap, uint32_t);
+                        print_uint(v, 10, false, width, padZero);
+                        break;
+                    }
+                    case 'x': {
+                        uint32_t v = va_arg(ap, uint32_t);
+                        print_uint(v, 16, false, width, padZero);
+                        break;
+                    }
+                    case 'X': {
+                        uint32_t v = va_arg(ap, uint32_t);
+                        print_uint(v, 16, true, width, padZero);
+                        break;
+                    }
+                    case 'p': {
+                        uint32_t v = (uint32_t)va_arg(ap, void*);
+                        puts((const int8_t*)"0x");
+                        print_uint(v, 16, false, sizeof(void*)*2, true);
+                        break;
+                    }
+                    default:
+                        putc('%'); putc(spec);
+                        break;
                 }
-                case 's': {
-                    const char* s = va_arg(ap, const char*);
-                    if (!s) s = "(null)";
-                    for (size_t j = 0; s[j] && written + 1 < size; ++j)
-                        str[written++] = s[j];
-                    break;
-                }
-                case 'd': case 'i': {
-                    int v = va_arg(ap, int);
-                    bool neg = v < 0;
-                    unsigned int uv = neg ? -v : v;
-                    int len = 0;
-                    if (neg) buf[len++] = '-';
-                    do { buf[len++] = '0' + (uv % 10); uv /= 10; } while (uv && len < 31);
-                    for (int k = len - 1; k >= 0 && written + 1 < size; --k)
-                        str[written++] = buf[k];
-                    break;
-                }
-                case 'u': {
-                    unsigned int v = va_arg(ap, unsigned int);
-                    int len = 0;
-                    do { buf[len++] = '0' + (v % 10); v /= 10; } while (v && len < 31);
-                    for (int k = len - 1; k >= 0 && written + 1 < size; --k)
-                        str[written++] = buf[k];
-                    break;
-                }
-                case 'x': case 'X': {
-                    unsigned int v = va_arg(ap, unsigned int);
-                    int len = 0;
-                    const char* digs = (spec == 'X') ? "0123456789ABCDEF" : "0123456789abcdef";
-                    do { buf[len++] = digs[v % 16]; v /= 16; } while (v && len < 31);
-                    for (int k = len - 1; k >= 0 && written + 1 < size; --k)
-                        str[written++] = buf[k];
-                    break;
-                }
-                default:
-                    str[written++] = '%';
-                    str[written++] = spec;
-                    break;
             }
         }
-        va_end(ap);
-        str[written] = '\0';
-        return (int)written;
-    }
+
+        void printf(const int8_t* fmt, ...) {
+            va_list ap; va_start(ap, fmt); vprintf(fmt, ap); va_end(ap);
+        }
+
+        // Minimal snprintf implementation using vprintf logic
+        int snprintf(char *str, size_t size, const char *format, ...) {
+            if (!str || size == 0 || !format) return -1;
+            va_list ap;
+            va_start(ap, format);
+            size_t written = 0;
+            for (size_t i = 0; format[i] && written + 1 < size; ++i) {
+                if (format[i] != '%') {
+                    str[written++] = format[i];
+                    continue;
+                }
+                // Handle format specifier (only %s, %d, %u, %x, %c, %% for now)
+                ++i;
+                char spec = format[i];
+                char buf[32];
+                switch (spec) {
+                    case '%': str[written++] = '%'; break;
+                    case 'c': {
+                        int c = va_arg(ap, int);
+                        str[written++] = (char)c;
+                        break;
+                    }
+                    case 's': {
+                        const char* s = va_arg(ap, const char*);
+                        if (!s) s = "(null)";
+                        for (size_t j = 0; s[j] && written + 1 < size; ++j)
+                            str[written++] = s[j];
+                        break;
+                    }
+                    case 'd': case 'i': {
+                        int v = va_arg(ap, int);
+                        bool neg = v < 0;
+                        unsigned int uv = neg ? -v : v;
+                        int len = 0;
+                        if (neg) buf[len++] = '-';
+                        do { buf[len++] = '0' + (uv % 10); uv /= 10; } while (uv && len < 31);
+                        for (int k = len - 1; k >= 0 && written + 1 < size; --k)
+                            str[written++] = buf[k];
+                        break;
+                    }
+                    case 'u': {
+                        unsigned int v = va_arg(ap, unsigned int);
+                        int len = 0;
+                        do { buf[len++] = '0' + (v % 10); v /= 10; } while (v && len < 31);
+                        for (int k = len - 1; k >= 0 && written + 1 < size; --k)
+                            str[written++] = buf[k];
+                        break;
+                    }
+                    case 'x': case 'X': {
+                        unsigned int v = va_arg(ap, unsigned int);
+                        int len = 0;
+                        const char* digs = (spec == 'X') ? "0123456789ABCDEF" : "0123456789abcdef";
+                        do { buf[len++] = digs[v % 16]; v /= 16; } while (v && len < 31);
+                        for (int k = len - 1; k >= 0 && written + 1 < size; --k)
+                            str[written++] = buf[k];
+                        break;
+                    }
+                    default:
+                        str[written++] = '%';
+                        str[written++] = spec;
+                        break;
+                    }
+                }
+            va_end(ap);
+            str[written] = '\0';
+            return (int)written;
+        }
 
     // --- Minimal keyboard input consumer for scanf ---
     // Simple single-consumer buffer to accumulate keystrokes offered
