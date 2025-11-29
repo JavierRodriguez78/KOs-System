@@ -9,6 +9,9 @@
 #include <process/thread_manager.hpp>
 #include <console/logger.hpp>
 
+// Extern hook to expose timer handler to ServiceManager for uptime profiling
+namespace kos { namespace services { extern kos::process::SchedulerTimerHandler* g_timer_handler_for_services; } }
+
 using namespace kos;
 using namespace kos::common;
 using namespace kos::memory;
@@ -36,6 +39,8 @@ namespace kos {
             // Initialize scheduler and timer for preemptive multitasking
             kos::process::g_scheduler = new kos::process::Scheduler();
             kos::process::SchedulerTimerHandler* timer_handler = new kos::process::SchedulerTimerHandler(interrupts, kos::process::g_scheduler);
+            // Expose timer handler to ServiceManager for uptime profiling.
+            kos::services::g_timer_handler_for_services = timer_handler;
             Logger::LogStatus("Scheduler initialized", true);
 
             // Initialize pipe manager for inter-task communication

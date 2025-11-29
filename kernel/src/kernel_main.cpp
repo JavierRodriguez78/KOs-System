@@ -130,7 +130,11 @@ extern "C" int atexit(void (*)(void)) { return 0; }
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
     using kos::kernel::BootStage; using kos::kernel::BootProgressor;
-    BootProgressor boot;
+    // Wire BootProgressor to a global uptime source (if available) so we
+    // can capture per-stage timing for profiling. This remains optional:
+    // on early boot where ServiceManager is not yet initialized, the
+    // uptime may simply return 0.
+    BootProgressor boot(&kos::services::ServiceManager::UptimeMs);
     boot.Advance(BootStage::EarlyInit);
     // Initialize multiboot parsing and framebuffer info
    
@@ -206,6 +210,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     // Main kernel thread continues to run
     boot.Advance(BootStage::Complete);
+    // Log a compact summary of per-stage timing once boot is complete.
+    boot.LogTimingSummary();
     while(1) {
         SchedulerAPI::YieldThread();
         SchedulerAPI::SleepThread(kMainThreadSleepMs); // Sleep 1 second

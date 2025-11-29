@@ -7,6 +7,7 @@
 #include <memory/heap.hpp>
 #include <memory/paging.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_inter_constants.hpp>
+#include <arch/x86/hardware/rtc/rtc.hpp>
 
 using namespace kos::sys;
 using namespace kos::console;
@@ -73,6 +74,19 @@ extern "C" uint32_t sys_pci_cfg_read(uint8_t bus, uint8_t device, uint8_t functi
     asm volatile ("inl %1, %0" : "=a"(val) : "Nd"(PCI_DATA_PORT));
     uint8_t shift = (offset & 3) * 8;
     return val >> shift;
+}
+
+// RTC date/time provider for apps
+extern "C" void sys_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day,
+                                  uint8_t* hour, uint8_t* minute, uint8_t* second) {
+    using namespace kos::arch::x86::hardware::rtc;
+    DateTime dt; RTC::Read(dt);
+    if (year)   *year = dt.year;
+    if (month)  *month = dt.month;
+    if (day)    *day = dt.day;
+    if (hour)   *hour = dt.hour;
+    if (minute) *minute = dt.minute;
+    if (second) *second = dt.second;
 }
 extern "C" void sys_listdir(const int8_t* path) {
     if (!kos::fs::g_fs_ptr) return;
@@ -345,4 +359,6 @@ extern "C" void InitSysApi() {
     t->get_process_info = &sys_get_process_info;
     // App key polling
     t->key_poll = &sys_key_poll;
+    // Date/time API
+    t->get_datetime = &sys_get_datetime;
 }

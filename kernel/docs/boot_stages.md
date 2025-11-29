@@ -43,6 +43,14 @@ The `GraphicsMode` stage is emitted only if a framebuffer was initialized (`gfx:
 
 Future Work
 -----------
-- Integrate boot timing (timestamps or cycle counts) per stage for profiling.
 - Add command-line flag (e.g., `nogfx`) to suppress window manager and graphical shell even if framebuffer exists.
 - Map stages to a more granular target system (akin to `systemd` targets) if service dependencies grow.
+
+Boot Timing & Profiling
+-----------------------
+The `BootProgressor` now records an optional millisecond timestamp for each stage transition by sampling a monotonic uptime source when available. When the boot sequence reaches the `Complete` stage, it emits a compact timing summary with two deltas per stage:
+
+- Time since boot start (relative to `EarlyInit`).
+- Time since the previous recorded stage.
+
+This allows simple profiling by grepping for the timing lines in the kernel log and comparing deltas across boots or revisions.

@@ -165,10 +165,17 @@ void ServiceManager::ApplyConfig() {
     Heap::Free(buf);
 }
 
+// Optional hook set by timer initialization to provide uptime ticks
+namespace kos { namespace services { kos::process::SchedulerTimerHandler* g_timer_handler_for_services = nullptr; }}
+
 uint32_t ServiceManager::UptimeMs() {
-    extern SchedulerTimerHandler* g_timer_handler_for_services;
-    (void)g_timer_handler_for_services;
-    return 0;
+    using namespace kos::services;
+    if (!g_timer_handler_for_services) return 0;
+    // Convert ticks to milliseconds using the configured timer frequency.
+    uint32_t ticks = g_timer_handler_for_services->GetTickCount();
+    uint32_t freq = g_timer_handler_for_services->GetFrequency();
+    if (freq == 0) return 0;
+    return (ticks * 1000u) / freq;
 }
 
 void ServiceManager::InitAndStart() {

@@ -66,6 +66,9 @@ namespace kos {
             int32_t (*get_process_info)(char* buffer, int32_t maxlen);
             // Non-blocking key poll for apps: returns 1 if a key was read into *out, 0 otherwise
             int32_t (*key_poll)(int8_t* out);
+            // Get current date/time from RTC (local time). All pointers optional.
+            void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
+                                 uint8_t* hour, uint8_t* minute, uint8_t* second);
         };
 
         /*
@@ -185,6 +188,10 @@ namespace kos {
         return table()->exec ? table()->exec(path, argc, argv, cmdline) : -1;
     }
     // No inline wrapper for key_poll on kernel side (apps use libc header)
+        static inline void get_datetime(uint16_t* year, uint8_t* month, uint8_t* day,
+                                        uint8_t* hour, uint8_t* minute, uint8_t* second) {
+            if (table()->get_datetime) table()->get_datetime(year, month, day, hour, minute, second);
+        }
     
     /*
     * @brief Format a string and store it in a buffer.

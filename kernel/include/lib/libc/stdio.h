@@ -45,6 +45,9 @@ typedef struct ApiTableC {
     int32_t (*get_process_info)(char* buffer, int32_t maxlen);
     // Non-blocking key poll: returns 1 and writes to *out if a key is available, 0 otherwise
     int32_t (*key_poll)(int8_t* out);
+    // Get current date/time from RTC (local), fills out fields
+    void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
+                         uint8_t* hour, uint8_t* minute, uint8_t* second);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -106,6 +109,17 @@ static inline int32_t kos_exec(const int8_t* path, int32_t argc, const int8_t** 
 static inline int32_t kos_key_poll(int8_t* out) {
     if (kos_sys_table()->key_poll) return kos_sys_table()->key_poll(out);
     return 0;
+}
+
+// Read current date/time via kernel RTC API
+static inline void kos_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day,
+                                   uint8_t* hour, uint8_t* minute, uint8_t* second) {
+    if (kos_sys_table()->get_datetime) {
+        kos_sys_table()->get_datetime(year, month, day, hour, minute, second);
+    } else {
+        if (year) *year = 1970; if (month) *month = 1; if (day) *day = 1;
+        if (hour) *hour = 0; if (minute) *minute = 0; if (second) *second = 0;
+    }
 }
 
 // Flags for kos_listdir_ex

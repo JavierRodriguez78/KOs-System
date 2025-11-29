@@ -41,13 +41,16 @@ namespace kos {
             // Expose config flag for debug for convenience.
             static bool DebugFromConfig();
 
+            // Millisecond uptime since boot, used for profiling. Returns 0
+            // if the timer subsystem is not yet available.
+            static uint32_t UptimeMs();
+
         private:
             static ServiceNode* s_head;
             static bool s_debugCfg;
             static uint32_t s_boot_ms;
 
             static void ApplyConfig();
-            static uint32_t UptimeMs();
         };
 
         // API to run the ServiceManager loop as a system service thread.
