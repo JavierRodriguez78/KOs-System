@@ -61,6 +61,7 @@ BootOptions::BootOptions() : mousePollMode(MOUSE_POLL_ALWAYS), debugEnabled(fals
 
 BootOptions BootOptions::ParseFromMultiboot(const void* mb_info, kos::common::uint32_t magic) {
     BootOptions opts;
+    opts.mode = DisplayMode::Graphics; // default to graphics if available later
 
     // Multiboot v1: parse minimal info struct for cmdline
     if (magic == MB1_MAGIC && mb_info) {
@@ -70,6 +71,9 @@ BootOptions BootOptions::ParseFromMultiboot(const void* mb_info, kos::common::ui
             const char* cmd = (const char*)(uintptr_t)mbi->cmdline;
             if (cmd) {
                 opts.mousePollMode = applyCmdlineFlags(cmd, opts.mousePollMode);
+                // Parse display mode: look for "mode=text" or "mode=graphics"
+                if (containsSubstring(cmd, "mode=text")) opts.mode = DisplayMode::Text;
+                else if (containsSubstring(cmd, "mode=graphics")) opts.mode = DisplayMode::Graphics;
             }
         }
         return opts;
@@ -85,7 +89,11 @@ BootOptions BootOptions::ParseFromMultiboot(const void* mb_info, kos::common::ui
             if (tag->type == 0) break;
             if (tag->type == 1) {
                 const char* cmd = (const char*)(p + sizeof(Tag));
-                if (cmd) opts.mousePollMode = applyCmdlineFlags(cmd, opts.mousePollMode);
+                if (cmd) {
+                    opts.mousePollMode = applyCmdlineFlags(cmd, opts.mousePollMode);
+                    if (containsSubstring(cmd, "mode=text")) opts.mode = DisplayMode::Text;
+                    else if (containsSubstring(cmd, "mode=graphics")) opts.mode = DisplayMode::Graphics;
+                }
                 break;
             }
             kos::common::uint32_t size = tag->size;

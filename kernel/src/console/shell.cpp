@@ -112,7 +112,24 @@ void Shell::Run() {
 }
 
 void Shell::InputChar(int8_t c) {
-    // Handle control characters (Ctrl+[A-Z] -> 1..26)
+    // Normalize CR to LF and handle Enter immediately
+    if (c == '\r') c = '\n';
+    if (c == '\n') {
+        tty.PutChar('\n');
+        buffer[bufferIndex] = 0;
+        ExecuteCommand();
+        bufferIndex = 0;
+        PrintPrompt();
+        return;
+    } else if (c == '\b' || c == 127) { // Backspace
+        if (bufferIndex > 0) {
+            bufferIndex--;
+            tty.Write("\b \b");
+        }
+        return;
+    }
+
+    // Handle control characters (Ctrl+[A-Z] -> 1..26). Other controls ignored.
     if (c > 0 && c < 32) {
         switch (c) {
             case 3: // Ctrl+C: cancel current line
@@ -123,7 +140,6 @@ void Shell::InputChar(int8_t c) {
             case 12: // Ctrl+L: clear screen
                 tty.Clear();
                 PrintPrompt();
-                // Optionally reprint current buffer (omitted for simplicity)
                 return;
             case 21: // Ctrl+U: kill line
                 while (bufferIndex > 0) {
@@ -134,18 +150,6 @@ void Shell::InputChar(int8_t c) {
             default:
                 // Ignore other control chars in shell (do not echo)
                 return;
-        }
-    }
-    if (c == '\n' || c == '\r') {
-        tty.PutChar('\n');
-        buffer[bufferIndex] = 0;
-        ExecuteCommand();
-        bufferIndex = 0;
-        PrintPrompt();
-    } else if (c == '\b' || c == 127) { // Backspace
-        if (bufferIndex > 0) {
-            bufferIndex--;
-            tty.Write("\b \b");
         }
     } else if (bufferIndex < BUFFER_SIZE - 1) {
         buffer[bufferIndex++] = c;

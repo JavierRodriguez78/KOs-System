@@ -28,8 +28,13 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
     // Offer key to app-facing queue so applications can poll (non-blocking)
     sys_offer_key(c);
-    // First, see if stdio scanf is actively reading input
-    bool consumed = kos::sys::TryDeliverKey(c);
+    // In text mode, keep keys for the shell and do not let scanf steal them.
+    bool consumed = false;
+    bool textMode = (kos::g_display_mode == kos::kernel::DisplayMode::Text);
+    if (!textMode) {
+        // Only allow stdio to consume input when not in text shell mode
+        consumed = kos::sys::TryDeliverKey(c);
+    }
     #ifndef KOS_BUILD_APPS
     // Handle scrollback navigation when terminal focused
     if (kos::gfx::Terminal::IsActive()) {

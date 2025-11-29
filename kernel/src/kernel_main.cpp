@@ -136,10 +136,16 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     // uptime may simply return 0.
     BootProgressor boot(&kos::services::ServiceManager::UptimeMs);
     boot.Advance(BootStage::EarlyInit);
+    // Parse boot options early to set global selections (mouse poll, display mode)
+    {
+        kos::kernel::BootOptions opts = kos::kernel::BootOptions::ParseFromMultiboot(multiboot_structure, multiboot_magic);
+        kos::g_mouse_poll_mode = opts.MousePollMode();
+        kos::g_display_mode = opts.Mode();
+    }
+
     // Initialize multiboot parsing and framebuffer info
-   
-     kos::kernel::MultibootKernel mb(multiboot_structure, multiboot_magic);
-     mb.Init();
+    kos::kernel::MultibootKernel mb(multiboot_structure, multiboot_magic);
+    mb.Init();
 
     static TTY tty;
     tty.Clear();
@@ -187,23 +193,31 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     Logger::LogStatus("Multitasking environment started", true);
     boot.Advance(BootStage::MultitaskingStart);
     
-    // If graphics available, mark graphics stage (Framebuffer + WindowManager started earlier)
-    if (kos::gfx::IsAvailable()) {
+    // If graphics mode selected and available, mark graphics stage
+    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics && kos::gfx::IsAvailable()) {
         boot.Advance(BootStage::GraphicsMode);
     }
 
-    // Initialize and start threaded shell
-    if (ThreadedShellAPI::InitializeShell()) {
-        Logger::LogStatus("Threaded shell initialized", true);
-        ThreadedShellAPI::StartShell();
-        // Ensure a prompt appears in the new graphical terminal by simulating Enter once
-        ThreadedShellAPI::ProcessKeyInput(kInitialShellPromptKey);
-        boot.Advance(BootStage::ShellInit);
+    // Start user interaction depending on selected display mode
+    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics && kos::gfx::IsAvailable()) {
+        // Initialize and start threaded shell (graphics)
+        if (ThreadedShellAPI::InitializeShell()) {
+            Logger::LogStatus("Threaded shell initialized", true);
+            ThreadedShellAPI::StartShell();
+            ThreadedShellAPI::ProcessKeyInput(kInitialShellPromptKey);
+            boot.Advance(BootStage::ShellInit);
+        } else {
+            Logger::LogStatus("Failed to initialize threaded shell", false);
+            // Fallback to text shell if graphics shell fails
+            g_shell = &g_shell_instance;
+            Logger::LogStatus("Starting fallback text shell...", true);
+            g_shell_instance.Run();
+            boot.Advance(BootStage::ShellInit);
+        }
     } else {
-        Logger::LogStatus("Failed to initialize threaded shell", false);
-        // Fallback to original shell
+        // Text mode: start classic shell
         g_shell = &g_shell_instance;
-        Logger::LogStatus("Starting fallback shell...", true);
+        Logger::LogStatus("Starting text shell...", true);
         g_shell_instance.Run();
         boot.Advance(BootStage::ShellInit);
     }

@@ -11,6 +11,7 @@
 #include <lib/sysapi.hpp>
 #include <memory/heap.hpp>
 #include <fs/filesystem.hpp>
+#include <kernel/globals.hpp>
 
 using namespace kos::process;
 using namespace kos::console;
@@ -102,14 +103,17 @@ void ThreadManager::CreateSystemThreads() {
         
     }
     
-    // Create shell thread
-    uint32_t shell_id = CreateSystemThread((void*)shell_thread, 8192, 
-                                          PRIORITY_HIGH, THREAD_SHELL, "shell-thread", main_thread->task_id);
-    if (shell_id) {
-        shell_thread = g_scheduler->FindTask(shell_id);
-            if (Logger::IsDebugEnabled()) {
-                Logger::Log("Created shell thread");
-            }
+    // Create shell thread only when running the threaded shell (graphics mode)
+    // In text mode, the classic shell runs on the main path to avoid input routing conflicts.
+    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics) {
+        uint32_t shell_id = CreateSystemThread((void*)shell_thread, 8192,
+                                              PRIORITY_HIGH, THREAD_SHELL, "shell-thread", main_thread->task_id);
+        if (shell_id) {
+            shell_thread = g_scheduler->FindTask(shell_id);
+                if (Logger::IsDebugEnabled()) {
+                    Logger::Log("Created shell thread");
+                }
+        }
     }
     
     // Create keyboard handler thread

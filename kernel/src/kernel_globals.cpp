@@ -20,6 +20,7 @@ kos::drivers::mouse::MouseEventHandler* g_mouse_ui_handler_ptr = &s_mouse_ui_han
 kos::console::Shell* g_shell = nullptr;
 kos::console::Shell g_shell_instance;
 kos::common::uint8_t g_mouse_poll_mode = 2; // default poll mode
+kos::kernel::DisplayMode g_display_mode = kos::kernel::DisplayMode::Graphics; // default display mode
 }
 
 typedef void (*constructor)();

@@ -29,7 +29,10 @@ void RegisterAndStartServices()
     ServiceManager::Register(&g_fs_service);
     ServiceManager::Register(&g_banner_service);
     ServiceManager::Register(&g_time_service);
-    ServiceManager::Register(&g_window_manager);
+    // Register WindowManager only if graphics mode selected
+    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics) {
+        ServiceManager::Register(&g_window_manager);
+    }
     ServiceManager::Register(&g_initd_service);
     Logger::Log("Kernel: services registered (FS, BANNER, TIME, WINMAN, INITD)");
     // Apply mouse poll mode before WindowManager starts

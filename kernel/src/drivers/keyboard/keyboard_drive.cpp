@@ -122,6 +122,9 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                 case 0x1D: // Right Ctrl press
                     ctrlRight = true;
                     break;
+                case 0x1C: // Numpad Enter (E0 1C)
+                    handler->OnKeyDown('\n');
+                    break;
                 case 0x49: // Page Up (E0 49)
                     handler->OnKeyDown((char)0xF1); // internal code for PageUp
                     break;
