@@ -10,7 +10,9 @@
 #include <console/tty.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
 #include <drivers/mouse/mouse_driver.hpp>
+#include <drivers/keyboard/keyboard_driver.hpp>
 #include <kernel/globals.hpp>
+#include <ui/cursor.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -148,11 +150,7 @@ bool WindowManager::Start() {
     // Suppress further log writes to TTY now; we'll unmute later in Tick() so
     // ServiceManager's status lines don't clobber the initial prompt.
     kos::console::Logger::MuteTTY(true);
-    kos::ui::InitInput();
-    // Center the cursor and set a comfortable sensitivity
-    const auto& fb = kos::gfx::GetInfo();
-    kos::ui::SetCursorPos((int)(fb.width/2), (int)(fb.height/2));
-    kos::ui::SetMouseSensitivity(2, 1); // 2x default sensitivity
+    // Input subsystem was initialized earlier at BootStage::InputInit
     kos::ui::Init();
     // Create a graphical terminal window sized for 80x25 8x8 cells + title bar
     {
@@ -217,6 +215,18 @@ bool WindowManager::Start() {
             char ch = buf[i]; if (ch < 32 || ch > 127) ch='?';
             const uint8_t* glyph = kos::gfx::kFont8x8Basic[ch - 32];
             kos::gfx::Compositor::DrawGlyph8x8(4 + i*8, 4, glyph, 0xFFFFFFFFu, wallpaper);
+        }
+        // Second line: input sources (kbd/mouse)
+        char buf2[160]; bi=0;
+        auto writeStr2 = [&](const char* s){ while(*s) buf2[bi++]=*s++; };
+        auto writeSrc=[&](const char* label, uint8_t src){ writeStr2(label); writeStr2(":"); if(src==1) writeStr2("IRQ"); else if(src==2) writeStr2("POLL"); else writeStr2("-"); writeStr2("  "); };
+        writeSrc("kbd", ::kos::g_kbd_input_source);
+        writeSrc("mouse", ::kos::g_mouse_input_source);
+        buf2[bi]=0;
+        for (int i=0; buf2[i]; ++i) {
+            char ch = buf2[i]; if (ch < 32 || ch > 127) ch='?';
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic[ch - 32];
+            kos::gfx::Compositor::DrawGlyph8x8(4 + i*8, 14, glyph, 0xFFFFFFFFu, wallpaper);
         }
     }
     kos::gfx::Compositor::EndFrame();
@@ -295,14 +305,26 @@ void WindowManager::Tick() {
             }
         }
     }
-    // Poll mouse each tick (non-blocking). Keeps UI responsive on platforms where IRQ12 is unreliable.
-    // Force polling until first packet is received, then respect configured mode.
-    if (g_mouse_driver_ptr) {
+    // Poll mouse each tick when needed: before first IRQ packet or in always mode.
+    static uint32_t s_no_pkt_ticks = 0;
+    static bool s_notified_no_irq = false;
+    if (::kos::g_mouse_driver_ptr) {
+        bool needPoll = (drivers::mouse::g_mouse_packets == 0) || (s_mouse_poll_mode == 2);
+        if (needPoll) ::kos::g_mouse_driver_ptr->PollOnce();
         if (drivers::mouse::g_mouse_packets == 0) {
-            g_mouse_driver_ptr->PollOnce();
-        } else if (s_mouse_poll_mode == 2 || (s_mouse_poll_mode == 1 && drivers::mouse::g_mouse_packets == 0)) {
-            g_mouse_driver_ptr->PollOnce();
+            if (!s_notified_no_irq) {
+                if (++s_no_pkt_ticks >= 60) { // ~2 seconds at 33ms/tick
+                    kos::console::Logger::Log("WINMAN: no mouse IRQ packets yet; polling fallback active");
+                    s_notified_no_irq = true;
+                }
+            }
+        } else {
+            s_no_pkt_ticks = 0; s_notified_no_irq = true; // we have packets; suppress notice
         }
+    }
+    // Also poll keyboard here as an extra safety net in graphics mode
+    if (::kos::g_keyboard_driver_ptr) {
+        ::kos::g_keyboard_driver_ptr->PollOnce();
     }
 
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background
@@ -425,31 +447,8 @@ void WindowManager::Tick() {
     }
     // Optional animation: move the demo window horizontally (simple effect)
     // For now, leave static to keep it predictable.
-    // Draw mouse cursor (simple crosshair) after all windows & terminal so it stays on top.
-    {
-        int cx, cy; uint8_t cb; kos::ui::GetMouseState(cx, cy, cb);
-        // Clamp just in case (defensive; GetMouseState already clamps)
-        const auto& fbinfo = kos::gfx::GetInfo();
-        if (cx < 0) cx = 0; if (cy < 0) cy = 0;
-        if (cx >= (int)fbinfo.width) cx = (int)fbinfo.width - 1;
-        if (cy >= (int)fbinfo.height) cy = (int)fbinfo.height - 1;
-        // Colors: white outline, inner depending on button state (left=red, middle=green, right=blue)
-        uint32_t inner = 0xFFFFFFFFu;
-        if (cb & 1u) inner = 0xFFFF4040u; // left
-        else if (cb & 4u) inner = 0xFF40FF40u; // middle
-        else if (cb & 2u) inner = 0xFF4040FFu; // right
-        // Crosshair size
-        // Horizontal line
-        for (int dx=-3; dx<=3; ++dx) {
-            int x = cx + dx; int y = cy; if (x>=0 && x<(int)fbinfo.width)
-                kos::gfx::Compositor::FillRect((uint32_t)x, (uint32_t)y, 1, 1, (dx==0? inner : 0xFFFFFFFFu));
-        }
-        // Vertical line
-        for (int dy=-3; dy<=3; ++dy) {
-            int x = cx; int y = cy + dy; if (y>=0 && y<(int)fbinfo.height)
-                kos::gfx::Compositor::FillRect((uint32_t)x, (uint32_t)y, 1, 1, (dy==0? inner : 0xFFFFFFFFu));
-        }
-    }
+    // Render cursor (style selectable) after all content
+    kos::ui::RenderCursor();
     kos::gfx::Compositor::EndFrame();
 }
 

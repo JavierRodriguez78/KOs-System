@@ -15,15 +15,17 @@ Stages
    - Core hardware drivers: PCI scan, keyboard, mouse handlers, storage (ATA), network devices, VGA/framebuffer basics.
 4. FilesystemInit
    - ATA device probing, FAT16/FAT32 mounts, root filesystem selection, global `g_fs_ptr` populated.
-5. ServicesInit
+5. InputInit
+   - Input subsystem prepared (mouse state, cursor centered, sensitivity applied) for graphics mode before services.
+6. ServicesInit
    - Kernel services registered and started (filesystem, banner, time, window manager, init daemon). Mouse poll mode applied.
-6. MultitaskingStart
+7. MultitaskingStart
    - Scheduler activated; threads can run; process spawning enabled.
-7. GraphicsMode
+8. GraphicsMode
    - Conditional: only logged if a framebuffer is detected (via `gfx::IsAvailable()`). Window manager already running.
-8. ShellInit
+9. ShellInit
    - Graphical threaded shell started (or fallback text shell). User interaction becomes available.
-9. Complete
+10. Complete
    - Boot sequence finished; system enters steady-state loop (idle + periodic scheduling).
 
 Design Goals
@@ -35,7 +37,7 @@ Design Goals
 
 Extending Stages
 ----------------
-To add a new stage, append it to `BootStage` in `include/kernel/boot_stage.hpp`, implement the transition point in `kernel_main.cpp`, and ensure it logs meaningful completion criteria.
+To add a new stage, append it to `BootStage` in `include/kernel/boot_stage.hpp`, implement the transition point in `kernel_main.cpp`, and ensure it logs meaningful completion criteria. The `kStageCount` constant must be updated to match.
 
 Conditional Graphics Stage
 --------------------------

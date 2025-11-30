@@ -10,6 +10,9 @@
 // Logo printer
 #include <console/logo.hpp>
 #include <graphics/framebuffer.hpp>
+#include <ui/cursor.hpp>
+#include <kernel/globals.hpp>
+#include <drivers/mouse/mouse_driver.hpp>
 // Scheduler / threads
 #include <process/scheduler.hpp>
 // Pipe management
@@ -260,6 +263,54 @@ void Shell::ExecuteCommand(const int8_t* command) {
         gfx::Clear32(0xFF000000u);
         PrintLogoFramebuffer32();
         tty.Write("Graphics initialized.\n");
+        return;
+    }
+
+    // Built-in: cursor [crosshair|triangle] (query or set cursor style)
+    if (String::strcmp(prog, (const int8_t*)"cursor", 6) == 0 && (prog[6] == 0)) {
+        if (!gfx::IsAvailable()) {
+            tty.Write("Graphics mode not active; no cursor.\n");
+            return;
+        }
+        if (argc == 1) {
+            kos::ui::CursorStyle cs = kos::ui::GetCursorStyle();
+            tty.Write("Cursor style: ");
+            if (cs == kos::ui::CursorStyle::Crosshair) tty.Write("crosshair\n"); else tty.Write("triangle\n");
+            return;
+        }
+        const int8_t* arg = argv[1];
+        if (String::strcmp(arg, (const int8_t*)"crosshair", 9) == 0 && arg[9] == 0) {
+            kos::ui::SetCursorStyle(kos::ui::CursorStyle::Crosshair);
+            tty.Write("Cursor style set to crosshair\n");
+            return;
+        } else if (String::strcmp(arg, (const int8_t*)"triangle", 8) == 0 && arg[8] == 0) {
+            kos::ui::SetCursorStyle(kos::ui::CursorStyle::Triangle);
+            tty.Write("Cursor style set to triangle\n");
+            return;
+        } else {
+            tty.Write("Usage: cursor [crosshair|triangle]\n");
+            return;
+        }
+    }
+
+    // Built-in: mousedbg [on|off] - dump raw mouse bytes (limited)
+    if (String::strcmp(prog, (const int8_t*)"mousedbg", 8) == 0 && (prog[8] == 0)) {
+        if (argc == 1) {
+            tty.Write("Usage: mousedbg [on|off]\n");
+            return;
+        }
+        // Use kernel global pointer (namespace ::kos)
+        if (!::kos::g_mouse_driver_ptr) { tty.Write("Mouse driver not initialized\n"); return; }
+        const int8_t* arg = argv[1];
+        if (String::strcmp(arg, (const int8_t*)"on", 2) == 0 && arg[2] == 0) {
+            ::kos::g_mouse_driver_ptr->EnableDebugDump(true);
+            tty.Write("Mouse debug dump enabled (prints ~96 bytes)\n");
+        } else if (String::strcmp(arg, (const int8_t*)"off", 3) == 0 && arg[3] == 0) {
+            ::kos::g_mouse_driver_ptr->EnableDebugDump(false);
+            tty.Write("Mouse debug dump disabled\n");
+        } else {
+            tty.Write("Usage: mousedbg [on|off]\n");
+        }
         return;
     }
 
@@ -535,6 +586,9 @@ void Shell::ExecuteCommand(const int8_t* command) {
     tty.Write("  gfxinfo        - Show framebuffer info (if available)\n");
     tty.Write("  gfxinit        - Initialize graphics: clear and draw logo\n");
     tty.Write("  gfxclear [hex] - Clear framebuffer to RRGGBB (default black)\n");
+    tty.Write("  cursor [style] - Show or set cursor style (crosshair|triangle)\n");
+    tty.Write("  mousedbg on/off- Dump raw mouse bytes (IRQ/POLL)\n");
+    tty.Write("  cursor [style] - Show or set cursor style (crosshair|triangle)\n");
         tty.Write("  lshw           - Hardware info: CPU, memory, PCI\n");
     tty.Write("  reboot         - Run reboot stub (no hardware reset)\n");
         

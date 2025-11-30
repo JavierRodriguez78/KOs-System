@@ -8,6 +8,7 @@
 #include <drivers/keyboard/keyboard.hpp>
 #include <lib/stdio.hpp>
 #include <kernel/globals.hpp>
+#include <console/logger.hpp>
 
 
 using namespace kos::common;    
@@ -26,13 +27,25 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
+    // One-time log to confirm the shell handler is receiving keys
+    {
+        static bool s_first_key_seen = false;
+        if (!s_first_key_seen) { kos::console::Logger::LogKV("KEY", "first-to-shell"); s_first_key_seen = true; }
+        if (c == '\n') { kos::console::Logger::LogKV("KEY", "enter"); }
+    }
     // Offer key to app-facing queue so applications can poll (non-blocking)
     sys_offer_key(c);
-    // In text mode, keep keys for the shell and do not let scanf steal them.
+    // Always prioritize routing to shell in graphics mode to avoid input blockage.
+    // In text mode, legacy behavior remains unchanged.
     bool consumed = false;
-    bool textMode = (kos::g_display_mode == kos::kernel::DisplayMode::Text);
-    if (!textMode) {
-        // Only allow stdio to consume input when not in text shell mode
+    bool graphics = false;
+    #ifndef KOS_BUILD_APPS
+    graphics = kos::gfx::IsAvailable();
+    #endif
+    if (graphics) {
+        // Do not let stdio consume keys in graphics mode; terminal window displays TTY output.
+        consumed = false;
+    } else {
         consumed = kos::sys::TryDeliverKey(c);
     }
     #ifndef KOS_BUILD_APPS

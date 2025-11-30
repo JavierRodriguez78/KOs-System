@@ -35,6 +35,9 @@ namespace kos{
                 // Polling buffer for fallback mode
                 uint8_t pbuf[3];
                 uint8_t poff = 0;
+                // Debug: dump raw bytes for a short duration
+                bool dumpEnabled = false;
+                uint32_t dumpCount = 0; // number of bytes dumped
         
                 public:
                     /*
@@ -63,6 +66,9 @@ namespace kos{
 
             // Fallback polling when IRQ12 doesn't fire. Non-blocking; processes at most one packet.
             void PollOnce();
+
+                    // Enable/disable debug raw byte dumping (printed via Logger)
+                    void EnableDebugDump(bool on) { dumpEnabled = on; dumpCount = 0; }
             };
         }
     }

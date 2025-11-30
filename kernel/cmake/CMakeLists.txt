@@ -213,20 +213,20 @@ add_custom_target(qemu-vvfat
 
 # Read-only QEMU run (avoids write-lock on disk.img). Good for quick boot/log checks.
 add_custom_target(qemu-ro
-    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(debug
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(gdb
     COMMAND ${CMAKE_COMMAND} -E echo ">>> Start Qemu in Debug && GDB mode..."
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -serial mon:stdio &
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio &
     COMMAND sleep 1
     COMMAND gdb -x ${KOS_ROOT_DIR}/.gdbinit
     DEPENDS iso

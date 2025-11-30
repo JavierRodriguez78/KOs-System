@@ -29,6 +29,8 @@ void InitDrivers(arch::x86::hardware::interrupts::InterruptManager* interrupts)
     Logger::Log("Loading device drivers");
     static ShellKeyboardHandler skbhandler;
     static kos::drivers::keyboard::KeyboardDriver keyboard(interrupts, &skbhandler);
+    // Expose keyboard driver globally for optional polling fallback
+    g_keyboard_driver_ptr = &keyboard;
     drvManager.AddDriver(&keyboard);
 
     // In graphics mode, route mouse events to UI input
@@ -59,6 +61,9 @@ void InitDrivers(arch::x86::hardware::interrupts::InterruptManager* interrupts)
     Logger::LogStatus("Timer IRQ0 enabled", true);
     interrupts->EnableIRQ(1);
     Logger::LogStatus("Keyboard IRQ1 enabled", true);
+    // Ensure PIC cascade (IRQ2) is unmasked so slave IRQs (8-15) propagate
+    interrupts->EnableIRQ(2);
+    Logger::LogStatus("PIC cascade IRQ2 enabled", true);
     // Enable mouse IRQ (PS/2 auxiliary device)
     interrupts->EnableIRQ(12);
     Logger::LogStatus("Mouse IRQ12 enabled", true);

@@ -47,6 +47,8 @@ namespace kos
                     *@brief Activates the keyboard driver.
                     */
                     virtual void Activate();
+                    // Poll one scancode (fallback when IRQ1 not firing). Returns true if a key was processed.
+                    bool PollOnce();
                 private:
                     
                     //  I/O ports for keyboard data and command

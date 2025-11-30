@@ -1,5 +1,9 @@
 #include <drivers/keyboard/keyboard_driver.hpp>
+#include <console/logger.hpp>
+#include <console/tty.hpp>
+#include <kernel/globals.hpp>
 using namespace kos::drivers::keyboard;
+using namespace kos::console;
 
 
 KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
@@ -124,12 +128,24 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                     break;
                 case 0x1C: // Numpad Enter (E0 1C)
                     handler->OnKeyDown('\n');
+                    {
+                        static bool s_first_irq_logged = false;
+                        if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
+                    }
                     break;
                 case 0x49: // Page Up (E0 49)
                     handler->OnKeyDown((char)0xF1); // internal code for PageUp
+                    {
+                        static bool s_first_irq_logged = false;
+                        if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
+                    }
                     break;
                 case 0x51: // Page Down (E0 51)
                     handler->OnKeyDown((char)0xF2); // internal code for PageDown
+                    {
+                        static bool s_first_irq_logged = false;
+                        if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
+                    }
                     break;
                 case 0x35: handler->OnKeyDown('/'); break; // Keypad '/' (E0 35)
                 case 0x4A: handler->OnKeyDown('-'); break; // Keypad '-' (E0 4A) on some layouts
@@ -218,8 +234,63 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                 }
             }
             handler->OnKeyDown(ch);
+            // mark source as IRQ
+            ::kos::g_kbd_input_source = 1;
+            static bool s_first_irq_logged = false;
+            if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
         }
     }
 
     return esp;
 };
+
+// Fallback: poll controller status and process one scancode identically to interrupt path.
+bool KeyboardDriver::PollOnce() {
+    // Check output buffer full
+    if ((commandport.Read() & 0x01) == 0) return false;
+    static bool s_tty_notified = false;
+    uint8_t key = dataport.Read();
+    if(handler == 0) return false;
+    if (key == 0xE0) { e0Prefix = true; return true; }
+    if (key & 0x80) {
+        uint8_t code = key & 0x7F;
+        if (e0Prefix) { if (code == 0x1D) ctrlRight = false; e0Prefix=false; }
+        else if (code == 0x1D) { ctrlLeft = false; }
+        return true; // release handled
+    }
+    if (e0Prefix) {
+        e0Prefix = false;
+        switch (key) {
+            case 0x1D: ctrlRight = true; break;
+            case 0x1C: handler->OnKeyDown('\n'); break;
+            case 0x49: handler->OnKeyDown((char)0xF1); break;
+            case 0x51: handler->OnKeyDown((char)0xF2); break;
+            case 0x35: handler->OnKeyDown('/'); break;
+            case 0x4A: handler->OnKeyDown('-'); break;
+            default: break;
+        }
+        static bool s_first_poll_logged = false;
+        if (!s_first_poll_logged) { Logger::LogKV("KBD", "first-poll"); s_first_poll_logged = true; }
+        if (!s_tty_notified) { kos::console::TTY::Write((const int8_t*)"[KBD] using POLL\n"); s_tty_notified = true; }
+        ::kos::g_kbd_input_source = 2;
+        return true;
+    }
+    int8_t ch = 0;
+    switch(key) {
+        case 0x0E: ch='\b'; break; case 0x02: ch='1'; break; case 0x03: ch='2'; break; case 0x04: ch='3'; break; case 0x05: ch='4'; break; case 0x06: ch='5'; break; case 0x07: ch='6'; break; case 0x08: ch='7'; break; case 0x09: ch='8'; break; case 0x0A: ch='9'; break; case 0x0B: ch='0'; break; case 0x0C: ch='-'; break;
+        case 0x10: ch='q'; break; case 0x11: ch='w'; break; case 0x12: ch='e'; break; case 0x13: ch='r'; break; case 0x14: ch='t'; break; case 0x15: ch='z'; break; case 0x16: ch='u'; break; case 0x17: ch='i'; break; case 0x18: ch='o'; break; case 0x19: ch='p'; break;
+        case 0x1E: ch='a'; break; case 0x1F: ch='s'; break; case 0x20: ch='d'; break; case 0x21: ch='f'; break; case 0x22: ch='g'; break; case 0x23: ch='h'; break; case 0x24: ch='j'; break; case 0x25: ch='k'; break; case 0x26: ch='l'; break;
+        case 0x2C: ch='y'; break; case 0x2D: ch='x'; break; case 0x2E: ch='c'; break; case 0x2F: ch='v'; break; case 0x30: ch='b'; break; case 0x31: ch='n'; break; case 0x32: ch='m'; break; case 0x33: ch=','; break; case 0x34: ch='.'; break; case 0x35: ch='-'; break; case 0x4A: ch='-'; break;
+        case 0x1C: ch='\n'; break; case 0x39: ch=' '; break; case 0x1D: ctrlLeft=true; break;
+        default: break;
+    }
+    if (ch) {
+        if ((ctrlLeft||ctrlRight) && ch >= 'a' && ch <= 'z') ch = (int8_t)(ch - 'a' + 1);
+        handler->OnKeyDown(ch);
+        static bool s_first_poll_logged = false;
+        if (!s_first_poll_logged) { Logger::LogKV("KBD", "first-poll"); s_first_poll_logged = true; }
+        if (!s_tty_notified) { kos::console::TTY::Write((const int8_t*)"[KBD] using POLL\n"); s_tty_notified = true; }
+        ::kos::g_kbd_input_source = 2;
+    }
+    return true;
+}

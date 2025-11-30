@@ -181,8 +181,18 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     kos::kernel::ScanAndMountFilesystems();
     boot.Advance(BootStage::FilesystemInit);
 
+    // Prepare input subsystem early (before services) so cursor is ready when GUI windows appear.
+    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics && kos::gfx::IsAvailable()) {
+        kos::ui::InitInput();
+        const auto& fbInfo = kos::gfx::GetInfo();
+        kos::ui::SetCursorPos((int)(fbInfo.width/2), (int)(fbInfo.height/2));
+        kos::ui::SetMouseSensitivity(2, 1);
+        Logger::LogKV("Input", "initialized");
+    }
+    boot.Advance(BootStage::InputInit);
+
     // Register and start kernel services (filesystem, banner, time, window manager, initd)
-    // Mouse poll mode is now supplied via global g_mouse_poll_mode (Alternative B)
+    // Mouse poll mode is now supplied via global g_mouse_poll_mode
     kos::kernel::RegisterAndStartServices();
     boot.Advance(BootStage::ServicesInit);
 

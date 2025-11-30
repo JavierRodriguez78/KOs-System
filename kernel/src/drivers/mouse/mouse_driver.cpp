@@ -4,6 +4,8 @@
 #include <drivers/mouse/mouse_constants.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
 #include <console/logger.hpp>
+#include <console/tty.hpp>
+#include <kernel/globals.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -103,7 +105,18 @@ void MouseDriver::Activate()
         if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0)
             return esp;
 
-        buffer[offset] = dataport.Read();
+        uint8_t b = dataport.Read();
+        buffer[offset] = b;
+        if (dumpEnabled && dumpCount < 96) {
+            // Print raw byte in hex, grouped
+            const char* hex = "0123456789ABCDEF";
+            char msg[16]; int i=0;
+            msg[i++]='['; msg[i++]='M'; msg[i++]='D'; msg[i++]=']'; msg[i++]=' '; msg[i++]='I'; msg[i++]='R'; msg[i++]='Q'; msg[i++]=' '; msg[i++]='b'; msg[i++]='='; msg[i++]='0'; msg[i++]='x';
+            msg[i++] = hex[(b>>4)&0xF]; msg[i++] = hex[b&0xF]; msg[i]=0;
+            Logger::Log(msg);
+            ++dumpCount;
+            if (dumpCount == 96) { Logger::Log("[MD] dump complete"); dumpEnabled = false; }
+        }
 
          if (handler == 0)
             return esp;
@@ -143,7 +156,8 @@ void MouseDriver::Activate()
             // Periodic debug to confirm movement/packets (every 64 packets)
             static uint32_t pkt = 0; ++pkt;
             if (pkt == 1) {
-                Logger::Log("[MOUSE] first packet received");
+                Logger::LogKV("MOUSE", "first-packet");
+                ::kos::g_mouse_input_source = 1; // IRQ
             } else if ((pkt & 63u) == 0 && Logger::IsDebugEnabled()) {
                 Logger::Log("[MOUSE] pkt");
             }
@@ -157,10 +171,20 @@ void MouseDriver::PollOnce() {
     // Check if data available
     uint8_t status = commandport.Read();
     if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0) return; // nothing
-    if ((status & MOUSE_STATUS_AUX) == 0) return; // nothing
+    // Do not require AUX bit: some emulators/hosts may not set it reliably
     uint8_t b = dataport.Read();
+    static bool s_mouse_poll_tty = false;
     pbuf[poff] = b;
     poff = (poff + 1) % 3;
+    if (dumpEnabled && dumpCount < 96) {
+        const char* hex = "0123456789ABCDEF";
+        char msg[16]; int i=0;
+        msg[i++]='['; msg[i++]='M'; msg[i++]='D'; msg[i++]=']'; msg[i++]=' '; msg[i++]='P'; msg[i++]='O'; msg[i++]='L'; msg[i++]=' '; msg[i++]='b'; msg[i++]='='; msg[i++]='0'; msg[i++]='x';
+        msg[i++] = hex[(b>>4)&0xF]; msg[i++] = hex[b&0xF]; msg[i]=0;
+        Logger::Log(msg);
+        ++dumpCount;
+        if (dumpCount == 96) { Logger::Log("[MD] dump complete"); dumpEnabled = false; }
+    }
     if (poff != 0) return; // need full packet
     // Sync bit check
     if ((pbuf[0] & MOUSE_SYNC_BIT) == 0) { poff = 0; return; }
@@ -178,5 +202,7 @@ void MouseDriver::PollOnce() {
     buttons = pbuf[0];
     // Increment packet counter directly
     ::kos::drivers::mouse::g_mouse_packets++;
-    static uint32_t fp = 0; if (++fp == 1) Logger::Log("[MOUSE] first packet (poll) received");
+    ::kos::g_mouse_input_source = 2; // POLL
+    if (!s_mouse_poll_tty) { kos::console::TTY::Write((const int8_t*)"[MOUSE] using POLL\n"); s_mouse_poll_tty = true; }
+    static uint32_t fp = 0; if (++fp == 1) Logger::LogKV("MOUSE", "first-packet-poll");
 }

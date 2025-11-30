@@ -10,7 +10,11 @@
 #include <console/logger.hpp>
 
 // Extern hook to expose timer handler to ServiceManager for uptime profiling
-namespace kos { namespace services { extern kos::process::SchedulerTimerHandler* g_timer_handler_for_services; } }
+namespace kos { 
+    namespace services { 
+        extern kos::process::SchedulerTimerHandler* g_timer_handler_for_services; 
+    } 
+}
 
 using namespace kos;
 using namespace kos::common;

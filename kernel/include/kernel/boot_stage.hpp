@@ -13,6 +13,7 @@ enum class BootStage : kos::common::uint8_t {
     MemoryInit,           // Physical memory manager, paging, heap
     DriverInit,           // Core hardware drivers (PCI, input, storage, network, etc.)
     FilesystemInit,       // Device scan + mount root / auxiliary filesystems
+    InputInit,            // Input subsystem prepared (mouse state / sensitivity) prior to services
     ServicesInit,         // Kernel service registration/startup (time, banner, window manager, initd)
     MultitaskingStart,    // Scheduler + thread/process subsystem enabled
     GraphicsMode,         // Graphical environment prepared (framebuffer/window manager active)
@@ -103,6 +104,7 @@ public:
             case BootStage::MemoryInit: return "MemoryInit";
             case BootStage::DriverInit: return "DriverInit";
             case BootStage::FilesystemInit: return "FilesystemInit";
+            case BootStage::InputInit: return "InputInit";
             case BootStage::ServicesInit: return "ServicesInit";
             case BootStage::MultitaskingStart: return "MultitaskingStart";
             case BootStage::GraphicsMode: return "GraphicsMode";
@@ -113,7 +115,7 @@ public:
     }
 
 private:
-    static constexpr int kStageCount = 9; // keep in sync with BootStage enum
+    static constexpr int kStageCount = 10; // keep in sync with BootStage enum
 
     void RecordTime(BootStage s) {
         if (!timeSource) return;

@@ -6,6 +6,7 @@
 #include <console/shell.hpp>
 #include <console/threaded_shell.hpp>
 #include <drivers/keyboard/keyboard.hpp>
+#include <drivers/keyboard/keyboard_driver.hpp>
 #include <lib/string.hpp>
 #include <lib/elfloader.hpp>
 #include <lib/sysapi.hpp>
@@ -502,8 +503,10 @@ extern "C" void keyboard_thread() {
     
     // Keyboard input handler - processes keyboard events in separate thread
     while (true) {
-        // In a real implementation, this would handle keyboard interrupts
-        // and forward input to the appropriate threads (shell, applications, etc.)
+        // Fallback polling: if IRQ1 hasn't produced input yet or host drops PS/2 interrupts
+        if (::kos::g_keyboard_driver_ptr) {
+            ::kos::g_keyboard_driver_ptr->PollOnce();
+        }
         
         SchedulerAPI::YieldThread();
         SchedulerAPI::SleepThread(10); // 10ms polling

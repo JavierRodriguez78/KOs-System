@@ -21,6 +21,10 @@ kos::console::Shell* g_shell = nullptr;
 kos::console::Shell g_shell_instance;
 kos::common::uint8_t g_mouse_poll_mode = 2; // default poll mode
 kos::kernel::DisplayMode g_display_mode = kos::kernel::DisplayMode::Graphics; // default display mode
+drivers::keyboard::KeyboardDriver* g_keyboard_driver_ptr = nullptr; // set in InitDrivers
+// Input diagnostics
+kos::common::uint8_t g_kbd_input_source = 0;
+kos::common::uint8_t g_mouse_input_source = 0;
 }
 
 typedef void (*constructor)();
