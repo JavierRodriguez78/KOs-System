@@ -1,6 +1,10 @@
 #pragma once
 
-namespace kos { namespace kernel {
-void StartShell();
-}
+namespace kos { 
+    namespace kernel {
+        /*
+        @brief Start the kernel shell.
+        */
+        void StartShell();
+    }
 }

@@ -1,7 +1,10 @@
 #pragma once
 #include <common/types.hpp>
 
+using namespace kos::common;
+
 namespace kos { 
+    
     namespace kernel {
 
         /*
