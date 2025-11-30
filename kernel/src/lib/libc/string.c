@@ -86,3 +86,23 @@ size_t strlen(const char* s) {
     while (*s++) { ++len; }
     return len;
 }
+
+char* strstr(const char* haystack, const char* needle) {
+    // Per C standard: if needle is empty, return haystack
+    if (!needle || *needle == '\0') {
+        return (char*)haystack;
+    }
+    const char* h = haystack;
+    const char* n = needle;
+    for (; *h; ++h) {
+        if (*h == *n) {
+            const char* h2 = h;
+            const char* n2 = n;
+            while (*n2 && (*h2 == *n2)) { ++h2; ++n2; }
+            if (*n2 == '\0') {
+                return (char*)h;
+            }
+        }
+    }
+    return 0; // NULL when no match
+}

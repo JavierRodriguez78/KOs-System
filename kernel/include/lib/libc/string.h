@@ -15,6 +15,7 @@ typedef unsigned long size_t; // Works for i386; adjust if needed
 int strcmp(const char* a, const char* b);
 int strncmp(const char* a, const char* b, size_t len);
 size_t strlen(const char* s);
+char* strstr(const char* haystack, const char* needle);
 void* memcpy(void* dest, const void* src, size_t n);
 void* memmove(void* dest, const void* src, size_t n);
 void* memchr(const void* s, int c, size_t n);
