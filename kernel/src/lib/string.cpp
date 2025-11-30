@@ -22,6 +22,25 @@ char* String::strcat(char* dest, const char* src) {
     *d = '\0';
     return dest;
 }
+
+char* String::strstr(const char* haystack, const char* needle) {
+    if (!needle || *needle == '\0') {
+        return (char*)haystack;
+    }
+    const char* h = haystack;
+    const char* n = needle;
+    for (; *h; ++h) {
+        if (*h == *n) {
+            const char* h2 = h;
+            const char* n2 = n;
+            while (*n2 && (*h2 == *n2)) { ++h2; ++n2; }
+            if (*n2 == '\0') {
+                return (char*)h;
+            }
+        }
+    }
+    return 0;
+}
 int32_t String::strcmp(const uint8_t* a, const uint8_t* b){
     while(*a && (*a == *b)){
         a++;

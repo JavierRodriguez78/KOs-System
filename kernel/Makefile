@@ -546,6 +546,32 @@ reboot.elf/fast:
 .PHONY : reboot.elf/fast
 
 #=============================================================================
+# Target rules for targets named date_obj
+
+# Build rule for target.
+date_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 date_obj
+.PHONY : date_obj
+
+# fast build rule for target.
+date_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/date_obj.dir/build.make kernel/cmake/CMakeFiles/date_obj.dir/build
+.PHONY : date_obj/fast
+
+#=============================================================================
+# Target rules for targets named date.elf
+
+# Build rule for target.
+date.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 date.elf
+.PHONY : date.elf
+
+# fast build rule for target.
+date.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/date.elf.dir/build.make kernel/cmake/CMakeFiles/date.elf.dir/build
+.PHONY : date.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -700,6 +726,7 @@ help:
 	@echo "... cat.elf"
 	@echo "... cd.elf"
 	@echo "... clear.elf"
+	@echo "... date.elf"
 	@echo "... debug"
 	@echo "... diskimg"
 	@echo "... docs"
@@ -727,6 +754,7 @@ help:
 	@echo "... cat_obj"
 	@echo "... cd_obj"
 	@echo "... clear_obj"
+	@echo "... date_obj"
 	@echo "... echo_obj"
 	@echo "... free_obj"
 	@echo "... hello_obj"

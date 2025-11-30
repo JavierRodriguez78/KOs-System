@@ -129,7 +129,8 @@ extern "C" int atexit(void (*)(void)) { return 0; }
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
-    using kos::kernel::BootStage; using kos::kernel::BootProgressor;
+    using kos::kernel::BootStage; 
+    using kos::kernel::BootProgressor;
     // Wire BootProgressor to a global uptime source (if available) so we
     // can capture per-stage timing for profiling. This remains optional:
     // on early boot where ServiceManager is not yet initialized, the

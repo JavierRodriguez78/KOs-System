@@ -24,6 +24,8 @@ namespace kos {
                 static void* memset(void* s, int c, uint32_t n);
                 // Concatenate src to dest (like C's strcat)
                 static char* strcat(char* dest, const char* src);
+                // Find substring (like C's strstr)
+                static char* strstr(const char* haystack, const char* needle);
         };
     }
 }
