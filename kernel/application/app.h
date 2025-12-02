@@ -14,4 +14,7 @@ void app_lshw(void);
 
 void app_reboot(void);
 
+// Power control
+void app_shutdown(void);
+
 #endif // KOS_APPLICATION_APP_H

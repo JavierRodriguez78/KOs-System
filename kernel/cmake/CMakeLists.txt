@@ -160,9 +160,10 @@ add_app(top)
 add_app(ping)
 add_app(reboot)
 add_app(date)
+add_app(shutdown)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
