@@ -4,6 +4,7 @@
 #include <console/logger.hpp>
 #include <ui/framework.hpp>
 #include <ui/input.hpp>
+#include <ui/login_screen.hpp>
 #include <graphics/terminal.hpp>
 #include <graphics/font8x8_basic.hpp>
 #include <services/service_manager.hpp>
@@ -13,6 +14,7 @@
 #include <drivers/keyboard/keyboard_driver.hpp>
 #include <kernel/globals.hpp>
 #include <ui/cursor.hpp>
+#include <console/shell.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -23,10 +25,19 @@ namespace kos { namespace services {
 
 static uint32_t t = 0;
 static uint32_t s_mouse_win_id = 0; // small diagnostics window for mouse position
+static uint32_t s_login_win_id = 0; // login window id during pre-login
+static bool s_login_active = false;
 // 0=never, 1=until first packet, 2=always (default)
 static uint8_t s_mouse_poll_mode = 2;
 static bool s_taskbar_enabled = true;
 static uint32_t s_terminal_counter = 1; // for titling Terminal N
+// File-scope keyboard handler that forwards keys to LoginScreen
+class LoginKeyboardHandler : public kos::drivers::keyboard::KeyboardEventHandler {
+public:
+    virtual void OnKeyDown(int8_t c) override { kos::ui::LoginScreen::OnKeyDown(c); }
+    virtual void OnKeyUp(int8_t) override {}
+};
+static LoginKeyboardHandler s_login_handler;
 
 // Special taskbar hit ids
 static constexpr uint32_t kTaskbarSpawnBtnId = 0xFFFFFFFFu; // sentinel for "+" button
@@ -152,28 +163,22 @@ bool WindowManager::Start() {
     kos::console::Logger::MuteTTY(true);
     // Input subsystem was initialized earlier at BootStage::InputInit
     kos::ui::Init();
-    // Create a graphical terminal window sized for 80x25 8x8 cells + title bar
+    // Create a login window first, before any terminal. Center it.
     {
-        uint32_t termW = 80 * 8 + 16; // padding
-        uint32_t termH = 25 * 8 + 18 + 8; // title + padding
-        uint32_t termId = kos::ui::CreateWindow(8, 24, termW, termH, 0xFF000000u, "Terminal");
-        if (termId) {
-            kos::gfx::Terminal::Initialize(termId, 80, 25, false); // start with 8x8 for stability
-            // Bring terminal to front and focus it so keyboard input works immediately
-            kos::ui::BringToFront(termId);
-            kos::ui::SetFocusedWindow(termId);
-            // Discard any boot-time buffered output so GUI terminal starts clean
-            kos::console::TTY::DiscardPreinitBuffer();
-            kos::gfx::Terminal::Clear();
-            // Do not unmute yet; allow ServiceManager to finish its post-start
-            // logs offscreen. We'll unmute in Tick() after a short delay.
-            // Emit a fresh shell prompt (mirrors basic Shell::PrintPrompt logic for root cwd)
-            kos::console::TTY::SetAttr(0x07); // standard attribute
-            kos::console::TTY::Write((const int8_t*)"kos[00]:/");
-            kos::console::TTY::SetColor(11, 0); // light cyan for basename (root)
-            kos::console::TTY::Write((const int8_t*)"");
-            kos::console::TTY::SetAttr(0x07);
-            kos::console::TTY::Write((const int8_t*)"$ ");
+        const auto& fbinfo = kos::gfx::GetInfo();
+        uint32_t w = 400, h = 160;
+        uint32_t x = (fbinfo.width > w ? (fbinfo.width - w) / 2 : 8);
+        uint32_t y = (fbinfo.height > h ? (fbinfo.height - h) / 3 : 24);
+        s_login_win_id = kos::ui::CreateWindow(x, y, w, h, 0xFF101012u, "Login");
+        if (s_login_win_id) {
+            s_login_active = true;
+            kos::ui::BringToFront(s_login_win_id);
+            kos::ui::SetFocusedWindow(s_login_win_id);
+            kos::ui::LoginScreen::Initialize(s_login_win_id);
+            // Swap keyboard handler to capture login input
+            if (::kos::g_keyboard_driver_ptr) {
+                ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
+            }
         }
     }
     // Create a small window to show live mouse coordinates
@@ -197,7 +202,9 @@ bool WindowManager::Start() {
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background
     kos::gfx::Compositor::BeginFrame(wallpaper);
     kos::ui::RenderAll();
-    if (kos::gfx::Terminal::IsActive()) {
+    if (s_login_active) {
+        kos::ui::LoginScreen::Render();
+    } else if (kos::gfx::Terminal::IsActive()) {
         kos::gfx::Terminal::Render();
     }
     // DEBUG OVERLAY (early): show fb + window stats if no windows visible
@@ -246,9 +253,10 @@ void WindowManager::Tick() {
         }
     }
     int mx, my; uint8_t mb; kos::ui::GetMouseState(mx, my, mb);
-    // Ensure terminal has focus at least once if no focus is set
-    if (kos::ui::GetFocusedWindow() == 0 && kos::gfx::Terminal::IsActive()) {
-        kos::ui::SetFocusedWindow(kos::gfx::Terminal::GetWindowId());
+    // Ensure focus exists: prefer login when active, else terminal
+    if (kos::ui::GetFocusedWindow() == 0) {
+        if (s_login_active && s_login_win_id) kos::ui::SetFocusedWindow(s_login_win_id);
+        else if (kos::gfx::Terminal::IsActive()) kos::ui::SetFocusedWindow(kos::gfx::Terminal::GetWindowId());
     }
     bool left = (mb & 1u) != 0;
     // Taskbar gets first dibs on clicks; otherwise defer to UI interactions
@@ -277,6 +285,10 @@ void WindowManager::Tick() {
     } else {
         // Still allow UI to finish interactions on mouse release
         kos::ui::UpdateInteractions();
+    }
+    // Ensure login keyboard handler stays active while login is shown
+    if (s_login_active && ::kos::g_keyboard_driver_ptr) {
+        ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
     }
     // Consume a few UI events for diagnostics (kept lightweight to avoid spam)
     {
@@ -331,6 +343,23 @@ void WindowManager::Tick() {
     kos::gfx::Compositor::BeginFrame(wallpaper);
     // Render all UI windows
     kos::ui::RenderAll();
+    // Render login screen contents if active
+    if (s_login_active) {
+        kos::ui::LoginScreen::Render();
+        // If authenticated, transition to normal terminal UI
+        if (kos::ui::LoginScreen::Authenticated()) {
+            // Close login window
+            if (s_login_win_id) { kos::ui::CloseWindow(s_login_win_id); s_login_win_id = 0; }
+            s_login_active = false;
+            // Restore keyboard handler to shell
+            static kos::console::ShellKeyboardHandler s_shell_handler;
+            if (::kos::g_keyboard_driver_ptr) {
+                ::kos::g_keyboard_driver_ptr->SetHandler(&s_shell_handler);
+            }
+            // Spawn terminal now
+            WindowManager::SpawnTerminal();
+        }
+    }
     // Build taskbar model and render taskbar
     if (s_taskbar_enabled) {
         BuildTaskbarButtons();
@@ -426,7 +455,7 @@ void WindowManager::Tick() {
         }
     }
     // Render terminal contents after windows so glyphs appear inside terminal client area
-    if (kos::gfx::Terminal::IsActive()) {
+    if (!s_login_active && kos::gfx::Terminal::IsActive()) {
         kos::gfx::Terminal::Render();
     }
     // DEBUG OVERLAY (live)

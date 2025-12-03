@@ -49,6 +49,8 @@ namespace kos
                     virtual void Activate();
                     // Poll one scancode (fallback when IRQ1 not firing). Returns true if a key was processed.
                     bool PollOnce();
+                    // Swap the active keyboard event handler at runtime
+                    void SetHandler(KeyboardEventHandler* newHandler) { handler = newHandler; }
                 private:
                     
                     //  I/O ports for keyboard data and command
