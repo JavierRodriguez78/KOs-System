@@ -17,6 +17,8 @@
 #include <process/scheduler.hpp>
 // Pipe management
 #include <process/pipe.hpp>
+#include <services/user_service.hpp>
+#include <services/service_manager.hpp>
 
 using namespace kos::console;
 using namespace kos::lib;
@@ -58,14 +60,18 @@ namespace kos {
 
 Shell::Shell() : bufferIndex(0) {
     for (int32_t i = 0; i < BUFFER_SIZE; ++i) buffer[i] = 0;
+    mode = Mode::LoginUser;
+    loginUserLen = 0;
 }
 
 void Shell::PrintPrompt() {
     const int8_t* cwd = kos::sys::table()->cwd ? kos::sys::table()->cwd : (const int8_t*)"/";
-    // Prompt prefix: kos[00]:
-    tty.Write((const int8_t*)"kos[");
-    tty.Write((const int8_t*)"00");
-    tty.Write((const int8_t*)"]:");
+    // Prompt prefix: user@kos:
+    const auto* usvc = kos::services::GetUserService();
+    const int8_t* uname = usvc ? usvc->CurrentUserName() : (const int8_t*)"user";
+    bool isRoot = usvc ? usvc->IsSuperuser() : false;
+    tty.Write(uname);
+    tty.Write((const int8_t*)"@kos:");
 
     // Print path with basename colorized (closest VGA color to #27F5E7 is light cyan = 11)
     // Find last '/'
@@ -93,7 +99,7 @@ void Shell::PrintPrompt() {
         }
     }
 
-    tty.Write((const int8_t*)"$ ");
+    tty.Write(isRoot ? (const int8_t*)"# " : (const int8_t*)"$ ");
 }
 
 void Shell::Run() {
@@ -103,11 +109,12 @@ void Shell::Run() {
     } else {
         PrintLogoBlockArt();
     }
+    // Interactive login prompt before normal shell
+    tty.Write("KOS login: ");
     // Initialize current working directory to filesystem root
     // Regardless of filesystem presence, use "/" as the starting directory
     SetCwd((const int8_t*)"/");
-    tty.Write("Welcome to KOS Shell\n");
-    PrintPrompt();
+    // Welcome will be printed after successful login
     while (true) {
         // In a real kernel, input would come from keyboard interrupts
         // Here, input is handled via InputChar() called by the keyboard handler
@@ -117,6 +124,69 @@ void Shell::Run() {
 void Shell::InputChar(int8_t c) {
     // Normalize CR to LF and handle Enter immediately
     if (c == '\r') c = '\n';
+    // Handle login modes separately
+    if (mode != Mode::Normal) {
+        // Enforce timeout lock if set
+        uint32_t now = kos::services::ServiceManager::UptimeMs();
+        if (lock_until_ms != 0 && now != 0 && now < lock_until_ms) {
+            return; // ignore input until timeout elapses
+        }
+        lock_until_ms = 0;
+        if (mode == Mode::LoginUser) {
+            if (c == '\n') {
+                loginUser[loginUserLen] = 0;
+                tty.Write("\nPassword: ");
+                mode = Mode::LoginPass;
+                bufferIndex = 0;
+                return;
+            } else if (c == '\b' || c == 127) {
+                if (loginUserLen > 0) { loginUserLen--; tty.Write("\b \b"); }
+                return;
+            } else if (c >= 32 && loginUserLen < (int)sizeof(loginUser)-1) {
+                loginUser[loginUserLen++] = c;
+                tty.PutChar(c);
+                return;
+            } else {
+                return;
+            }
+        } else if (mode == Mode::LoginPass) {
+            if (c == '\n') {
+                buffer[bufferIndex] = 0;
+                auto* usvc = kos::services::GetUserService();
+                bool ok = (usvc && usvc->Login(loginUser, buffer));
+                tty.Write("\n");
+                if (ok) {
+                    tty.Write("Welcome to KOS Shell\n");
+                    mode = Mode::Normal;
+                    PrintPrompt();
+                } else {
+                    tty.Write("Login incorrect\n");
+                    // Reset and prompt again
+                    loginUserLen = 0;
+                    bufferIndex = 0;
+                    if (--retries_left <= 0) {
+                        uint32_t now2 = kos::services::ServiceManager::UptimeMs();
+                        lock_until_ms = (now2 ? now2 : 0) + 3000; // 3s lock
+                        retries_left = 3;
+                        tty.Write("Too many attempts. Try again in 3s.\n");
+                    }
+                    mode = Mode::LoginUser;
+                    tty.Write("KOS login: ");
+                }
+                return;
+            } else if (c == '\b' || c == 127) {
+                if (bufferIndex > 0) { bufferIndex--; tty.Write("\b \b"); }
+                return;
+            } else if (c >= 32 && bufferIndex < BUFFER_SIZE - 1) {
+                // mask password input
+                buffer[bufferIndex++] = c;
+                tty.PutChar('*');
+                return;
+            } else {
+                return;
+            }
+        }
+    }
     if (c == '\n') {
         tty.PutChar('\n');
         buffer[bufferIndex] = 0;
@@ -367,6 +437,77 @@ void Shell::ExecuteCommand(const int8_t* command) {
         return;
     }
 
+    // Built-in: whoami
+    if (String::strcmp(prog, (const int8_t*)"whoami", 6) == 0 && (prog[6] == 0)) {
+        const auto* usvc = kos::services::GetUserService();
+        const int8_t* uname = usvc ? usvc->CurrentUserName() : (const int8_t*)"(none)";
+        tty.Write(uname);
+        tty.PutChar('\n');
+        return;
+    }
+
+    // Built-in: su <user> <password>
+    if (String::strcmp(prog, (const int8_t*)"su", 2) == 0 && (prog[2] == 0)) {
+        if (argc < 3) { tty.Write("Usage: su <user> <password>\n"); return; }
+        auto* usvc = kos::services::GetUserService();
+        if (!usvc) { tty.Write("UserService not available\n"); return; }
+        if (usvc->Login(argv[1], argv[2])) {
+            tty.Write("Login successful\n");
+        } else {
+            tty.Write("Authentication failed\n");
+        }
+        return;
+    }
+
+    // Built-in: adduser <user> <password> (root only)
+    if (String::strcmp(prog, (const int8_t*)"adduser", 7) == 0 && (prog[7] == 0)) {
+        auto* usvc = kos::services::GetUserService();
+        if (!usvc) { tty.Write("UserService not available\n"); return; }
+        if (!usvc->IsSuperuser()) { tty.Write("adduser: permission denied\n"); return; }
+        if (argc < 3) { tty.Write("Usage: adduser <user> <password>\n"); return; }
+        if (usvc->AddUser(argv[1], argv[2], false)) tty.Write("User added\n"); else tty.Write("Failed to add user\n");
+        return;
+    }
+
+    // Built-in: passwd <user> <newpass> (root or self)
+    if (String::strcmp(prog, (const int8_t*)"passwd", 6) == 0 && (prog[6] == 0)) {
+        auto* usvc = kos::services::GetUserService();
+        if (!usvc) { tty.Write("UserService not available\n"); return; }
+        if (argc < 3) { tty.Write("Usage: passwd <user> <newpass>\n"); return; }
+        const int8_t* target = argv[1];
+        const int8_t* curr = usvc->CurrentUserName();
+        bool allowed = usvc->IsSuperuser() || (String::strcmp(target, curr) == 0);
+        if (!allowed) { tty.Write("passwd: permission denied\n"); return; }
+        if (usvc->SetPassword(target, argv[2])) tty.Write("Password updated\n"); else tty.Write("Failed to update password\n");
+        return;
+    }
+
+    // Built-in: logout - return to login prompt
+    if (String::strcmp(prog, (const int8_t*)"logout", 6) == 0 && (prog[6] == 0)) {
+        auto* usvc = kos::services::GetUserService();
+        if (usvc) usvc->Logout();
+        // reset shell to login mode
+        mode = Mode::LoginUser;
+        loginUserLen = 0;
+        bufferIndex = 0;
+        retries_left = 3;
+        lock_until_ms = 0;
+        tty.Write("Logged out.\n");
+        tty.Write("KOS login: ");
+        return;
+    }
+
+    // Privilege guard: reboot/shutdown require root
+    if ((String::strcmp(prog, (const int8_t*)"reboot", 6) == 0 && (prog[6] == 0)) ||
+        (String::strcmp(prog, (const int8_t*)"shutdown", 8) == 0 && (prog[8] == 0))) {
+        const auto* usvc = kos::services::GetUserService();
+        if (!usvc || !usvc->IsSuperuser()) {
+            tty.Write("permission denied (root required)\n");
+            return;
+        }
+        // fallthrough: allow execution as external app
+    }
+
     // Built-in: detailed thread list
     if (String::strcmp(prog, (const int8_t*)"threads", 7) == 0 &&
         (prog[7] == 0)) {
@@ -590,7 +731,8 @@ void Shell::ExecuteCommand(const int8_t* command) {
     tty.Write("  mousedbg on/off- Dump raw mouse bytes (IRQ/POLL)\n");
     tty.Write("  cursor [style] - Show or set cursor style (crosshair|triangle)\n");
         tty.Write("  lshw           - Hardware info: CPU, memory, PCI\n");
-    tty.Write("  reboot         - Run reboot stub (no hardware reset)\n");
+    tty.Write("  reboot         - Reboot (root only)\n");
+    tty.Write("  shutdown       - Power off (root only)\n");
         
         
         tty.Write("  ps             - Show scheduler statistics\n");
@@ -604,6 +746,10 @@ void Shell::ExecuteCommand(const int8_t* command) {
         tty.Write("  mkpipe <name>  - Create a new pipe\n");
         tty.Write("  rmpipe <name>  - Remove a pipe\n");
         tty.Write("  <cmd>          - Execute /bin/<cmd>.elf from filesystem\n");
+        tty.Write("  whoami         - Print current user\n");
+        tty.Write("  su <u> <p>     - Switch user (login)\n");
+        tty.Write("  adduser <u> <p>- Add user (root)\n");
+        tty.Write("  passwd <u> <p> - Change password (root or self)\n");
         return;
     }
 

@@ -22,9 +22,15 @@ namespace kos{
             void InputChar(int8_t c); // Handle input from keyboard
 
         private:
+            enum class Mode { LoginUser, LoginPass, Normal };
+            Mode mode = Mode::Normal;
             static const int32_t BUFFER_SIZE = 128;
             int8_t buffer[BUFFER_SIZE];
             int32_t bufferIndex;
+            int8_t loginUser[32];
+            int32_t loginUserLen = 0;
+            int32_t retries_left = 3;
+            uint32_t lock_until_ms = 0;
             void PrintPrompt();
             void ExecuteCommand();
             void ExecuteCommand(const int8_t* command); // New overload to execute given command

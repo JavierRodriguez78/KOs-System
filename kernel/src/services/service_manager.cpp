@@ -4,6 +4,7 @@
 #include <services/time_service.hpp>
 #include <services/filesystem_service.hpp>
 #include <services/network_manager.hpp>
+#include <services/user_service.hpp>
 #include <application/init/service.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/string.hpp>
@@ -89,6 +90,9 @@ static void RegisterBuiltinServices() {
 
     static NetworkManagerService networkService;
     ServiceManager::Register(&networkService);
+
+    static UserService userService;
+    ServiceManager::Register(&userService);
 }
 
 
