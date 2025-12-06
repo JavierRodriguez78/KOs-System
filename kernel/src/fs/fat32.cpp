@@ -911,3 +911,77 @@ void FAT32::DebugInfo() {
 }
 
 // (No DebugInfo method; detailed logs are printed during Mount())
+
+int32_t FAT32::Rename(const int8_t* src, const int8_t* dst) {
+    if (!mountedFlag || !src || !dst) return -1;
+    if (src[0] != '/' || dst[0] != '/') return -1;
+
+    auto split_parent_basename = [](const int8_t* path, int8_t* parentOut, int parentCap, int8_t* baseOut, int baseCap) {
+        // Copy path, find last '/'
+        int len = 0; while (path[len]) ++len;
+        int last = -1; for (int i = 0; i < len; ++i) if (path[i] == '/') last = i;
+        if (last <= 0) { // root or malformed, parent='/'
+            if (parentCap > 1) { parentOut[0] = '/'; parentOut[1] = 0; } else if (parentCap > 0) parentOut[0] = 0;
+            int bi = 0; for (int i = last+1; path[i] && bi < baseCap-1; ++i) baseOut[bi++] = path[i]; if (baseCap>0) baseOut[bi]=0;
+            return;
+        }
+        int pi = 0; for (int i = 0; i < last && pi < parentCap-1; ++i) parentOut[pi++] = path[i];
+        if (pi == 0 && parentCap > 0) { parentOut[pi++] = '/'; }
+        if (parentCap > 0) parentOut[pi] = 0;
+        int bi = 0; for (int i = last+1; path[i] && bi < baseCap-1; ++i) baseOut[bi++] = path[i]; if (baseCap>0) baseOut[bi]=0;
+    };
+
+    int8_t srcParent[160], srcBase[32]; srcParent[0]=0; srcBase[0]=0;
+    int8_t dstParent[160], dstBase[32]; dstParent[0]=0; dstBase[0]=0;
+    split_parent_basename(src, srcParent, sizeof(srcParent), srcBase, sizeof(srcBase));
+    split_parent_basename(dst, dstParent, sizeof(dstParent), dstBase, sizeof(dstBase));
+    if (srcBase[0] == 0 || dstBase[0] == 0) return -1;
+
+    // Traverse from root to get parent clusters
+    auto walk_to_dir = [&](const int8_t* path, uint32_t& outDirCl) -> bool {
+        outDirCl = bpb.rootCluster;
+        if (path[0] == '/' && path[1] == 0) return true;
+        const int8_t* p = (path[0] == '/') ? (path + 1) : path;
+        int8_t comp[13];
+        while (*p) {
+            int ci=0; while (*p && *p!='/' && ci<12) comp[ci++]=*p++; comp[ci]=0; if (*p=='/') ++p; if (ci==0) continue;
+            for (int i=0; comp[i]; ++i) if (comp[i]>='a'&&comp[i]<='z') comp[i]-=('a'-'A');
+            uint32_t childCl=0, childSz=0; if (!FindShortNameInDirCluster(outDirCl, comp, childCl, childSz)) return false; outDirCl = childCl;
+        }
+        return true;
+    };
+
+    uint32_t srcDirCl=0, dstDirCl=0; if (!walk_to_dir(srcParent, srcDirCl)) return -1; if (!walk_to_dir(dstParent, dstDirCl)) return -1;
+
+    // Build 8.3 names
+    for (int i=0; srcBase[i]; ++i) if (srcBase[i]>='a'&&srcBase[i]<='z') srcBase[i]-=('a'-'A');
+    for (int i=0; dstBase[i]; ++i) if (dstBase[i]>='a'&&dstBase[i]<='z') dstBase[i]-=('a'-'A');
+    uint8_t src11[11], dst11[11]; bool ok1=false, ok2=false; PackShortName11(srcBase, src11, ok1, true); PackShortName11(dstBase, dst11, ok2, true);
+    if (!ok1 || !ok2) return -1; // invalid names
+
+    // Locate src entry, fetch cluster/size/attr and entry position
+    uint32_t entryCl=0, entryOff=0, startCl=0, fileSize=0; uint8_t attr=0;
+    if (!FindShortEntryWithOffset(srcDirCl, src11, entryCl, entryOff, startCl, fileSize, attr)) return -1;
+
+    // Fail if destination name exists in dest directory (no overwrite for now)
+    uint32_t tmpCl=0, tmpSz=0; if (FindShortNameInDirCluster(dstDirCl, (const int8_t*)dstBase, tmpCl, tmpSz)) return -1;
+
+    // Same directory rename: modify name in place
+    if (srcDirCl == dstDirCl) {
+        uint8_t* dirBuf = (uint8_t*)0x3C000;
+        if (!ReadCluster(entryCl, dirBuf)) return -1;
+        for (int i=0;i<11;++i) dirBuf[entryOff+i] = dst11[i];
+        return WriteCluster(entryCl, dirBuf) ? 0 : -1;
+    }
+
+    // Cross-directory move: support files only (attr 0x20). Directories need '..' update.
+    if (!(attr & 0x20)) {
+        tty.Write((const int8_t*)"mv: moving directories across parents not supported\n");
+        return -1;
+    }
+    // Add new entry to destination dir with same start cluster and size
+    if (!AddFileEntryToDir(dstDirCl, dst11, startCl, fileSize)) return -1;
+    // Mark old entry as deleted (0xE5)
+    uint8_t* dirBuf = (uint8_t*)0x3D000; if (!ReadCluster(entryCl, dirBuf)) return -1; dirBuf[entryOff] = 0xE5; if (!WriteCluster(entryCl, dirBuf)) return -1;
+    return 0;
+}

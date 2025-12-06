@@ -173,6 +173,16 @@ extern "C" int32_t sys_mkdir(const int8_t* path, int32_t parents) {
     return -1;
 }
 
+// Rename syscall: absolute, normalized, call into filesystem
+extern "C" int32_t sys_rename(const int8_t* src, const int8_t* dst) {
+    if (!kos::fs::g_fs_ptr || !src || !dst) return -1;
+    int8_t absSrc[160], absDst[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    normalize_abs_path(src, cwd, absSrc, (int)sizeof(absSrc));
+    normalize_abs_path(dst, cwd, absDst, (int)sizeof(absDst));
+    return kos::fs::g_fs_ptr->Rename(absSrc, absDst);
+}
+
 // --- Simple argument storage for current process/app ---
 static int32_t g_argc = 0;
 static const int8_t* g_argv_vec[16];
@@ -361,4 +371,6 @@ extern "C" void InitSysApi() {
     t->key_poll = &sys_key_poll;
     // Date/time API
     t->get_datetime = &sys_get_datetime;
+    // File rename/move
+    t->rename = &sys_rename;
 }

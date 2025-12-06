@@ -48,6 +48,8 @@ typedef struct ApiTableC {
     // Get current date/time from RTC (local), fills out fields
     void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
                          uint8_t* hour, uint8_t* minute, uint8_t* second);
+    // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
+    int32_t (*rename)(const int8_t* src, const int8_t* dst);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -120,6 +122,12 @@ static inline void kos_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day
         if (year) *year = 1970; if (month) *month = 1; if (day) *day = 1;
         if (hour) *hour = 0; if (minute) *minute = 0; if (second) *second = 0;
     }
+}
+
+// Rename/move wrapper
+static inline int32_t kos_rename(const int8_t* src, const int8_t* dst) {
+    if (kos_sys_table()->rename) return kos_sys_table()->rename(src, dst);
+    return -1;
 }
 
 // Flags for kos_listdir_ex

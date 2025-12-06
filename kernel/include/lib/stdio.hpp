@@ -69,6 +69,8 @@ namespace kos {
             // Get current date/time from RTC (local time). All pointers optional.
             void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
                                  uint8_t* hour, uint8_t* minute, uint8_t* second);
+            // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
+            int32_t (*rename)(const int8_t* src, const int8_t* dst);
         };
 
         /*

@@ -46,6 +46,7 @@ namespace kos{
             // Register a couple of built-in commands under /Bin/
             Register((const int8_t*)"hello", &cmd_hello);
             Register((const int8_t*)"echo", &cmd_echo);
+            // External commands like 'mv' are executed from /bin via the shell
         }
 
     }

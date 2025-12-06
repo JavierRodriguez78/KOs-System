@@ -25,6 +25,9 @@ namespace kos {
             }
             virtual int32_t WriteFile(const int8_t* path, const uint8_t* data, uint32_t len);
             virtual int32_t Mkdir(const int8_t* path, int32_t parents) { (void)path; (void)parents; return -1; }
+            // Rename or move a file or directory. Default: unsupported (-1).
+            // Paths are absolute and normalized by caller.
+            virtual int32_t Rename(const int8_t* src, const int8_t* dst) { (void)src; (void)dst; return -1; }
         };
         extern Filesystem* g_fs_ptr;
         // ...existing code...

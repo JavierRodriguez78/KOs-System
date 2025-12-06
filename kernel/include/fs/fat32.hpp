@@ -34,6 +34,10 @@ namespace kos {
             // an existing file or creates a new file if it does not exist. Uses 8.3 short
             // names only. Returns number of bytes appended or -1 on failure.
             virtual int32_t WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) override;
+            // Rename/move (8.3 only). Supports:
+            //  - Same-directory rename for files and directories
+            //  - Cross-directory move for files only (no overwrite)
+            virtual int32_t Rename(const int8_t* src, const int8_t* dst) override;
 
         private:
             BlockDevice* dev;
