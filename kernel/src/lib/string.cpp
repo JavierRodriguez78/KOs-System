@@ -23,6 +23,17 @@ char* String::strcat(char* dest, const char* src) {
     return dest;
 }
 
+char* String::strncat(char* dest, const char* src, uint32_t n) {
+    char* d = dest;
+    while (*d) ++d; // move to end
+    uint32_t i = 0;
+    for (; i < n && src[i] != '\0'; ++i) {
+        d[i] = src[i];
+    }
+    d[i] = '\0';
+    return dest;
+}
+
 char* String::strstr(const char* haystack, const char* needle) {
     if (!needle || *needle == '\0') {
         return (char*)haystack;

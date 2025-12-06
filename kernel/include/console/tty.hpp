@@ -24,6 +24,8 @@ namespace kos {
                 // Discard any pre-initialization buffered output so a fresh
                 // graphical terminal session can start without boot logs.
                 static void DiscardPreinitBuffer();
+                // Cursor movement helper for higher-level console APIs
+                static void MoveCursor(uint32_t col, uint32_t row);
             private:
                 static VGA vga;
         };

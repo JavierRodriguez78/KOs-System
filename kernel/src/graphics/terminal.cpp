@@ -113,6 +113,19 @@ void Terminal::SetColor(uint8_t fg, uint8_t bg) {
     s_fg = (fg & 0x0F); s_bg = (bg & 0x0F);
 }
 
+void Terminal::MoveCursor(uint32_t col, uint32_t row) {
+    if (!IsActive()) return;
+    if (col >= s_cols) col = s_cols - 1;
+    if (row >= s_capacityRows) row = s_capacityRows - 1;
+    s_cursorCol = col;
+    s_cursorRow = row;
+}
+
+void Terminal::GetSize(uint32_t& outCols, uint32_t& outRows) {
+    outCols = s_cols;
+    outRows = s_rows;
+}
+
 void Terminal::advanceCursor() {
     ++s_cursorCol;
     if (s_cursorCol >= s_cols) { s_cursorCol = 0; ++s_cursorRow; }

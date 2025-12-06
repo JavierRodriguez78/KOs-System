@@ -115,6 +115,7 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/tty.cpp
     ${KOS_ROOT_DIR}/src/console/log_to_journal.cpp
     ${KOS_ROOT_DIR}/src/console/log_to_journal_c.cpp
+    ${KOS_ROOT_DIR}/src/console/kcursers_c.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.c
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
     ${KOS_ROOT_DIR}/src/libc/stdio.c
@@ -125,12 +126,30 @@ target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-m
 target_compile_definitions(app_support_objs PRIVATE KOS_BUILD_APPS=1)
 
 function(add_app NAME)
-    # Build the app object (C apps)
+    # C apps by default
     add_library(${NAME}_obj OBJECT ${KOS_ROOT_DIR}/application/${NAME}.c)
     target_include_directories(${NAME}_obj PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR}/application)
     target_compile_options(${NAME}_obj PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2 -ffreestanding -fno-builtin -fno-stack-protector)
 
-    # Link into disk/bin/<name>.elf using ld (disk is now at project root)
+    set(APP_ELF ${KOS_ROOT_DIR}/../disk/bin/${NAME}.elf)
+    add_custom_command(
+        OUTPUT ${APP_ELF}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${KOS_ROOT_DIR}/../disk/bin
+        COMMAND ld -melf_i386 -e main -Ttext 0x01000000 -o ${APP_ELF} $<TARGET_OBJECTS:${NAME}_obj> $<TARGET_OBJECTS:app_support_objs>
+        DEPENDS ${NAME}_obj app_support_objs
+        VERBATIM
+        COMMAND_EXPAND_LISTS
+    )
+
+    add_custom_target(${NAME}.elf ALL DEPENDS ${APP_ELF})
+endfunction()
+
+# Helper to add C++ apps
+function(add_app_cpp NAME)
+    add_library(${NAME}_obj OBJECT ${KOS_ROOT_DIR}/application/${NAME}.cpp)
+    target_include_directories(${NAME}_obj PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR}/application)
+    target_compile_options(${NAME}_obj PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2 -ffreestanding -fno-builtin -fno-stack-protector -fno-exceptions -fno-rtti)
+
     set(APP_ELF ${KOS_ROOT_DIR}/../disk/bin/${NAME}.elf)
     add_custom_command(
         OUTPUT ${APP_ELF}
@@ -161,9 +180,10 @@ add_app(ping)
 add_app(reboot)
 add_app(date)
 add_app(shutdown)
+add_app_cpp(kcursers_demo)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf kcursers_demo.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

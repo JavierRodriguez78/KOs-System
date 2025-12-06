@@ -21,6 +21,8 @@ void* memmove(void* dest, const void* src, size_t n);
 void* memchr(const void* s, int c, size_t n);
 int memcmp(const void* s1, const void* s2, size_t n);
 void* memset(void* s, int c, size_t n);
+// Append up to n characters from src to dest; always NUL-terminates; returns dest
+char* strncat(char* dest, const char* src, size_t n);
 
 #ifdef __cplusplus
 }

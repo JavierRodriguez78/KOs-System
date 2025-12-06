@@ -106,3 +106,16 @@ char* strstr(const char* haystack, const char* needle) {
     }
     return 0; // NULL when no match
 }
+
+char* strncat(char* dest, const char* src, size_t n) {
+    // Append at most n characters from src to the end of dest
+    // Behavior mirrors POSIX/ISO C: always NUL-terminate result
+    char* d = dest;
+    while (*d) ++d; // move to end of dest
+    size_t i = 0;
+    for (; i < n && src[i] != '\0'; ++i) {
+        d[i] = src[i];
+    }
+    d[i] = '\0';
+    return dest;
+}

@@ -2,6 +2,7 @@
 #define __KOS__DRIVERS__VGA__VGA_H
 
 #include <common/types.hpp>
+#include <drivers/vga/vga_constants.hpp>
 
 using namespace kos::common;
 
@@ -79,6 +80,23 @@ namespace kos{
                     * @param a Attribute byte (foreground and background color).
                     */
                     void SetAttr(uint8_t a);
+
+                    /**
+                    * @brief Sets the cursor position.
+                    * @param cx Column (0..VGA_WIDTH-1)
+                    * @param cy Row (0..VGA_HEIGHT-1)
+                    */
+                    void SetCursor(uint8_t cx, uint8_t cy);
+
+                    /**
+                    * @brief Gets text-mode dimensions.
+                    * @param outW Width in columns
+                    * @param outH Height in rows
+                    */
+                    static inline void GetSize(uint8_t& outW, uint8_t& outH) {
+                        outW = (uint8_t)VGA_WIDTH;
+                        outH = (uint8_t)VGA_HEIGHT;
+                    }
 
                     /**
                     * @brief Combines foreground and background colors into an attribute byte.

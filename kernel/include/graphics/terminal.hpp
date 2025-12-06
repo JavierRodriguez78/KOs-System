@@ -21,6 +21,9 @@ public:
     static void SetTallFont(bool enable); // runtime toggle (8x16 vs 8x8)
     static bool IsActive();
     static uint32_t GetWindowId();
+    // Basic cursor/size helpers for console cursor operations
+    static void MoveCursor(uint32_t col, uint32_t row);
+    static void GetSize(uint32_t& outCols, uint32_t& outRows);
 private:
     struct Cell { char ch; uint8_t fg; uint8_t bg; };
     static Cell* s_buffer;

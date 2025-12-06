@@ -113,6 +113,15 @@ static void preterm_try_flush() {
         #endif
     }
 
+    void TTY::MoveCursor(uint32_t col, uint32_t row) {
+        vga.SetCursor((uint8_t)col, (uint8_t)row);
+        #ifndef KOS_BUILD_APPS
+        if (kos::gfx::Terminal::IsActive()) {
+            kos::gfx::Terminal::MoveCursor(col, row);
+        }
+        #endif
+    }
+
 #ifndef KOS_BUILD_APPS
     void TTY::DiscardPreinitBuffer() {
         // Permanently drop any captured boot output so GUI terminal starts clean

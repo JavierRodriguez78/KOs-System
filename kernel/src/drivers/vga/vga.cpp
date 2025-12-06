@@ -89,3 +89,10 @@ void VGA::SetColor(uint8_t fg, uint8_t bg){
 void VGA::SetAttr(uint8_t a){
     attr = a;
 }
+
+void VGA::SetCursor(uint8_t cx, uint8_t cy) {
+    if (cx >= VGA_WIDTH) cx = VGA_WIDTH - 1;
+    if (cy >= VGA_HEIGHT) cy = VGA_HEIGHT - 1;
+    x = cx;
+    y = cy;
+}

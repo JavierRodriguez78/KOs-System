@@ -572,6 +572,58 @@ date.elf/fast:
 .PHONY : date.elf/fast
 
 #=============================================================================
+# Target rules for targets named shutdown_obj
+
+# Build rule for target.
+shutdown_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 shutdown_obj
+.PHONY : shutdown_obj
+
+# fast build rule for target.
+shutdown_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/shutdown_obj.dir/build.make kernel/cmake/CMakeFiles/shutdown_obj.dir/build
+.PHONY : shutdown_obj/fast
+
+#=============================================================================
+# Target rules for targets named shutdown.elf
+
+# Build rule for target.
+shutdown.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 shutdown.elf
+.PHONY : shutdown.elf
+
+# fast build rule for target.
+shutdown.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/shutdown.elf.dir/build.make kernel/cmake/CMakeFiles/shutdown.elf.dir/build
+.PHONY : shutdown.elf/fast
+
+#=============================================================================
+# Target rules for targets named kcursers_demo_obj
+
+# Build rule for target.
+kcursers_demo_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kcursers_demo_obj
+.PHONY : kcursers_demo_obj
+
+# fast build rule for target.
+kcursers_demo_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kcursers_demo_obj.dir/build.make kernel/cmake/CMakeFiles/kcursers_demo_obj.dir/build
+.PHONY : kcursers_demo_obj/fast
+
+#=============================================================================
+# Target rules for targets named kcursers_demo.elf
+
+# Build rule for target.
+kcursers_demo.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kcursers_demo.elf
+.PHONY : kcursers_demo.elf
+
+# fast build rule for target.
+kcursers_demo.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kcursers_demo.elf.dir/build.make kernel/cmake/CMakeFiles/kcursers_demo.elf.dir/build
+.PHONY : kcursers_demo.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -737,6 +789,7 @@ help:
 	@echo "... hello.elf"
 	@echo "... init.elf"
 	@echo "... iso"
+	@echo "... kcursers_demo.elf"
 	@echo "... kernel_bin"
 	@echo "... ls.elf"
 	@echo "... lshw.elf"
@@ -748,6 +801,7 @@ help:
 	@echo "... qemu-ro"
 	@echo "... qemu-vvfat"
 	@echo "... reboot.elf"
+	@echo "... shutdown.elf"
 	@echo "... top.elf"
 	@echo "... vdi"
 	@echo "... app_support_objs"
@@ -759,6 +813,7 @@ help:
 	@echo "... free_obj"
 	@echo "... hello_obj"
 	@echo "... init_obj"
+	@echo "... kcursers_demo_obj"
 	@echo "... kernel_objs"
 	@echo "... ls_obj"
 	@echo "... lshw_obj"
@@ -767,6 +822,7 @@ help:
 	@echo "... ping_obj"
 	@echo "... pwd_obj"
 	@echo "... reboot_obj"
+	@echo "... shutdown_obj"
 	@echo "... top_obj"
 .PHONY : help
 
