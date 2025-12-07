@@ -1,6 +1,7 @@
 #include <console/shell.hpp>
 #include <console/tty.hpp>
 #include <lib/string.hpp>
+#include <application/app.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -42,11 +43,28 @@ namespace kos{
             tty.Write("Echo command executed.\n");
         }
 
+        // Weak declarations for optional app_* commands.
+        extern "C" void app_ls() __attribute__((weak));
+        extern "C" void app_mkdir() __attribute__((weak));
+        extern "C" void app_pwd() __attribute__((weak));
+        extern "C" void app_clear() __attribute__((weak));
+        extern "C" void app_cat() __attribute__((weak));
+        extern "C" void app_reboot() __attribute__((weak));
+
+
         void CommandRegistry::Init() {
-            // Register a couple of built-in commands under /Bin/
+            // Register built-in demo commands
             Register((const int8_t*)"hello", &cmd_hello);
             Register((const int8_t*)"echo", &cmd_echo);
-            // External commands like 'mv' are executed from /bin via the shell
+
+            // Register embedded application commands if linked into kernel
+            if (app_ls)      Register((const int8_t*)"ls",     app_ls);
+            if (app_mkdir)   Register((const int8_t*)"mkdir",  app_mkdir);
+            if (app_pwd)     Register((const int8_t*)"pwd",    app_pwd);
+            if (app_clear)   Register((const int8_t*)"clear",  app_clear);
+            if (app_cat)     Register((const int8_t*)"cat",    app_cat);
+            if (app_reboot)  Register((const int8_t*)"reboot", app_reboot);
+            // Add more here as they are exposed via app.hpp
         }
 
     }

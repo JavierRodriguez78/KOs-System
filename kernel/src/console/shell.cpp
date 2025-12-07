@@ -109,6 +109,8 @@ void Shell::Run() {
     } else {
         PrintLogoBlockArt();
     }
+    // Initialize built-in command registry so core commands are available
+    kos::console::CommandRegistry::Init();
     // Interactive login prompt before normal shell
     tty.Write("KOS login: ");
     // Initialize current working directory to filesystem root
@@ -260,6 +262,11 @@ void Shell::ExecuteCommand(const int8_t* command) {
     }
     if (argc == 0) return;
     const int8_t* prog = argv[0];
+    // Try built-in registry commands first
+    if (auto* entry = kos::console::CommandRegistry::Find(prog)) {
+        entry();
+        return;
+    }
 
     // Built-in alias: cls -> clear application
     if (String::strcmp(prog, (const int8_t*)"cls", 3) == 0 && (prog[3] == 0)) {

@@ -4,9 +4,9 @@
 #include <lib/libc/stdio.h>
 #include <lib/string.hpp>
 
-
 using namespace kos::lib;
-using namespace kos::arch::x86::hardware::cpu;
+
+namespace kos { namespace arch { namespace x86 { namespace hardware { namespace cpu {
 
 static void cpuid(uint32_t eax, uint32_t ecx, uint32_t* regs) {
                 bool cpuid_ok = true;
@@ -42,7 +42,7 @@ static void cpuid(uint32_t eax, uint32_t ecx, uint32_t* regs) {
     #endif
 }
 
-void GetCpuInfo(CpuInfo& info) {
+void cpu::GetCpuInfo(cpu::CpuInfo& info) {
     uint32_t regs[4];
     cpuid(0, 0, regs);
     ((uint32_t*)info.vendor)[0] = regs[1];
@@ -64,9 +64,9 @@ void GetCpuInfo(CpuInfo& info) {
     info.brand[48] = 0;
 }
 
-void PrintCpuInfo() {
-    CpuInfo info;
-    GetCpuInfo(info);
+void cpu::PrintCpuInfo() {
+    cpu::CpuInfo info;
+    cpu::GetCpuInfo(info);
     if (info.vendor[0] == 0 && info.brand[0] == 0) {
         kos_puts("[WARN] CPUID not supported or invalid opcode.\n");
         kos_puts("CPU Info: (unavailable)\n");
@@ -83,5 +83,7 @@ void PrintCpuInfo() {
 }
 
 extern "C" void PrintCpuInfo_C() {
-    kos::arch::x86::PrintCpuInfo();
+    cpu::PrintCpuInfo();
 }
+
+}}}}} // namespaces

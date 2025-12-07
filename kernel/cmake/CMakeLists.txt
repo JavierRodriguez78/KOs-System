@@ -120,6 +120,7 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
     ${KOS_ROOT_DIR}/src/libc/stdio.c
     ${KOS_ROOT_DIR}/src/libc/tokenize.c
+    ${KOS_ROOT_DIR}/arch/x86/hardware/cpu/cpu.cpp
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
@@ -181,10 +182,11 @@ add_app(reboot)
 add_app(date)
 add_app(shutdown)
 add_app(mv)
+add_app_cpp(lscpu)
 add_app_cpp(kcursers_demo)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf kcursers_demo.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
