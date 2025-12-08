@@ -184,9 +184,10 @@ add_app(shutdown)
 add_app(mv)
 add_app_cpp(lscpu)
 add_app_cpp(kcursers_demo)
+add_app_cpp(ifconfig)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf ifconfig.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

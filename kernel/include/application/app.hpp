@@ -9,5 +9,6 @@ extern "C" void app_pwd();
 extern "C" void app_clear();
 extern "C" void app_cat();
 extern "C" void app_reboot();
+extern "C" void app_ifconfig();
 
 #endif // KOS_INCLUDE_APPLICATION_APP_HPP

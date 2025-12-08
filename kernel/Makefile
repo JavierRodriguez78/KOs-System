@@ -598,6 +598,58 @@ shutdown.elf/fast:
 .PHONY : shutdown.elf/fast
 
 #=============================================================================
+# Target rules for targets named mv_obj
+
+# Build rule for target.
+mv_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 mv_obj
+.PHONY : mv_obj
+
+# fast build rule for target.
+mv_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/mv_obj.dir/build.make kernel/cmake/CMakeFiles/mv_obj.dir/build
+.PHONY : mv_obj/fast
+
+#=============================================================================
+# Target rules for targets named mv.elf
+
+# Build rule for target.
+mv.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 mv.elf
+.PHONY : mv.elf
+
+# fast build rule for target.
+mv.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/mv.elf.dir/build.make kernel/cmake/CMakeFiles/mv.elf.dir/build
+.PHONY : mv.elf/fast
+
+#=============================================================================
+# Target rules for targets named lscpu_obj
+
+# Build rule for target.
+lscpu_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lscpu_obj
+.PHONY : lscpu_obj
+
+# fast build rule for target.
+lscpu_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lscpu_obj.dir/build.make kernel/cmake/CMakeFiles/lscpu_obj.dir/build
+.PHONY : lscpu_obj/fast
+
+#=============================================================================
+# Target rules for targets named lscpu.elf
+
+# Build rule for target.
+lscpu.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lscpu.elf
+.PHONY : lscpu.elf
+
+# fast build rule for target.
+lscpu.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lscpu.elf.dir/build.make kernel/cmake/CMakeFiles/lscpu.elf.dir/build
+.PHONY : lscpu.elf/fast
+
+#=============================================================================
 # Target rules for targets named kcursers_demo_obj
 
 # Build rule for target.
@@ -622,6 +674,32 @@ kcursers_demo.elf: cmake_check_build_system
 kcursers_demo.elf/fast:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kcursers_demo.elf.dir/build.make kernel/cmake/CMakeFiles/kcursers_demo.elf.dir/build
 .PHONY : kcursers_demo.elf/fast
+
+#=============================================================================
+# Target rules for targets named ifconfig_obj
+
+# Build rule for target.
+ifconfig_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ifconfig_obj
+.PHONY : ifconfig_obj
+
+# fast build rule for target.
+ifconfig_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ifconfig_obj.dir/build.make kernel/cmake/CMakeFiles/ifconfig_obj.dir/build
+.PHONY : ifconfig_obj/fast
+
+#=============================================================================
+# Target rules for targets named ifconfig.elf
+
+# Build rule for target.
+ifconfig.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ifconfig.elf
+.PHONY : ifconfig.elf
+
+# fast build rule for target.
+ifconfig.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ifconfig.elf.dir/build.make kernel/cmake/CMakeFiles/ifconfig.elf.dir/build
+.PHONY : ifconfig.elf/fast
 
 #=============================================================================
 # Target rules for targets named apps
@@ -787,14 +865,17 @@ help:
 	@echo "... free.elf"
 	@echo "... gdb"
 	@echo "... hello.elf"
+	@echo "... ifconfig.elf"
 	@echo "... init.elf"
 	@echo "... iso"
 	@echo "... kcursers_demo.elf"
 	@echo "... kernel_bin"
 	@echo "... ls.elf"
+	@echo "... lscpu.elf"
 	@echo "... lshw.elf"
 	@echo "... memtest.elf"
 	@echo "... mkdir.elf"
+	@echo "... mv.elf"
 	@echo "... ping.elf"
 	@echo "... pwd.elf"
 	@echo "... qemu"
@@ -812,13 +893,16 @@ help:
 	@echo "... echo_obj"
 	@echo "... free_obj"
 	@echo "... hello_obj"
+	@echo "... ifconfig_obj"
 	@echo "... init_obj"
 	@echo "... kcursers_demo_obj"
 	@echo "... kernel_objs"
 	@echo "... ls_obj"
+	@echo "... lscpu_obj"
 	@echo "... lshw_obj"
 	@echo "... memtest_obj"
 	@echo "... mkdir_obj"
+	@echo "... mv_obj"
 	@echo "... ping_obj"
 	@echo "... pwd_obj"
 	@echo "... reboot_obj"

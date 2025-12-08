@@ -2,9 +2,12 @@
 #include <console/logger.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/string.hpp>
+#include "include/net/rx_dispatch.hpp"
 #include <memory/heap.hpp>
 #include <process/thread_manager.hpp>
 #include <net/ipv4.hpp>
+#include <net/interface.hpp>
+#include "include/net/nic.hpp"
 
 using namespace kos::console;
 using namespace kos::memory;
@@ -12,6 +15,7 @@ using namespace kos::lib;
 using namespace kos::services;
 using namespace kos::process;   
 using namespace kos::net::ipv4;
+using namespace kos::net::iface;
 
 
 
@@ -134,6 +138,17 @@ bool NetworkManagerService::Start() {
     loadConfig();
     // If DHCP requested, fill known defaults (stub). Real DHCP requires NIC + UDP/IP.
     tryDhcpStub();
+    // If still missing configuration, apply a simple static default suitable for bridged networks
+    if (cfg_.ip[0] == 0 || cfg_.mask[0] == 0 || cfg_.gw[0] == 0) {
+        kos::lib::String::strncpy((int8_t*)cfg_.ip,   (const int8_t*)"192.168.1.50", sizeof(cfg_.ip)-1);
+        kos::lib::String::strncpy((int8_t*)cfg_.mask, (const int8_t*)"255.255.255.0", sizeof(cfg_.mask)-1);
+        kos::lib::String::strncpy((int8_t*)cfg_.gw,   (const int8_t*)"192.168.1.1", sizeof(cfg_.gw)-1);
+        if (cfg_.dns[0] == 0) {
+            kos::lib::String::strncpy((int8_t*)cfg_.dns,  (const int8_t*)"8.8.8.8", sizeof(cfg_.dns)-1);
+        }
+        kos::lib::String::strncpy((int8_t*)cfg_.mode, (const int8_t*)"static", sizeof(cfg_.mode)-1);
+        Logger::Log("NetworkManager: applied static defaults");
+    }
     logConfig("NetworkManager: configured");
     writeStateFiles();
 
@@ -145,6 +160,40 @@ bool NetworkManagerService::Start() {
     String::strncpy((int8_t*)ipcfg.dns,  (const int8_t*)cfg_.dns,  sizeof(ipcfg.dns)-1);
     SetConfig(ipcfg);
 
+    // Publish a minimal interface state for eth0
+    Interface ifc{};
+    kos::lib::String::strncpy((int8_t*)ifc.name, (const int8_t*)cfg_.ifname, sizeof(ifc.name)-1);
+    // Try to read MAC from NIC layer if available
+    {
+        uint8_t macb[6];
+        if (kos_nic_get_mac(macb)) {
+            char macstr[18];
+            // Manually format MAC as xx:xx:xx:xx:xx:xx
+            const char hexchars[] = "0123456789abcdef";
+            int pos = 0;
+            for (int i = 0; i < 6; ++i) {
+                uint8_t b = macb[i];
+                macstr[pos++] = hexchars[(b >> 4) & 0xF];
+                macstr[pos++] = hexchars[b & 0xF];
+                if (i != 5) macstr[pos++] = ':';
+            }
+            macstr[pos] = '\0';
+            kos::lib::String::strncpy((int8_t*)ifc.mac, (const int8_t*)macstr, sizeof(ifc.mac)-1);
+        } else {
+            kos::lib::String::strncpy((int8_t*)ifc.mac, (const int8_t*)"00:00:00:00:00:00", sizeof(ifc.mac)-1);
+        }
+    }
+    ifc.mtu = 1500;
+    ifc.up = true;        // configuration applied
+    ifc.running = true;   // mark running once NIC is present; will reflect link later
+    ifc.rx_packets = 0;
+    ifc.rx_bytes = 0;
+    ifc.tx_packets = 0;
+    ifc.tx_bytes = 0;
+    SetInterface(ifc);
+
+    // Initialize NIC RX dispatch to route frames to ARP/IP/ICMP handlers
+    kos::net::rx_dispatch_init();
     // Without a NIC driver/stack we cannot actually bring up a link; report capability
     Logger::Log("NetworkManager: NOTE: NIC driver and TCP/IP stack not present yet; internet connectivity not available");
 
@@ -167,5 +216,17 @@ void NetworkManagerService::worker_trampoline() {
         SchedulerAPI::SleepThread(2000);
     }
 }
+
+
+
+// --- Minimal interface storage ---
+namespace {
+    kos::net::iface::Interface g_ifc{};
+}
+
+namespace kos { namespace net { namespace iface {
+    void SetInterface(const Interface& ifc) { g_ifc = ifc; }
+    const Interface& GetInterface() { return g_ifc; }
+}}}
 
 

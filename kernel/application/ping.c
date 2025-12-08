@@ -40,20 +40,11 @@ static void print_usage(void) {
 }
 
 static int simulated_ping(const int8_t* target, int count) {
-    kos_printf((const int8_t*)"PING %s (simulated): %d fake echoes\n", target, count);
-    uint32_t base_heap = kos_get_heap_used();
-    for (int seq = 0; seq < count; ++seq) {
-        volatile uint32_t spin = 10000 + (uint32_t)seq * 500; // adjustable if too slow
-        for (volatile uint32_t i = 0; i < spin; ++i) {}
-        uint32_t heap_now = kos_get_heap_used();
-        uint32_t delta = (heap_now >= base_heap) ? (heap_now - base_heap) : 0;
-        uint32_t rtt = (spin / 1000) + (delta % 7);
-        if (rtt < 1) rtt = 1;
-        kos_printf((const int8_t*)"64 bytes from %s: icmp_seq=%d ttl=64 time=%u ms\n", target, seq, rtt);
-    }
-    kos_printf((const int8_t*)"--- %s ping statistics ---\n", target);
-    kos_printf((const int8_t*)"%d packets transmitted, %d received, 0%% packet loss, time %u ms\n", count, count, count * 2u);
-    return 0;
+    (void)count;
+    kos_printf((const int8_t*)"ping: cannot reach %s\n", target);
+    kos_puts((const int8_t*)"Reason: network stack not available (no ICMP).\n");
+    kos_puts((const int8_t*)"Hint: enable NIC + IP stack; then provide raw ICMP API.\n");
+    return -1;
 }
 
 #ifdef KOS_NET_HAVE_RAW_ICMP

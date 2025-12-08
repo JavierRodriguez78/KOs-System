@@ -6,6 +6,7 @@
 #include <drivers/net/rtl8139/rtl8139.hpp>
 #include <drivers/net/e1000/e1000.hpp>
 #include <drivers/net/rtl8169/rtl8169.hpp>
+#include <drivers/net/rtl8822be/rtl8822be.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <console/logger.hpp>
@@ -50,9 +51,11 @@ namespace kos {
             static rtl8139::Rtl8139Driver nic_rtl8139;
             static e1000::E1000Driver   nic_e1000;
             static rtl8169::Rtl8169Driver nic_rtl8169;
+            static rtl8822be::Rtl8822beDriver nic_rtl8822be;
             drvManager.AddDriver(&nic_rtl8139);
             drvManager.AddDriver(&nic_e1000);
-            drvManager.AddDriver(&nic_rtl8169); 
+            drvManager.AddDriver(&nic_rtl8169);
+            drvManager.AddDriver(&nic_rtl8822be);
             PeripheralComponentIntercontroller PCIController;
             PCIController.SelectDrivers(&drvManager);
             Logger::Log("Initializing Hardware, Stage 2");
