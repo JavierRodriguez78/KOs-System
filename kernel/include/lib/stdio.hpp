@@ -71,6 +71,9 @@ namespace kos {
                                  uint8_t* hour, uint8_t* minute, uint8_t* second);
             // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
             int32_t (*rename)(const int8_t* src, const int8_t* dst);
+            // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
+            // Kept as opaque pointer signature for C/C++ compatibility with ApiTableC.
+            int32_t (*net_list_sockets)(void* out, int32_t max, int32_t want_tcp, int32_t want_udp, int32_t listening_only);
         };
 
         /*

@@ -702,6 +702,58 @@ ifconfig.elf/fast:
 .PHONY : ifconfig.elf/fast
 
 #=============================================================================
+# Target rules for targets named ss_obj
+
+# Build rule for target.
+ss_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ss_obj
+.PHONY : ss_obj
+
+# fast build rule for target.
+ss_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ss_obj.dir/build.make kernel/cmake/CMakeFiles/ss_obj.dir/build
+.PHONY : ss_obj/fast
+
+#=============================================================================
+# Target rules for targets named ss.elf
+
+# Build rule for target.
+ss.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ss.elf
+.PHONY : ss.elf
+
+# fast build rule for target.
+ss.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ss.elf.dir/build.make kernel/cmake/CMakeFiles/ss.elf.dir/build
+.PHONY : ss.elf/fast
+
+#=============================================================================
+# Target rules for targets named sshd_obj
+
+# Build rule for target.
+sshd_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sshd_obj
+.PHONY : sshd_obj
+
+# fast build rule for target.
+sshd_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/sshd_obj.dir/build.make kernel/cmake/CMakeFiles/sshd_obj.dir/build
+.PHONY : sshd_obj/fast
+
+#=============================================================================
+# Target rules for targets named sshd.elf
+
+# Build rule for target.
+sshd.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sshd.elf
+.PHONY : sshd.elf
+
+# fast build rule for target.
+sshd.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/sshd.elf.dir/build.make kernel/cmake/CMakeFiles/sshd.elf.dir/build
+.PHONY : sshd.elf/fast
+
+#=============================================================================
 # Target rules for targets named apps
 
 # Build rule for target.
@@ -883,6 +935,8 @@ help:
 	@echo "... qemu-vvfat"
 	@echo "... reboot.elf"
 	@echo "... shutdown.elf"
+	@echo "... ss.elf"
+	@echo "... sshd.elf"
 	@echo "... top.elf"
 	@echo "... vdi"
 	@echo "... app_support_objs"
@@ -907,6 +961,8 @@ help:
 	@echo "... pwd_obj"
 	@echo "... reboot_obj"
 	@echo "... shutdown_obj"
+	@echo "... ss_obj"
+	@echo "... sshd_obj"
 	@echo "... top_obj"
 .PHONY : help
 

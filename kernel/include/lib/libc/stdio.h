@@ -50,6 +50,9 @@ typedef struct ApiTableC {
                          uint8_t* hour, uint8_t* minute, uint8_t* second);
     // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
     int32_t (*rename)(const int8_t* src, const int8_t* dst);
+    // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
+    // Signature: out points to an array of kos_sockinfo_t; fields are const char* and integers.
+    int32_t (*net_list_sockets)(void* out, int32_t max, int32_t want_tcp, int32_t want_udp, int32_t listening_only);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -127,6 +130,26 @@ static inline void kos_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day
 // Rename/move wrapper
 static inline int32_t kos_rename(const int8_t* src, const int8_t* dst) {
     if (kos_sys_table()->rename) return kos_sys_table()->rename(src, dst);
+    return -1;
+}
+
+// Socket enumeration (future-ready)
+typedef struct kos_sockinfo_t {
+    const char* proto;   // "tcp"|"udp"
+    const char* state;   // e.g., LISTEN, ESTAB
+    const char* laddr;   // local address (text)
+    uint16_t    lport;   // local port
+    const char* raddr;   // remote address (text)
+    uint16_t    rport;   // remote port
+    int32_t     pid;     // owning pid (optional)
+    const char* prog;    // program name (optional)
+} kos_sockinfo_t;
+
+static inline int32_t kos_net_list_sockets(kos_sockinfo_t* out, int32_t max,
+                                           int32_t want_tcp, int32_t want_udp,
+                                           int32_t listening_only) {
+    if (kos_sys_table()->net_list_sockets)
+        return kos_sys_table()->net_list_sockets((void*)out, max, want_tcp, want_udp, listening_only);
     return -1;
 }
 

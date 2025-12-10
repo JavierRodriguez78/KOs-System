@@ -116,6 +116,8 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/console/log_to_journal.cpp
     ${KOS_ROOT_DIR}/src/console/log_to_journal_c.cpp
     ${KOS_ROOT_DIR}/src/console/kcursers_c.cpp
+    ${KOS_ROOT_DIR}/src/lib/socket.cpp
+    ${KOS_ROOT_DIR}/src/lib/string.cpp
     ${KOS_ROOT_DIR}/src/lib/libc/string.c
     ${KOS_ROOT_DIR}/src/drivers/vga/vga.cpp
     ${KOS_ROOT_DIR}/src/libc/stdio.c
@@ -187,7 +189,11 @@ add_app_cpp(kcursers_demo)
 add_app_cpp(ifconfig)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf ifconfig.elf)
+add_app(ss)
+add_app(sshd)
+
+# Convenience aggregate
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf ifconfig.elf ss.elf sshd.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)

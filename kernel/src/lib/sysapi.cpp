@@ -1,5 +1,7 @@
 
 #include <lib/stdio.hpp>
+#include <lib/libc/stdio.h>
+#include <lib/socket.hpp>
 #include <console/tty.hpp>
 #include <fs/filesystem.hpp>
 #include <lib/elfloader.hpp>
@@ -181,6 +183,39 @@ extern "C" int32_t sys_rename(const int8_t* src, const int8_t* dst) {
     normalize_abs_path(src, cwd, absSrc, (int)sizeof(absSrc));
     normalize_abs_path(dst, cwd, absDst, (int)sizeof(absDst));
     return kos::fs::g_fs_ptr->Rename(absSrc, absDst);
+}
+
+// Socket enumeration bridging to lib::SocketEnumerate for current kernel sockets
+extern "C" int32_t sys_net_list_sockets(void* out, int32_t max, int32_t want_tcp, int32_t want_udp, int32_t listening_only) {
+    if (!out || max <= 0) return -1;
+    kos_sockinfo_t* arr = reinterpret_cast<kos_sockinfo_t*>(out);
+    kos::lib::SocketEnumEntry tmp[64];
+    int m = (max < 64) ? max : 64;
+    int n = kos::lib::SocketEnumerate(tmp, m);
+    int w = 0;
+    for (int i = 0; i < n; ++i) {
+        const char* p = tmp[i].proto ? tmp[i].proto : "";
+        int is_tcp = (p[0]=='t' && p[1]=='c' && p[2]=='p');
+        int is_udp = (p[0]=='u' && p[1]=='d' && p[2]=='p');
+        // Filter by proto
+        if ((want_tcp || want_udp) && !((want_tcp && is_tcp) || (want_udp && is_udp))) continue;
+        // Filter listening-only
+        if (listening_only) {
+            const char* st = tmp[i].state ? tmp[i].state : "";
+            if (!(st[0]=='L' && st[1]=='I')) continue;
+        }
+        arr[w].proto = tmp[i].proto;
+        arr[w].state = tmp[i].state;
+        arr[w].laddr = tmp[i].laddr;
+        arr[w].lport = (uint16_t)tmp[i].lport;
+        arr[w].raddr = tmp[i].raddr;
+        arr[w].rport = (uint16_t)tmp[i].rport;
+        arr[w].pid   = tmp[i].pid;
+        arr[w].prog  = tmp[i].prog;
+        ++w;
+        if (w >= max) break;
+    }
+    return w;
 }
 
 // --- Simple argument storage for current process/app ---
@@ -373,4 +408,6 @@ extern "C" void InitSysApi() {
     t->get_datetime = &sys_get_datetime;
     // File rename/move
     t->rename = &sys_rename;
+    // Networking: socket enumeration (stub)
+    t->net_list_sockets = &sys_net_list_sockets;
 }

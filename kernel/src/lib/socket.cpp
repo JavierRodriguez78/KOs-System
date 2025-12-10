@@ -12,6 +12,9 @@ struct InternalSocket {
     SocketDomain domain;
     SocketType type;
     SocketProtocol protocol;
+    unsigned lport = 0; // INET only
+    unsigned rport = 0; // INET only
+    char raddr[64];     // INET peer textual (optional)
 };
 
 static constexpr int MAX_SOCKETS = 128;
@@ -103,5 +106,70 @@ int Socket::send(const char* data, int length) {
     if (!receiver) return -2;
     // Simulate data transfer: in a real kernel, this would enqueue data to the receiver's buffer
     return length;
+}
+
+// Simple helpers to register INET sockets (placeholder until full TCP/UDP stack)
+extern "C" int SocketListenInet(int type /*1=DGRAM,2=STREAM*/, unsigned port) {
+    if (socket_count >= MAX_SOCKETS) return -1;
+    int fd = next_fd++;
+    InternalSocket& s = socket_table[socket_count++];
+    s.fd = fd;
+    s.domain = SocketDomain::INET;
+    s.type = (type == 2 ? SocketType::STREAM : SocketType::DGRAM);
+    s.protocol = SocketProtocol::DEFAULT;
+    s.bound = true;
+    s.connected = false;
+    s.path[0] = '\0';
+    s.lport = port;
+    s.rport = 0;
+    s.raddr[0] = '\0';
+    return fd;
+}
+
+extern "C" int SocketConnectInet(int type /*1=DGRAM,2=STREAM*/, const char* raddr, unsigned rport, unsigned lport) {
+    if (socket_count >= MAX_SOCKETS) return -1;
+    int fd = next_fd++;
+    InternalSocket& s = socket_table[socket_count++];
+    s.fd = fd;
+    s.domain = SocketDomain::INET;
+    s.type = (type == 2 ? SocketType::STREAM : SocketType::DGRAM);
+    s.protocol = SocketProtocol::DEFAULT;
+    s.bound = (lport != 0);
+    s.connected = true;
+    s.lport = lport;
+    s.rport = rport;
+    String::strncpy(reinterpret_cast<int8_t*>(s.raddr), reinterpret_cast<const int8_t*>(raddr ? raddr : ""), sizeof(s.raddr));
+    s.path[0] = '\0';
+    return fd;
+}
+
+int kos::lib::SocketEnumerate(SocketEnumEntry* out, int max) {
+    if (!out || max <= 0) return 0;
+    int n = 0;
+    for (int i = 0; i < socket_count && n < max; ++i) {
+        InternalSocket& s = socket_table[i];
+        // Map domain/type to proto/state
+        const char* proto = (s.domain == SocketDomain::INET)
+                                ? ((s.type == SocketType::STREAM) ? "tcp" : "udp")
+                                : "unix";
+        const char* state = s.bound ? (s.connected ? "ESTAB" : "LISTEN") : (s.connected ? "CONN" : "");
+        out[n].proto = proto;
+        out[n].state = state;
+        if (s.domain == SocketDomain::INET) {
+            out[n].laddr = "0.0.0.0"; // placeholder bind address
+            out[n].lport = s.lport;
+            out[n].raddr = s.connected ? s.raddr : "";
+            out[n].rport = s.rport;
+        } else {
+            out[n].laddr = s.path[0] ? s.path : "*";
+            out[n].lport = 0u;
+            out[n].raddr = s.connected ? s.path : "";
+            out[n].rport = 0u;
+        }
+        out[n].pid = 0;
+        out[n].prog = "";
+        ++n;
+    }
+    return n;
 }
 

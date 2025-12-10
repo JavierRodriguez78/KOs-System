@@ -98,6 +98,25 @@ namespace kos {
                 // File descriptor for the socket
                 int socketFd;
         };
+
+        // Lightweight enumeration for current in-kernel sockets (UNIX placeholders for now).
+        // Fills arrays of parallel fields; returns count written up to max.
+        struct SocketEnumEntry {
+            const char* proto;   // "tcp"|"udp"|"unix"
+            const char* state;   // "LISTEN"|"ESTAB" etc.
+            const char* laddr;   // local address (text/path)
+            unsigned    lport;   // for INET; 0 for UNIX
+            const char* raddr;   // peer address
+            unsigned    rport;   // for INET; 0 for UNIX
+            int         pid;     // optional
+            const char* prog;    // optional
+        };
+
+        int SocketEnumerate(SocketEnumEntry* out, int max);
+
+        // Register INET sockets (testing stubs until real TCP/UDP stack exists)
+        int SocketListenInet(SocketType type, unsigned port);
+        int SocketConnectInet(SocketType type, const char* raddr, unsigned rport, unsigned lport);
     } // namespace lib
 } // namespace kos
 

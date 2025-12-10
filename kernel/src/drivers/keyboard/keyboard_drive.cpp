@@ -217,8 +217,11 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 
             default:
             {
+                // Suppress noisy scancode debug in normal builds; enable with -DKBD_DEBUG
+                #ifdef KBD_DEBUG
                 tty.Write("KEYBOARD 0X");
                 tty.WriteHex(key);
+                #endif
                 break; // ch remains 0
             }
         }
