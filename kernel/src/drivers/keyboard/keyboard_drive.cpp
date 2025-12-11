@@ -1,4 +1,5 @@
 #include <drivers/keyboard/keyboard_driver.hpp>
+#include <drivers/ps2/ps2.hpp>
 #include <console/logger.hpp>
 #include <console/tty.hpp>
 #include <kernel/globals.hpp>
@@ -9,6 +10,7 @@ using namespace kos::console;
 KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
 :InterruptHandler(manager, 0x21),dataport(0x60),commandport(0x64){
     this->handler = handler;
+    kos::drivers::ps2::PS2Controller::Instance().Init();
 };
 
 
@@ -24,29 +26,26 @@ void KeyboardDriver::Activate()
     static TTY tty;
     tty.Write("[KBD] Activating keyboard...\n");
     
+    auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
     // Clear keyboard buffer
-    while(commandport.Read() & 0x1) {
-        dataport.Read();
-    }
+    while(ps2.ReadStatus() & 0x1) { (void)ps2.ReadData(); }
     
     // Wait for keyboard controller to be ready
     int timeout = 1000;
-    while ((commandport.Read() & 0x02) && timeout-- > 0) {
+    while ((ps2.ReadStatus() & 0x02) && timeout-- > 0) {
         // Wait for input buffer to be empty
     }
     
     tty.Write("[KBD] Disabling devices...\n");
-    commandport.Write(0xAD); // Disable first PS/2 port
-    commandport.Write(0xA7); // Disable second PS/2 port (if exists)
+    ps2.WriteCommand(0xAD); // Disable first PS/2 port
+    ps2.WriteCommand(0xA7); // Disable second PS/2 port (if exists)
     
     // Clear buffer again
-    while(commandport.Read() & 0x1) {
-        dataport.Read();
-    }
+    while(ps2.ReadStatus() & 0x1) { (void)ps2.ReadData(); }
     
     tty.Write("[KBD] Reading controller config...\n");
-    commandport.Write(0x20); // Read controller config
-    uint8_t config = dataport.Read();
+    ps2.WriteCommand(0x20); // Read controller config
+    uint8_t config = ps2.ReadData();
     tty.Write("[KBD] Controller config: ");
     tty.WriteHex(config);
     tty.Write("\n");
@@ -59,23 +58,26 @@ void KeyboardDriver::Activate()
     tty.Write("[KBD] Writing new config: ");
     tty.WriteHex(config);
     tty.Write("\n");
-    commandport.Write(0x60); // Write controller config
-    dataport.Write(config);
+    ps2.WriteCommand(0x60); // Write controller config
+    ps2.WriteData(config);
     
     tty.Write("[KBD] Enabling first PS/2 port...\n");
-    commandport.Write(0xAE); // Enable first PS/2 port
+    ps2.WriteCommand(0xAE); // Enable first PS/2 port
     
     tty.Write("[KBD] Sending enable command to keyboard...\n");
-    dataport.Write(0xF4); // Enable scanning
+    ps2.WriteToMouse(0xF4); // For mouse; for keyboard, write directly to data port (same 0x60)
+    // However, for keyboard device commands, controller expects writes to 0x60 when using first port
+    // So issue device command via data port
+    ps2.WriteData(0xF4); // Enable scanning
     
     // Wait for acknowledgment
     timeout = 1000;
-    while (timeout-- > 0 && !(commandport.Read() & 0x01)) {
+    while (timeout-- > 0 && !(ps2.ReadStatus() & 0x01)) {
         // Wait for response
     }
     
-    if (commandport.Read() & 0x01) {
-        uint8_t response = dataport.Read();
+    if (ps2.ReadStatus() & 0x01) {
+        uint8_t response = ps2.ReadData();
         tty.Write("[KBD] Keyboard response: ");
         tty.WriteHex(response);
         tty.Write("\n");
@@ -88,7 +90,8 @@ void KeyboardDriver::Activate()
   
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 {
-    uint8_t key = dataport.Read();
+    auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+    uint8_t key = ps2.ReadData();
 
     if(handler == 0)
         return esp;
@@ -250,9 +253,10 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 // Fallback: poll controller status and process one scancode identically to interrupt path.
 bool KeyboardDriver::PollOnce() {
     // Check output buffer full
-    if ((commandport.Read() & 0x01) == 0) return false;
+    auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+    if ((ps2.ReadStatus() & 0x01) == 0) return false;
     static bool s_tty_notified = false;
-    uint8_t key = dataport.Read();
+    uint8_t key = ps2.ReadData();
     if(handler == 0) return false;
     if (key == 0xE0) { e0Prefix = true; return true; }
     if (key & 0x80) {

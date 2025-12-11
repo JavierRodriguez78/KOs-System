@@ -15,6 +15,7 @@
 #include <kernel/globals.hpp>
 #include <ui/cursor.hpp>
 #include <console/shell.hpp>
+#include <drivers/ps2/ps2.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -433,7 +434,7 @@ void WindowManager::Tick() {
                 kos::gfx::Compositor::DrawGlyph8x8(tx + i*8, ty, glyph, 0xFFFFFFFFu, d.bg);
             }
 
-            // Build line 2: "btn: lmr  pk: #### src: IRQ|POLL" with uppercase when pressed
+            // Build line 2: "btn: lmr  pk: #### src: IRQ|POLL cfg:0xHH" with uppercase when pressed
             bi = 0;
             putc('b'); putc('t'); putc('n'); putc(':'); putc(' ');
             bool left = (mb & 1u) != 0; bool right = (mb & 2u) != 0; bool middle = (mb & 4u) != 0;
@@ -443,8 +444,15 @@ void WindowManager::Tick() {
             uint32_t pk = drivers::mouse::g_mouse_packets;
             writeDec(pk);
             putc(' '); putc(' '); putc('s'); putc('r'); putc('c'); putc(':'); putc(' ');
-            const char* src = (pk == 0 ? "POLL" : "IRQ");
+            const char* src = (::kos::g_mouse_input_source == 2 ? "POLL" : (::kos::g_mouse_input_source == 1 ? "IRQ" : "-"));
             for (const char* s = src; *s; ++s) putc(*s);
+            // Show PS/2 controller config byte
+            putc(' '); putc(' '); putc('c'); putc('f'); putc('g'); putc(':');
+            putc('0'); putc('x');
+            auto& ps2 = ::kos::drivers::ps2::PS2Controller::Instance();
+            uint8_t cfg = ps2.ReadConfig();
+            const char* hex = "0123456789ABCDEF";
+            putc(hex[(cfg>>4)&0xF]); putc(hex[cfg & 0xF]);
             buf[bi]=0;
             uint32_t ty2 = ty + 10;
             for (uint32_t i=0; buf[i]; ++i) {

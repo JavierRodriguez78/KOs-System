@@ -108,7 +108,7 @@ namespace kos {
         uint32_t GetFocusedWindow(); // 0 when none
 
         // Standard title bar metrics to keep compositor and hit-testing in sync
-        constexpr uint32_t TitleBarHeight();
+        constexpr uint32_t TitleBarHeight() { return 18; }
         void GetStandardButtonRects(const kos::gfx::WindowDesc& d,
                                     kos::gfx::Rect& outMin,
                                     kos::gfx::Rect& outMax,

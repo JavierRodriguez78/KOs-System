@@ -97,7 +97,7 @@ bool HitTest(int x, int y, uint32_t& outWindowId, bool& onTitleBar) {
     return false;
 }
 
-constexpr uint32_t TitleBarHeight() { return 18; }
+// TitleBarHeight is defined inline in the header.
 
 void GetStandardButtonRects(const WindowDesc& d, Rect& outMin, Rect& outMax, Rect& outClose) {
     const uint32_t th = TitleBarHeight();

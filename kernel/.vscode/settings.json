@@ -51,5 +51,6 @@
         "tty.hpp": "c",
         "service_manager.hpp": "c",
         "stddef.h": "c"
-    }
+    },
+    "cmake.sourceDirectory": "/mnt/e/proyectos/KOs-System/kernel/cmake"
 }

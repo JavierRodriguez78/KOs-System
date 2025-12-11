@@ -3,6 +3,7 @@
 #include <drivers/mouse/mouse_driver.hpp>
 #include <drivers/mouse/mouse_constants.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
+#include <drivers/ps2/ps2.hpp>
 #include <console/logger.hpp>
 #include <console/tty.hpp>
 #include <kernel/globals.hpp>
@@ -19,6 +20,7 @@ dataport(MOUSE_DATA_PORT),
 commandport(MOUSE_COMMAND_PORT)
 {
     this->handler = handler;
+    kos::drivers::ps2::PS2Controller::Instance().Init();
 }
 
 MouseDriver::~MouseDriver()
@@ -39,18 +41,17 @@ void MouseDriver::Activate()
 {
     offset = 0;
     buttons = 0;
-    // Flush any pending output bytes from the controller to start clean
-    while (commandport.Read() & MOUSE_STATUS_OUTPUT_BUFFER) { (void)dataport.Read(); }
+    // Use PS/2 controller abstraction
+    auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+    // Flush pending output
+    while (ps2.ReadStatus() & MOUSE_STATUS_OUTPUT_BUFFER) { (void)ps2.ReadData(); }
 
-    // Enable auxiliary (mouse) device (unmask second PS/2 port)
-    wait_write(commandport);
-    commandport.Write(MOUSE_CMD_ENABLE_AUX);
+    // Enable auxiliary device
+    ps2.WaitWrite(); ps2.WriteCommand(MOUSE_CMD_ENABLE_AUX);
 
-    // Read current controller command byte
-    wait_write(commandport);
-    commandport.Write(MOUSE_CMD_READ_BYTE);
-    wait_read(commandport);
-    uint8_t status = dataport.Read();
+    // Read config byte
+    ps2.WaitWrite(); ps2.WriteCommand(MOUSE_CMD_READ_BYTE);
+    ps2.WaitRead();  uint8_t status = ps2.ReadData();
 
     uint8_t originalStatus = status;
 
@@ -59,20 +60,16 @@ void MouseDriver::Activate()
     status &= ~(uint8_t)MOUSE_DISABLE_PORT2_BIT;
 
     // Write updated controller command byte back
-    wait_write(commandport);
-    commandport.Write(MOUSE_CMD_WRITE_BYTE);
-    wait_write(commandport);
-    dataport.Write(status);
+    ps2.WaitWrite(); ps2.WriteCommand(MOUSE_CMD_WRITE_BYTE);
+    ps2.WaitWrite(); ps2.WriteData(status);
 
     // Send Set Defaults (0xF6)
-    wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
-    wait_write(commandport); dataport.Write(MOUSE_CMD_SET_DEFAULTS);
-    wait_read(commandport); uint8_t ack1 = dataport.Read();
+    ps2.WriteToMouse(MOUSE_CMD_SET_DEFAULTS);
+    ps2.WaitRead(); uint8_t ack1 = ps2.ReadData();
 
     // Enable Data Reporting (0xF4)
-    wait_write(commandport); commandport.Write(MOUSE_CMD_WRITE_TO_MOUSE);
-    wait_write(commandport); dataport.Write(MOUSE_CMD_ENABLE_DATA_REPORTING);
-    wait_read(commandport); uint8_t ack2 = dataport.Read();
+    ps2.WriteToMouse(MOUSE_CMD_ENABLE_DATA_REPORTING);
+    ps2.WaitRead(); uint8_t ack2 = ps2.ReadData();
 
     if (Logger::IsDebugEnabled()) {
         // Logger::Log only accepts a single message string; build simple hex output manually
@@ -101,11 +98,12 @@ void MouseDriver::Activate()
     {
         // Check if output buffer has data (bit0). We don't require AUX flag (bit5)
         // because we're already servicing IRQ12, so the byte is for the mouse.
-        uint8_t status = commandport.Read();
+        auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+        uint8_t status = ps2.ReadStatus();
         if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0)
             return esp;
 
-        uint8_t b = dataport.Read();
+        uint8_t b = ps2.ReadData();
         buffer[offset] = b;
         if (dumpEnabled && dumpCount < 96) {
             // Print raw byte in hex, grouped
@@ -169,10 +167,11 @@ void MouseDriver::Activate()
 // Reads one byte if available and assembles a packet; on full packet dispatches events.
 void MouseDriver::PollOnce() {
     // Check if data available
-    uint8_t status = commandport.Read();
+    auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+    uint8_t status = ps2.ReadStatus();
     if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0) return; // nothing
     // Do not require AUX bit: some emulators/hosts may not set it reliably
-    uint8_t b = dataport.Read();
+    uint8_t b = ps2.ReadData();
     static bool s_mouse_poll_tty = false;
     pbuf[poff] = b;
     poff = (poff + 1) % 3;
