@@ -7,6 +7,8 @@
 #include <drivers/net/e1000/e1000.hpp>
 #include <drivers/net/rtl8169/rtl8169.hpp>
 #include <drivers/net/rtl8822be/rtl8822be.hpp>
+#include <drivers/ps2/ps2.hpp>
+#include <drivers/usb/usb_core.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <console/logger.hpp>
@@ -32,6 +34,14 @@ namespace kos {
 
             // Initialize shell pointer for keyboard handler fallback
             g_shell = &g_shell_instance;
+
+            // Initialize PS/2 controller once before creating keyboard/mouse drivers
+            Logger::Log("Initializing PS/2 controller");
+            kos::drivers::ps2::PS2Controller::Instance().Init();
+
+            // Initialize USB subsystem for USB keyboard/mouse support
+            Logger::Log("Probing USB controllers");
+            kos::drivers::usb::UsbCore::Init();
 
             Logger::Log("Loading device drivers");
             static ShellKeyboardHandler skbhandler;

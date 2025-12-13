@@ -20,7 +20,7 @@ dataport(MOUSE_DATA_PORT),
 commandport(MOUSE_COMMAND_PORT)
 {
     this->handler = handler;
-    kos::drivers::ps2::PS2Controller::Instance().Init();
+    // PS/2 controller already initialized in InitDrivers
 }
 
 MouseDriver::~MouseDriver()
@@ -62,14 +62,29 @@ void MouseDriver::Activate()
     // Write updated controller command byte back
     ps2.WaitWrite(); ps2.WriteCommand(MOUSE_CMD_WRITE_BYTE);
     ps2.WaitWrite(); ps2.WriteData(status);
+    
+    // Small delay after config write
+    for (volatile int i = 0; i < 10000; ++i) {}
 
     // Send Set Defaults (0xF6)
     ps2.WriteToMouse(MOUSE_CMD_SET_DEFAULTS);
-    ps2.WaitRead(); uint8_t ack1 = ps2.ReadData();
+    // Add delay and retry logic
+    for (volatile int i = 0; i < 10000; ++i) {}
+    ps2.WaitRead(); 
+    uint8_t ack1 = ps2.ReadData();
 
     // Enable Data Reporting (0xF4)
     ps2.WriteToMouse(MOUSE_CMD_ENABLE_DATA_REPORTING);
-    ps2.WaitRead(); uint8_t ack2 = ps2.ReadData();
+    for (volatile int i = 0; i < 10000; ++i) {}
+    ps2.WaitRead(); 
+    uint8_t ack2 = ps2.ReadData();
+    
+    static TTY tty;
+    tty.Write("[MOUSE] Activation: ack1=");
+    tty.WriteHex(ack1);
+    tty.Write(" ack2=");
+    tty.WriteHex(ack2);
+    tty.Write("\n");
 
     if (Logger::IsDebugEnabled()) {
         // Logger::Log only accepts a single message string; build simple hex output manually
@@ -104,6 +119,17 @@ void MouseDriver::Activate()
             return esp;
 
         uint8_t b = ps2.ReadData();
+        
+        // Debug: log first few interrupts to serial
+        static int irq_count = 0;
+        if (irq_count < 3) {
+            static TTY tty;
+            tty.Write("[MOUSE-IRQ] byte: ");
+            tty.WriteHex(b);
+            tty.Write("\n");
+            ++irq_count;
+        }
+        
         buffer[offset] = b;
         if (dumpEnabled && dumpCount < 96) {
             // Print raw byte in hex, grouped

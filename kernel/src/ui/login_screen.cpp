@@ -3,6 +3,8 @@
 #include <services/user_service.hpp>
 #include <graphics/framebuffer.hpp>
 #include <lib/string.hpp>
+#include <console/tty.hpp>
+#include <lib/serial.hpp>
 
 using namespace kos::ui;
 using namespace kos::gfx;
@@ -31,6 +33,22 @@ static inline void clampAppend(char* buf, int& len, int max, char c) {
 }
 
 void LoginScreen::OnKeyDown(int8_t c) {
+    // Debug: log first few key events
+    static int key_count = 0;
+    if (key_count < 5) {
+        kos::lib::serial_write("[LOGIN] OnKeyDown: ");
+        if (c >= 32 && c <= 126) {
+            kos::lib::serial_putc((char)c);
+        } else {
+            kos::lib::serial_write("0x");
+            const char* hex = "0123456789ABCDEF";
+            kos::lib::serial_putc(hex[((uint8_t)c >> 4) & 0xF]);
+            kos::lib::serial_putc(hex[(uint8_t)c & 0xF]);
+        }
+        kos::lib::serial_write("\n");
+        ++key_count;
+    }
+    
     if (!s_ready || s_authenticated) return;
     if (c == '\n') {
         // Try auth via UserService

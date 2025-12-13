@@ -29,4 +29,6 @@ namespace kos {
     // Input source diagnostics: 0=none, 1=IRQ, 2=POLL
     extern kos::common::uint8_t g_kbd_input_source;
     extern kos::common::uint8_t g_mouse_input_source;
+    // Keyboard event counter for UI diagnostics
+    extern kos::common::uint32_t g_kbd_events;
 }

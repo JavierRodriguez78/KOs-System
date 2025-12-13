@@ -8,6 +8,7 @@
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <drivers/driver.hpp>
 #include <drivers/keyboard/keyboard_handler.hpp>
+#include <lib/serial.hpp>
 
 using namespace kos::arch::x86::hardware::interrupts;
 
@@ -50,7 +51,17 @@ namespace kos
                     // Poll one scancode (fallback when IRQ1 not firing). Returns true if a key was processed.
                     bool PollOnce();
                     // Swap the active keyboard event handler at runtime
-                    void SetHandler(KeyboardEventHandler* newHandler) { handler = newHandler; }
+                    void SetHandler(KeyboardEventHandler* newHandler) { 
+                        handler = newHandler;
+                        // Debug log
+                        kos::lib::serial_write("[KBD] SetHandler called, ptr=");
+                        const char* hex = "0123456789ABCDEF";
+                        uintptr_t addr = (uintptr_t)newHandler;
+                        for (int i = 7; i >= 0; --i) {
+                            kos::lib::serial_putc(hex[(addr >> (i*4)) & 0xF]);
+                        }
+                        kos::lib::serial_write("\n");
+                    }
                 private:
                     
                     //  I/O ports for keyboard data and command

@@ -845,6 +845,58 @@ gdb/fast:
 .PHONY : gdb/fast
 
 #=============================================================================
+# Target rules for targets named qemu-gtk
+
+# Build rule for target.
+qemu-gtk: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-gtk
+.PHONY : qemu-gtk
+
+# fast build rule for target.
+qemu-gtk/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-gtk.dir/build.make kernel/cmake/CMakeFiles/qemu-gtk.dir/build
+.PHONY : qemu-gtk/fast
+
+#=============================================================================
+# Target rules for targets named qemu-gtk-view
+
+# Build rule for target.
+qemu-gtk-view: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-gtk-view
+.PHONY : qemu-gtk-view
+
+# fast build rule for target.
+qemu-gtk-view/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-gtk-view.dir/build.make kernel/cmake/CMakeFiles/qemu-gtk-view.dir/build
+.PHONY : qemu-gtk-view/fast
+
+#=============================================================================
+# Target rules for targets named qemu-usb
+
+# Build rule for target.
+qemu-usb: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-usb
+.PHONY : qemu-usb
+
+# fast build rule for target.
+qemu-usb/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-usb.dir/build.make kernel/cmake/CMakeFiles/qemu-usb.dir/build
+.PHONY : qemu-usb/fast
+
+#=============================================================================
+# Target rules for targets named qemu-log
+
+# Build rule for target.
+qemu-log: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-log
+.PHONY : qemu-log
+
+# fast build rule for target.
+qemu-log/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-log.dir/build.make kernel/cmake/CMakeFiles/qemu-log.dir/build
+.PHONY : qemu-log/fast
+
+#=============================================================================
 # Target rules for targets named diskimg
 
 # Build rule for target.
@@ -931,7 +983,11 @@ help:
 	@echo "... ping.elf"
 	@echo "... pwd.elf"
 	@echo "... qemu"
+	@echo "... qemu-gtk"
+	@echo "... qemu-gtk-view"
+	@echo "... qemu-log"
 	@echo "... qemu-ro"
+	@echo "... qemu-usb"
 	@echo "... qemu-vvfat"
 	@echo "... reboot.elf"
 	@echo "... shutdown.elf"

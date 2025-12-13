@@ -264,6 +264,38 @@ add_custom_target(gdb
     USES_TERMINAL
 )
 
+# Alternative QEMU runs for different host/display/input setups
+# - qemu-gtk: Uses GTK display backend and std VGA; good on WSL/Wayland
+# - qemu-usb: Same as gtk but enables USB keyboard/mouse (your OS needs USB stack)
+add_custom_target(qemu-gtk
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log
+    DEPENDS iso diskimg
+    USES_TERMINAL
+    COMMAND ${CMAKE_COMMAND} -E echo "Serial output saved to: ${CMAKE_BINARY_DIR}/serial.log"
+)
+
+add_custom_target(qemu-gtk-view
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log &
+    COMMAND sleep 2
+    COMMAND tail -f ${CMAKE_BINARY_DIR}/serial.log
+    DEPENDS iso diskimg
+    USES_TERMINAL
+)
+
+add_custom_target(qemu-usb
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=on -device usb-kbd -device usb-mouse -serial file:${CMAKE_BINARY_DIR}/serial.log
+    DEPENDS iso diskimg
+    USES_TERMINAL
+    COMMAND ${CMAKE_COMMAND} -E echo "Serial output saved to: ${CMAKE_BINARY_DIR}/serial.log"
+)
+
+# Debug-focused QEMU run with verbose logging and snapshot mode (no disk writes)
+add_custom_target(qemu-log
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial mon:stdio -no-reboot -no-shutdown -d guest_errors,int
+    DEPENDS iso diskimg
+    USES_TERMINAL
+)
+
 # -----------------------
 set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
 

@@ -25,6 +25,7 @@ drivers::keyboard::KeyboardDriver* g_keyboard_driver_ptr = nullptr; // set in In
 // Input diagnostics
 kos::common::uint8_t g_kbd_input_source = 0;
 kos::common::uint8_t g_mouse_input_source = 0;
+kos::common::uint32_t g_kbd_events = 0;
 }
 
 typedef void (*constructor)();

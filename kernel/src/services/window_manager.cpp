@@ -16,6 +16,7 @@
 #include <ui/cursor.hpp>
 #include <console/shell.hpp>
 #include <drivers/ps2/ps2.hpp>
+#include <lib/serial.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -32,6 +33,10 @@ static bool s_login_active = false;
 static uint8_t s_mouse_poll_mode = 2;
 static bool s_taskbar_enabled = true;
 static uint32_t s_terminal_counter = 1; // for titling Terminal N
+static uint32_t s_prev_mouse_pk = 0;    // track mouse packet counter between frames
+static int s_mouse_evt_flash = 0;       // frames to flash event indicator when new packets arrive
+static uint32_t s_prev_kbd_ev = 0;      // track keyboard event counter
+static int s_kbd_evt_flash = 0;         // frames to flash indicator when keys arrive
 // File-scope keyboard handler that forwards keys to LoginScreen
 class LoginKeyboardHandler : public kos::drivers::keyboard::KeyboardEventHandler {
 public:
@@ -192,7 +197,11 @@ bool WindowManager::Start() {
         // Keep on top but do not steal focus from terminal
         if (s_mouse_win_id) {
             kos::ui::BringToFront(s_mouse_win_id);
-            if (kos::gfx::Terminal::IsActive()) {
+            // Ensure login retains focus/top if active
+            if (s_login_active && s_login_win_id) {
+                kos::ui::BringToFront(s_login_win_id);
+                kos::ui::SetFocusedWindow(s_login_win_id);
+            } else if (kos::gfx::Terminal::IsActive()) {
                 kos::ui::SetFocusedWindow(kos::gfx::Terminal::GetWindowId());
             }
         }
@@ -208,6 +217,15 @@ bool WindowManager::Start() {
     } else if (kos::gfx::Terminal::IsActive()) {
         kos::gfx::Terminal::Render();
     }
+    
+    // *** STARTUP TEST: Write to serial to confirm it's working ***
+    static bool startup_logged = false;
+    if (!startup_logged) {
+        kos::lib::serial_init();
+        kos::lib::serial_write("\n[WM] Window manager initialized\n");
+        startup_logged = true;
+    }
+    
     // DEBUG OVERLAY (early): show fb + window stats if no windows visible
     {
         const auto& fbinfo = kos::gfx::GetInfo();
@@ -224,12 +242,16 @@ bool WindowManager::Start() {
             const uint8_t* glyph = kos::gfx::kFont8x8Basic[ch - 32];
             kos::gfx::Compositor::DrawGlyph8x8(4 + i*8, 4, glyph, 0xFFFFFFFFu, wallpaper);
         }
-        // Second line: input sources (kbd/mouse)
+        // Second line: input sources (kbd/mouse) and brief key indicator
         char buf2[160]; bi=0;
         auto writeStr2 = [&](const char* s){ while(*s) buf2[bi++]=*s++; };
         auto writeSrc=[&](const char* label, uint8_t src){ writeStr2(label); writeStr2(":"); if(src==1) writeStr2("IRQ"); else if(src==2) writeStr2("POLL"); else writeStr2("-"); writeStr2("  "); };
         writeSrc("kbd", ::kos::g_kbd_input_source);
         writeSrc("mouse", ::kos::g_mouse_input_source);
+        // Update keyboard event flash
+        if (::kos::g_kbd_events != s_prev_kbd_ev) { s_kbd_evt_flash = 15; s_prev_kbd_ev = ::kos::g_kbd_events; }
+        else if (s_kbd_evt_flash > 0) { --s_kbd_evt_flash; }
+        if (s_kbd_evt_flash > 0) { writeStr2("[KEY]"); }
         buf2[bi]=0;
         for (int i=0; buf2[i]; ++i) {
             char ch = buf2[i]; if (ch < 32 || ch > 127) ch='?';
@@ -289,6 +311,11 @@ void WindowManager::Tick() {
     }
     // Ensure login keyboard handler stays active while login is shown
     if (s_login_active && ::kos::g_keyboard_driver_ptr) {
+        static bool logged_handler_set = false;
+        if (!logged_handler_set) {
+            kos::console::Logger::Log("WM: Setting login keyboard handler");
+            logged_handler_set = true;
+        }
         ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
     }
     // Consume a few UI events for diagnostics (kept lightweight to avoid spam)
@@ -338,6 +365,24 @@ void WindowManager::Tick() {
     // Also poll keyboard here as an extra safety net in graphics mode
     if (::kos::g_keyboard_driver_ptr) {
         ::kos::g_keyboard_driver_ptr->PollOnce();
+    }
+    
+    // Debug: periodically log input status
+    static uint32_t tick_count = 0;
+    if ((++tick_count % 300) == 0) { // Every ~10 seconds at 30Hz
+        kos::lib::serial_write("[WM-Tick] kbd_src=");
+        kos::lib::serial_putc('0' + ::kos::g_kbd_input_source);
+        kos::lib::serial_write(" kbd_events=");
+        // Simple decimal output
+        uint32_t ev = ::kos::g_kbd_events;
+        if (ev == 0) {
+            kos::lib::serial_write("0");
+        } else {
+            char buf[12]; int i = 0;
+            while (ev && i < 11) { buf[i++] = '0' + (ev % 10); ev /= 10; }
+            while (i--) kos::lib::serial_putc(buf[i]);
+        }
+        kos::lib::serial_write("\n");
     }
 
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background
@@ -415,6 +460,10 @@ void WindowManager::Tick() {
         kos::gfx::WindowDesc d; 
         if (kos::ui::GetWindowDesc(s_mouse_win_id, d)) {
             int mx, my; uint8_t mb; kos::ui::GetMouseState(mx, my, mb);
+            // Update event flash based on packet counter
+            uint32_t pk_now = drivers::mouse::g_mouse_packets;
+            if (pk_now != s_prev_mouse_pk) { s_mouse_evt_flash = 15; s_prev_mouse_pk = pk_now; }
+            else if (s_mouse_evt_flash > 0) { --s_mouse_evt_flash; }
             // Build line 1: "x: ####  y: ####"
             char buf[64];
             int bi = 0; auto putc=[&](char c){ if (bi < (int)sizeof(buf)-1) buf[bi++]=c; };
@@ -434,14 +483,14 @@ void WindowManager::Tick() {
                 kos::gfx::Compositor::DrawGlyph8x8(tx + i*8, ty, glyph, 0xFFFFFFFFu, d.bg);
             }
 
-            // Build line 2: "btn: lmr  pk: #### src: IRQ|POLL cfg:0xHH" with uppercase when pressed
+            // Build line 2: "btn: lmr  pk: #### src: IRQ|POLL cfg:0xHH [EVT]" with uppercase when pressed
             bi = 0;
             putc('b'); putc('t'); putc('n'); putc(':'); putc(' ');
             bool left = (mb & 1u) != 0; bool right = (mb & 2u) != 0; bool middle = (mb & 4u) != 0;
             putc(left ? 'L' : 'l'); putc(middle ? 'M' : 'm'); putc(right ? 'R' : 'r');
             putc(' '); putc(' '); putc('p'); putc('k'); putc(':'); putc(' ');
             // Read packet counter
-            uint32_t pk = drivers::mouse::g_mouse_packets;
+            uint32_t pk = pk_now;
             writeDec(pk);
             putc(' '); putc(' '); putc('s'); putc('r'); putc('c'); putc(':'); putc(' ');
             const char* src = (::kos::g_mouse_input_source == 2 ? "POLL" : (::kos::g_mouse_input_source == 1 ? "IRQ" : "-"));
@@ -453,6 +502,8 @@ void WindowManager::Tick() {
             uint8_t cfg = ps2.ReadConfig();
             const char* hex = "0123456789ABCDEF";
             putc(hex[(cfg>>4)&0xF]); putc(hex[cfg & 0xF]);
+            // Flash an event tag briefly when packets arrive
+            if (s_mouse_evt_flash > 0) { putc(' '); putc(' '); putc('E'); putc('V'); putc('T'); }
             buf[bi]=0;
             uint32_t ty2 = ty + 10;
             for (uint32_t i=0; buf[i]; ++i) {
