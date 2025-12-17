@@ -2,6 +2,12 @@
 #include <lib/libc/string.h>
 #include <lib/libc/stdint.h>
 
+// Enable raw ICMP networking - the C API functions are implemented in raw_icmp_shim.cpp
+#define KOS_NET_HAVE_RAW_ICMP 1
+
+// DNS resolution support
+extern int kos_dns_resolve(const char* hostname, char* ip_str_out, int ip_str_size);
+
 // Simple ping implementation.
 // Usage: ping [-c COUNT] TARGET
 // Current behavior (default): simulated ICMP echo replies (no real network stack yet).
@@ -50,12 +56,41 @@ static int simulated_ping(const int8_t* target, int count) {
 #ifdef KOS_NET_HAVE_RAW_ICMP
 // Real ping path using future raw ICMP socket support.
 static int real_ping(const int8_t* target, int count) {
+    // Try to resolve hostname to IP if it's not already an IP address
+    char resolved_ip[16];
+    const char* ip_to_ping = (const char*)target;
+    
+    // Check if target looks like an IP address (contains only digits and dots)
+    int is_ip = 1;
+    for (const char* p = (const char*)target; *p; ++p) {
+        if (*p != '.' && (*p < '0' || *p > '9')) {
+            is_ip = 0;
+            break;
+        }
+    }
+    
+    // If not an IP, try DNS resolution
+    if (!is_ip) {
+        kos_printf((const int8_t*)"ping: resolving %s...\n", target);
+        if (kos_dns_resolve((const char*)target, resolved_ip, sizeof(resolved_ip)) == 0) {
+            kos_printf((const int8_t*)"ping: %s resolved to %s\n", target, resolved_ip);
+            ip_to_ping = resolved_ip;
+        } else {
+            kos_printf((const int8_t*)"ping: failed to resolve %s\n", target);
+            kos_puts((const int8_t*)"Note: DNS resolution requires working network stack\n");
+            kos_puts((const int8_t*)"      Try using an IP address directly (e.g., 8.8.8.8)\n");
+            return -1;
+        }
+    }
+    
     // For now we craft a small payload; in future this could be timestamp + padding.
     const char payload[] = "KOS"; // 3 bytes
     uint16_t ident = 0x1234; // arbitrary identifier (could be process id)
-    int fd = kos_sock_open_raw_icmp((const char*)target);
+    int fd = kos_sock_open_raw_icmp(ip_to_ping);
     if (fd < 0) {
-        kos_printf((const int8_t*)"ping: unable to open raw ICMP socket for %s (fd=%d)\n", target, fd);
+        kos_printf((const int8_t*)"ping: unable to open raw ICMP socket for %s (fd=%d)\n", ip_to_ping, fd);
+        kos_puts((const int8_t*)"Note: Only IP addresses are supported (e.g., 8.8.8.8)\n");
+        kos_puts((const int8_t*)"      DNS resolution not yet implemented\n");
         return -1;
     }
     int received = 0;

@@ -41,6 +41,16 @@ namespace kos {
                         * This method deactivates the driver and releases any resources it holds.
                         */
                         virtual void Deactivate() override {}
+                        
+                        /*
+                        * @brief Send a packet using TX ring
+                        */
+                        bool tx_send(const uint8_t* data, uint32_t len);
+                        
+                        /*
+                        * @brief Poll for received packets
+                        */
+                        void rx_poll();
 
                     private:
                         /*
@@ -51,14 +61,44 @@ namespace kos {
                         bool probe_once();
                         
                         /*
+                        * @brief Initialize the E1000 hardware
+                        * @return true if initialization succeeded, false otherwise
+                        */
+                        bool init_hardware();
+                        
+                        /*
+                        * @brief Read MAC address from device
+                        */
+                        void read_mac_address();
+                        
+                        /*
                         * @brief Log the E1000 device information.
                         * This method logs relevant information about the detected E1000 device.
                         */  
                         void log_device();
+                        
+                        /*
+                        * @brief Read 32-bit value from MMIO register
+                        */
+                        uint32_t mmio_read32(uint32_t reg);
+                        
+                        /*
+                        * @brief Write 32-bit value to MMIO register
+                        */
+                        void mmio_write32(uint32_t reg, uint32_t val);
+                        
+                        /*
+                         * @brief Initialize TX descriptor ring
+                         */
+                        bool init_tx_ring();
+                        
+                        /*
+                         * @brief Initialize RX descriptor ring
+                         */
+                        bool init_rx_ring();
 
                         /*
-                        * @brief E1000 device vendor ID.
-                        * @var vendor_id
+                        * @brief E1000 vendor ID.
                         */
                         uint16_t vendor_{0};
                         
@@ -75,6 +115,12 @@ namespace kos {
                         uint32_t io_base_{0};
                         
                         /*
+                        * @brief E1000 MMIO base address (virtual)
+                        * @var mmio_base
+                        */
+                        volatile uint8_t* mmio_base_{nullptr};
+                        
+                        /*
                         * @brief E1000 device IRQ line.
                         * @var irq
                         */
@@ -85,6 +131,37 @@ namespace kos {
                         * @var found
                         */  
                         bool found_{false};
+                        
+                        // TX descriptor ring structures
+                        struct TxDesc {
+                            uint64_t addr;
+                            uint16_t length;
+                            uint8_t cso;
+                            uint8_t cmd;
+                            uint8_t status;
+                            uint8_t css;
+                            uint16_t special;
+                        } __attribute__((packed));
+                        
+                        // RX descriptor ring structures
+                        struct RxDesc {
+                            uint64_t addr;
+                            uint16_t length;
+                            uint16_t checksum;
+                            uint8_t status;
+                            uint8_t errors;
+                            uint16_t special;
+                        } __attribute__((packed));
+                        
+                        TxDesc* tx_descs_{nullptr};
+                        uint8_t** tx_buffers_{nullptr};
+                        uint32_t tx_head_{0};
+                        uint32_t tx_tail_{0};
+                        
+                        RxDesc* rx_descs_{nullptr};
+                        uint8_t** rx_buffers_{nullptr};
+                        uint32_t rx_head_{0};
+                        uint32_t rx_tail_{0};
                     };
                 }
             }

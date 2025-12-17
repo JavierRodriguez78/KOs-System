@@ -1,6 +1,7 @@
 #include "include/net/raw_icmp.hpp"
 #include "include/net/icmp.hpp"
 #include "include/common/types.hpp"
+#include <lib/libc/stdio.h>
 
 // Provide C ABI functions for ping.c to call, backed by kos::net::rawicmp_*.
 extern "C" {
@@ -62,12 +63,18 @@ int kos_sock_open_raw_icmp(const char* dst_ip) {
 }
 
 int kos_sock_send_icmp_echo(int fd, unsigned short ident, unsigned short seq, const void* payload, unsigned short len) {
+    kos_printf((const int8_t*)"[shim] kos_sock_send_icmp_echo called, fd=%d\n", fd);
     _shim_fd_entry* e = _fd_get(fd);
-    if (!e) return -1;
+    if (!e) {
+        kos_printf((const int8_t*)"[shim] Invalid fd\n");
+        return -1;
+    }
+    kos_printf((const int8_t*)"[shim] Calling rawicmp_send_echo...\n");
     bool ok = kos::net::rawicmp_send_echo(e->h, e->dst_ip_be, ident, seq,
                                           (const kos::common::uint8_t*)payload,
                                           (kos::common::uint32_t)len,
                                           1000);
+    kos_printf((const int8_t*)"[shim] rawicmp_send_echo returned: %s\n", ok ? "true" : "false");
     return ok ? (int)len : -1;
 }
 

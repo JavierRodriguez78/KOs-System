@@ -6,6 +6,8 @@
 #include "include/common/types.hpp"
 #include "include/net/ethernet.hpp"
 #include "include/net/nic.hpp"
+#include <lib/libc/stdio.h>
+#include <lib/syscalls.hpp>
 
 namespace kos {
 namespace net {
@@ -21,24 +23,41 @@ bool rawicmp_send_echo(
     const kos::common::uint8_t* payload,
     kos::common::uint32_t payload_len,
     kos::common::uint32_t /*timeout_ms*/) {
+    kos_printf((const int8_t*)"[raw_icmp] Sending echo request...\n");
+    
     // Build ICMP Echo Request payload
     kos::common::uint8_t icmp_buf[64];
     kos::common::uint32_t icmp_len = kos::net::icmp::build_echo_request(id, seq, payload, payload_len, icmp_buf, sizeof(icmp_buf));
-    if (icmp_len == 0) return false;
+    if (icmp_len == 0) {
+        kos_printf((const int8_t*)"[raw_icmp] Failed to build ICMP packet\n");
+        return false;
+    }
 
+    // Get network configuration from kernel via syscall
+    kos::sys::NetConfig netcfg{};
+    if (kos_sys_syscall_get_net_config(&netcfg) < 0) {
+        kos_printf((const int8_t*)"[raw_icmp] Failed to get network config from kernel\n");
+        return false;
+    }
+    
+    kos_printf((const int8_t*)"[raw_icmp] Source IP from kernel: %s\n", netcfg.ip);
+    
     // Build IPv4 packet around ICMP
     kos::common::uint8_t ip_buf[96];
-    kos::net::ipv4::Config cfg = kos::net::ipv4::GetConfig();
-    // Parse dotted decimal to BE uint32
+    
+    // Parse source IP to big-endian uint32
     unsigned parts[4] = {0,0,0,0}; int pi = 0; unsigned val = 0;
-    for (int i = 0; cfg.ip[i] != '\0'; ++i) {
-        char ch = cfg.ip[i];
+    for (int i = 0; netcfg.ip[i] != '\0'; ++i) {
+        char ch = netcfg.ip[i];
         if (ch >= '0' && ch <= '9') { val = val*10 + (unsigned)(ch-'0'); if (val>255) { val=0; break; } }
         else if (ch == '.') { parts[pi++] = val; val = 0; if (pi>3) break; }
         else { break; }
     }
     if (pi == 3) parts[3] = val; else { parts[0]=0; parts[1]=0; parts[2]=0; parts[3]=0; }
     kos::common::uint32_t src_ip_be = (parts[0]<<24)|(parts[1]<<16)|(parts[2]<<8)|parts[3];
+    kos_printf((const int8_t*)"[raw_icmp] Building IP packet, src=%u.%u.%u.%u\n",
+               parts[0], parts[1], parts[2], parts[3]);
+    
     kos::common::uint32_t ip_len = build_ipv4_packet(
         icmp_buf, icmp_len,
         /*src_ip_be*/src_ip_be,
@@ -46,33 +65,64 @@ bool rawicmp_send_echo(
         /*protocol*/1, /* ICMP */
         /*ttl*/64,
         ip_buf, sizeof(ip_buf));
-    if (ip_len == 0) return false;
+    if (ip_len == 0) {
+        kos_printf((const int8_t*)"[raw_icmp] ERROR: Failed to build IP packet\n");
+        return false;
+    }
+    kos_printf((const int8_t*)"[raw_icmp] IP packet built, len=%u\n", ip_len);
 
     // Resolve MAC via ARP (fallback to broadcast)
     kos::net::MacAddr mac{};
     bool have_mac = arp_resolve(kos::net::IPv4Addr{dst_ip_be}, mac);
+    kos_printf((const int8_t*)"[raw_icmp] ARP resolution: %s\n", have_mac ? "SUCCESS" : "BROADCAST");
 
     // Build Ethernet frame
     kos::common::uint8_t frame[128];
-    if (ip_len + sizeof(kos::net::EthernetHeader) > sizeof(frame)) return false;
+    if (ip_len + sizeof(kos::net::EthernetHeader) > sizeof(frame)) {
+        kos_printf((const int8_t*)"[raw_icmp] ERROR: Frame too large (%u > 128)\n",
+                   ip_len + sizeof(kos::net::EthernetHeader));
+        return false;
+    }
+    kos_printf((const int8_t*)"[raw_icmp] Building Ethernet frame...\n");
     kos::net::EthernetHeader* eth = reinterpret_cast<kos::net::EthernetHeader*>(frame);
     // Destination MAC
     for (int i = 0; i < 6; ++i) {
         eth->dst[i] = have_mac ? mac.b[i] : 0xFF;
     }
-    // Source MAC from NIC
+    
+    // Get source MAC from kernel via syscall
     kos::common::uint8_t smac[6];
-    if (kos_nic_get_mac(smac)) { for (int i = 0; i < 6; ++i) eth->src[i] = smac[i]; }
-    else { for (int i = 0; i < 6; ++i) eth->src[i] = 0x00; }
+    bool have_src_mac = (kos_sys_syscall_get_mac_address(smac) == 0);
+    
+    if (have_src_mac) {
+        for (int i = 0; i < 6; ++i) eth->src[i] = smac[i];
+        kos_printf((const int8_t*)"[raw_icmp] Source MAC from kernel: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                   smac[0], smac[1], smac[2], smac[3], smac[4], smac[5]);
+    } else {
+        kos_printf((const int8_t*)"[raw_icmp] WARNING: No MAC from kernel, using default\n");
+        smac[0] = 0x52; smac[1] = 0x54; smac[2] = 0x00;
+        smac[3] = 0x12; smac[4] = 0x34; smac[5] = 0x56;
+        for (int i = 0; i < 6; ++i) eth->src[i] = smac[i];
+    }
     eth->ethertype = kos::net::ETHERTYPE_IPV4;
 
     // Copy IP payload after header
     kos::common::uint8_t* out = frame + sizeof(kos::net::EthernetHeader);
     for (kos::common::uint32_t i = 0; i < ip_len; ++i) out[i] = ip_buf[i];
 
-    // Send via NIC
+    // Send via kernel syscall instead of direct NIC call
     kos::common::uint32_t frame_len = sizeof(kos::net::EthernetHeader) + ip_len;
-    return kos_nic_send_frame(frame, frame_len);
+    int sent_bytes = kos_sys_syscall_send_ethernet_frame(frame, frame_len);
+    bool sent = (sent_bytes > 0);
+    
+    // Debug: Print result to serial/stdout
+    if (sent) {
+        kos_printf((const int8_t*)"[raw_icmp] Frame sent via kernel, len=%u\n", frame_len);
+    } else {
+        kos_printf((const int8_t*)"[raw_icmp] Frame send FAILED (kernel returned %d)\n", sent_bytes);
+    }
+    
+    return sent;
 }
 
 // Simple storage for last received echo reply

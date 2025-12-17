@@ -17,6 +17,7 @@
 #include <console/shell.hpp>
 #include <drivers/ps2/ps2.hpp>
 #include <lib/serial.hpp>
+#include <drivers/net/e1000/e1000_poll.h>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -264,6 +265,9 @@ bool WindowManager::Start() {
 }
 
 void WindowManager::Tick() {
+    // Poll E1000 for received packets
+    e1000_rx_poll();
+    
     if (!kos::gfx::IsAvailable()) return;
     // One-time delayed logger unmute so boot logs and ServiceManager's status
     // don't clobber the initial prompt line in the GUI terminal.

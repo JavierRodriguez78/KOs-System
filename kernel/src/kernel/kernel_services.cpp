@@ -3,11 +3,13 @@
 #include <services/banner_service.hpp>
 #include <services/time_service.hpp>
 #include <services/filesystem_service.hpp>
+#include <services/network_manager.hpp>
 #include <services/window_manager.hpp>
 #include <services/service.hpp>
 #include <console/logger.hpp>
 #include <kernel/globals.hpp>
 #include <lib/elfloader.hpp>
+#include <lib/syscalls.hpp>
 #include <process/thread_manager.hpp>
 #include <application/init/service.hpp>
 
@@ -19,22 +21,27 @@ namespace kos { namespace kernel {
 
 static BannerService g_banner_service;
 static TimeService g_time_service;
+static NetworkManagerService g_network_service;
 static kos::services::WindowManager g_window_manager;
 static FilesystemService g_fs_service;
 static kos::services::InitDService g_initd_service;
 
 void RegisterAndStartServices()
 {
+    // Initialize syscall table so apps can call kernel functions
+    sys::InitializeSyscallTable();
+    
     // Register built-in services and start them based on configuration
     ServiceManager::Register(&g_fs_service);
     ServiceManager::Register(&g_banner_service);
     ServiceManager::Register(&g_time_service);
+    ServiceManager::Register(&g_network_service);
     // Register WindowManager only if graphics mode selected
     if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics) {
         ServiceManager::Register(&g_window_manager);
     }
     ServiceManager::Register(&g_initd_service);
-    Logger::Log("Kernel: services registered (FS, BANNER, TIME, WINMAN, INITD)");
+    Logger::Log("Kernel: services registered (FS, BANNER, TIME, NETWORK, WINMAN, INITD)");
     // Apply mouse poll mode before WindowManager starts
     WindowManager::SetMousePollMode(kos::g_mouse_poll_mode);
     ServiceManager::InitAndStart();

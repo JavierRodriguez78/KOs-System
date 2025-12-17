@@ -8,6 +8,7 @@
 #include <net/ipv4.hpp>
 #include <net/interface.hpp>
 #include "include/net/nic.hpp"
+#include <drivers/net/e1000/e1000_poll.h>
 
 using namespace kos::console;
 using namespace kos::memory;
@@ -158,6 +159,14 @@ bool NetworkManagerService::Start() {
     String::strncpy((int8_t*)ipcfg.mask, (const int8_t*)cfg_.mask, sizeof(ipcfg.mask)-1);
     String::strncpy((int8_t*)ipcfg.gw,   (const int8_t*)cfg_.gw,   sizeof(ipcfg.gw)-1);
     String::strncpy((int8_t*)ipcfg.dns,  (const int8_t*)cfg_.dns,  sizeof(ipcfg.dns)-1);
+    
+    // Debug: Verify what we're setting
+    Logger::Log("NetworkManager: Publishing IPv4 config to network stack:");
+    Logger::LogKV("  IP", (const char*)ipcfg.ip);
+    Logger::LogKV("  Mask", (const char*)ipcfg.mask);
+    Logger::LogKV("  Gateway", (const char*)ipcfg.gw);
+    Logger::LogKV("  DNS", (const char*)ipcfg.dns);
+    
     SetConfig(ipcfg);
 
     // Publish a minimal interface state for eth0
@@ -211,9 +220,13 @@ bool NetworkManagerService::Start() {
 NetworkManagerService* NetworkManagerService::s_self = nullptr;
 
 void NetworkManagerService::worker_trampoline() {
-    // Keep a heartbeat so it shows in top; later this can monitor link or DHCP lease
+    // Network service worker: polls RX and monitors link status
     for (;;) {
-        SchedulerAPI::SleepThread(2000);
+        // Poll E1000 RX ring for incoming packets
+        e1000_rx_poll();
+        
+        // Sleep to avoid busy-waiting
+        SchedulerAPI::SleepThread(10); // Poll every 10ms
     }
 }
 

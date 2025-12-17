@@ -48,6 +48,12 @@ list(REMOVE_ITEM KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/console/log_to_journal_c.cpp
 )
 
+# Exclude app-only syscall stubs from kernel (kernel has its own syscall implementations)
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/lib/syscall_app_stubs.cpp
+    ${KOS_SRC_DIR}/lib/syscall_stubs.cpp
+)
+
 # Arch-specific sources (not under src/)
 set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_manager.cpp
@@ -123,6 +129,17 @@ add_library(app_support_objs OBJECT
     ${KOS_ROOT_DIR}/src/libc/stdio.c
     ${KOS_ROOT_DIR}/src/libc/tokenize.c
     ${KOS_ROOT_DIR}/arch/x86/hardware/cpu/cpu.cpp
+    ${KOS_ROOT_DIR}/src/net/raw_icmp_shim.cpp
+    ${KOS_ROOT_DIR}/src/net/raw_icmp.cpp
+    ${KOS_ROOT_DIR}/src/net/icmp.cpp
+    ${KOS_ROOT_DIR}/src/net/ipv4_packet.cpp
+    ${KOS_ROOT_DIR}/src/net/ipv4.cpp
+    ${KOS_ROOT_DIR}/src/net/arp.cpp
+    ${KOS_ROOT_DIR}/src/net/arp_cache.cpp
+    ${KOS_ROOT_DIR}/src/net/nic.cpp
+    ${KOS_ROOT_DIR}/src/net/udp.cpp
+    ${KOS_ROOT_DIR}/src/net/dns.cpp
+    ${KOS_ROOT_DIR}/src/lib/syscall_app_stubs.cpp
 )
 target_include_directories(app_support_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 target_compile_options(app_support_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
