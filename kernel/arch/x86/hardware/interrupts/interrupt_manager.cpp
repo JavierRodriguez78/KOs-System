@@ -4,6 +4,7 @@
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_constants.hpp>
 #include <common/panic.hpp>
+#include <lib/serial.hpp>
 using namespace kos::common;
 using namespace kos::arch::x86::hardware::interrupts;
 
@@ -232,6 +233,19 @@ static inline void print_hex32(uint32_t v) {
 
 uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
 {
+    // Debug: log all hardware interrupts
+    if (interrupt >= hardwareInterruptOffset && interrupt < hardwareInterruptOffset + 16) {
+        kos::lib::serial_write("[INT]");
+        const char* hex = "0123456789ABCDEF";
+        kos::lib::serial_putc(hex[(interrupt >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[interrupt & 0xF]);
+        kos::lib::serial_write(" h=");
+        uintptr_t h = (uintptr_t)handlers[interrupt];
+        for (int i = 7; i >= 0; --i) {
+            kos::lib::serial_putc(hex[(h >> (i*4)) & 0xF]);
+        }
+        kos::lib::serial_write("\n");
+    }
 
     if(handlers[interrupt] !=0)
     {

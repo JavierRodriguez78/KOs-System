@@ -202,10 +202,26 @@ void ServiceManager::InitAndStart() {
 }
 
 void ServiceManager::TickAll() {
+    uint32_t now = UptimeMs();
     ServiceNode* node = s_head;
     while (node) {
         if (node->enabled) {
-            node->svc->Tick();
+            uint32_t interval = node->svc->TickIntervalMs();
+            // Services with interval=0 don't want periodic ticking
+            if (interval == 0) {
+                // Skip periodic ticking for services that don't want it
+            } else {
+                // Always tick if this is the first tick (last_tick_ms == 0) or enough time passed
+                // Also tick if UptimeMs returns 0 (timer not yet initialized)
+                bool firstTick = (node->last_tick_ms == 0);
+                bool timerNotReady = (now == 0 && node->last_tick_ms == 0);
+                bool intervalElapsed = (now >= node->last_tick_ms && (now - node->last_tick_ms) >= interval);
+                
+                if (firstTick || timerNotReady || intervalElapsed) {
+                    node->svc->Tick();
+                    node->last_tick_ms = (now > 0) ? now : 1; // Avoid 0 to mark as ticked
+                }
+            }
         }
         node = node->next;
     }
@@ -225,7 +241,8 @@ static void service_manager_thread() {
     Logger::Log("ServiceManager thread running");
     while (true) {
         ServiceManager::TickAll();
-        SchedulerAPI::SleepThread(500);
+        // Use a short sleep to allow responsive ticking (services control their own rate via TickIntervalMs)
+        SchedulerAPI::SleepThread(16); // ~60 Hz base rate, individual services throttle themselves
     }
 }
 

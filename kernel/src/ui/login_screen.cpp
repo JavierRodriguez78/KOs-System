@@ -19,6 +19,7 @@ char     LoginScreen::s_pass[32] = {0};
 int      LoginScreen::s_pass_len = 0;
 bool     LoginScreen::s_focus_user = true;
 char     LoginScreen::s_message[96] = {0};
+static uint32_t s_key_count = 0;  // Track total keys received by OnKeyDown
 
 void LoginScreen::Initialize(uint32_t windowId) {
     s_win_id = windowId;
@@ -26,6 +27,16 @@ void LoginScreen::Initialize(uint32_t windowId) {
     s_authenticated = false;
     s_user_len = 0; s_pass_len = 0; s_focus_user = true;
     s_message[0] = 0;
+    
+    // Debug log initialization
+    kos::lib::serial_write("[LOGIN] Initialize: win_id=");
+    const char* hex = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; --i) {
+        kos::lib::serial_putc(hex[(windowId >> (i * 4)) & 0xF]);
+    }
+    kos::lib::serial_write(" ready=");
+    kos::lib::serial_putc(s_ready ? '1' : '0');
+    kos::lib::serial_write("\n");
 }
 
 static inline void clampAppend(char* buf, int& len, int max, char c) {
@@ -33,21 +44,26 @@ static inline void clampAppend(char* buf, int& len, int max, char c) {
 }
 
 void LoginScreen::OnKeyDown(int8_t c) {
-    // Debug: log first few key events
-    static int key_count = 0;
-    if (key_count < 5) {
-        kos::lib::serial_write("[LOGIN] OnKeyDown: ");
-        if (c >= 32 && c <= 126) {
-            kos::lib::serial_putc((char)c);
-        } else {
-            kos::lib::serial_write("0x");
-            const char* hex = "0123456789ABCDEF";
-            kos::lib::serial_putc(hex[((uint8_t)c >> 4) & 0xF]);
-            kos::lib::serial_putc(hex[(uint8_t)c & 0xF]);
-        }
-        kos::lib::serial_write("\n");
-        ++key_count;
+    // Increment key counter for visual debugging
+    ++s_key_count;
+    
+    // Debug: log all key events to serial for troubleshooting
+    kos::lib::serial_write("[LOGIN] Key: ");
+    if (c >= 32 && c <= 126) {
+        kos::lib::serial_putc((char)c);
+    } else {
+        kos::lib::serial_write("0x");
+        const char* hex = "0123456789ABCDEF";
+        kos::lib::serial_putc(hex[((uint8_t)c >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[(uint8_t)c & 0xF]);
     }
+    kos::lib::serial_write(" ready=");
+    kos::lib::serial_putc(s_ready ? '1' : '0');
+    kos::lib::serial_write(" auth=");
+    kos::lib::serial_putc(s_authenticated ? '1' : '0');
+    kos::lib::serial_write(" focus=");
+    kos::lib::serial_putc(s_focus_user ? 'U' : 'P');
+    kos::lib::serial_write("\n");
     
     if (!s_ready || s_authenticated) return;
     if (c == '\n') {
@@ -81,9 +97,8 @@ void LoginScreen::OnKeyDown(int8_t c) {
         if (c >= 32 && c <= 126) {
             if (s_focus_user) clampAppend(s_user, s_user_len, 32, (char)c);
             else clampAppend(s_pass, s_pass_len, 32, (char)c);
-            // Typing hint to confirm key reception
-            const char typing[] = "Typing...";
-            int mi=0; for (int i=0; typing[i] && mi<95; ++i) s_message[mi++]=typing[i]; s_message[mi]=0;
+            // Clear any previous error message when user starts typing
+            s_message[0] = 0;
         }
     }
 }
@@ -105,28 +120,61 @@ void LoginScreen::Render() {
     const uint32_t th = kos::ui::TitleBarHeight();
     const uint32_t padX = 12; const uint32_t padY = 12;
     uint32_t x0 = d.x + padX; uint32_t y0 = d.y + th + padY;
-    // Clear client area
+    // Clear entire client area first
     Compositor::FillRect(d.x, d.y + th, d.w, d.h > th ? d.h - th : 0, d.bg);
     // Title
     drawText(x0, y0, "Welcome to KOS", 0xFFFFFFFFu, d.bg);
+    
     // Username label and field
-    drawText(x0, y0 + 16, "Username:", 0xFFB0B0B0u, d.bg);
-    // Draw a simple box background for input
+    drawText(x0, y0 + 18, "Username:", 0xFFB0B0B0u, d.bg);
+    // Draw input box background for username
     uint32_t ux = x0 + 80; uint32_t uy = y0 + 16; uint32_t uw = d.w - (ux - d.x) - padX; if (uw < 80) uw = 80;
-    Compositor::FillRect(ux, uy-2, uw, 12, 0xFF222225u);
-    drawText(ux + 4, uy, s_user, 0xFFFFFFFFu, 0xFF222225u);
-    // Password
-    drawText(x0, y0 + 32, "Password:", 0xFFB0B0B0u, d.bg);
-    uint32_t px = x0 + 80; uint32_t py = y0 + 32; uint32_t pw = d.w - (px - d.x) - padX; if (pw < 80) pw = 80;
-    Compositor::FillRect(px, py-2, pw, 12, 0xFF222225u);
-    // Masked pass
+    Compositor::FillRect(ux, uy, uw, 14, 0xFF222225u);
+    // Draw username text with proper vertical centering
+    drawText(ux + 4, uy + 3, s_user, 0xFFFFFFFFu, 0xFF222225u);
+    // Draw cursor if focused on username field
+    if (s_focus_user) {
+        uint32_t cursorX = ux + 4 + (uint32_t)s_user_len * 8;
+        Compositor::FillRect(cursorX, uy + 2, 2, 10, 0xFFFFFFFFu);
+    }
+    
+    // Password label and field
+    drawText(x0, y0 + 38, "Password:", 0xFFB0B0B0u, d.bg);
+    uint32_t px = x0 + 80; uint32_t py = y0 + 36; uint32_t pw = d.w - (px - d.x) - padX; if (pw < 80) pw = 80;
+    Compositor::FillRect(px, py, pw, 14, 0xFF222225u);
+    // Masked password
     char masked[32]; for (int i=0;i<s_pass_len && i<31;++i) masked[i]='*'; masked[s_pass_len<31?s_pass_len:31]=0;
-    drawText(px + 4, py, masked, 0xFFFFFFFFu, 0xFF222225u);
-    // Focus indicator
+    drawText(px + 4, py + 3, masked, 0xFFFFFFFFu, 0xFF222225u);
+    // Draw cursor if focused on password field
+    if (!s_focus_user) {
+        uint32_t cursorX = px + 4 + (uint32_t)s_pass_len * 8;
+        Compositor::FillRect(cursorX, py + 2, 2, 10, 0xFFFFFFFFu);
+    }
+    
+    // Focus indicator line under the active field
     uint32_t fx = s_focus_user ? ux : px; uint32_t fy = s_focus_user ? uy : py; uint32_t fw = s_focus_user ? uw : pw;
-    Compositor::FillRect(fx, fy+10, fw, 1, 0xFF3B82F6u);
-    // Hint or status
+    Compositor::FillRect(fx, fy + 14, fw, 2, 0xFF3B82F6u);
+    
+    // Hint text
     const char* hint = "Press Enter to login, Tab to switch";
-    drawText(x0, y0 + 52, hint, 0xFF909090u, d.bg);
-    if (s_message[0]) drawText(x0, y0 + 66, s_message, 0xFFFF6B6Bu, d.bg);
+    drawText(x0, y0 + 58, hint, 0xFF909090u, d.bg);
+    
+    // Status/error message
+    if (s_message[0]) drawText(x0, y0 + 74, s_message, 0xFFFF6B6Bu, d.bg);
+    
+    // Debug: show current input lengths and key count
+    char debugBuf[64];
+    int di = 0;
+    auto writeNum = [&](uint32_t v) {
+        if (v == 0) { debugBuf[di++] = '0'; return; }
+        char rev[12]; int ri = 0;
+        while (v && ri < 11) { rev[ri++] = '0' + (v % 10); v /= 10; }
+        while (ri--) debugBuf[di++] = rev[ri];
+    };
+    debugBuf[di++] = 'U'; debugBuf[di++] = ':'; writeNum((uint32_t)s_user_len);
+    debugBuf[di++] = ' '; debugBuf[di++] = 'P'; debugBuf[di++] = ':'; writeNum((uint32_t)s_pass_len);
+    debugBuf[di++] = ' '; debugBuf[di++] = 'F'; debugBuf[di++] = ':'; debugBuf[di++] = s_focus_user ? 'U' : 'P';
+    debugBuf[di++] = ' '; debugBuf[di++] = 'K'; debugBuf[di++] = ':'; writeNum(s_key_count);
+    debugBuf[di] = 0;
+    drawText(x0, y0 + 90, debugBuf, 0xFF606060u, d.bg);
 }

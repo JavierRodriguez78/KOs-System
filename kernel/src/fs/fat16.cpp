@@ -804,3 +804,133 @@ void FAT16::DebugInfo() {
     tty.WriteHex((uint8_t)(bpb.rootEntryCount & 0xFF)); 
     tty.PutChar('\n');
 }
+
+int32_t FAT16::EnumDir(const int8_t* path, DirEnumCallback callback, void* userdata) {
+    if (!mounted || !callback) return -1;
+    
+    bool atRoot = (!path || (path[0] == '/' && path[1] == 0));
+    uint32_t dirCluster = 0;
+    
+    if (!atRoot) {
+        // Traverse path to find directory cluster
+        const int8_t* p = (path[0] == '/') ? (path + 1) : path;
+        int8_t comp[13];
+        bool firstComponent = true;
+        
+        while (*p) {
+            int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+            comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
+            for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+            
+            uint32_t childCl = 0, childSz = 0;
+            bool isDir = false;
+            if (firstComponent) {
+                if (!FindShortNameInRoot(comp, childCl, childSz, isDir)) return -1;
+                firstComponent = false;
+            } else {
+                if (!FindShortNameInDirCluster(dirCluster, comp, childCl, childSz, isDir)) return -1;
+            }
+            if (!isDir) return -1;
+            dirCluster = childCl;
+        }
+        
+        if (firstComponent) atRoot = true;
+    }
+    
+    int32_t count = 0;
+    
+    if (atRoot) {
+        // Enumerate root directory entries
+        uint8_t sec[512];
+        for (uint32_t s = 0; s < rootDirSectors; ++s) {
+            if (!ReadSector(rootDirLBA + s, sec)) return -1;
+            for (int i = 0; i < 512; i += 32) {
+                uint8_t fb = sec[i];
+                if (fb == 0x00) goto done;
+                if (fb == 0xE5) continue;
+                uint8_t attr = sec[i + 11];
+                if (attr == 0x0F) continue;
+                
+                DirEntry entry;
+                int ni = 0;
+                for (int j = 0; j < 8; ++j) {
+                    int8_t c = (int8_t)sec[i + j];
+                    if (c == ' ') break;
+                    entry.name[ni++] = c;
+                }
+                int8_t ext[4]; int ei = 0;
+                for (int j = 0; j < 3; ++j) {
+                    int8_t c = (int8_t)sec[i + 8 + j];
+                    if (c == ' ') break;
+                    ext[ei++] = c;
+                }
+                if (!(attr & 0x10) && ei > 0) {
+                    entry.name[ni++] = '.';
+                    for (int k = 0; k < ei; ++k) entry.name[ni++] = ext[k];
+                }
+                entry.name[ni] = 0;
+                entry.size = (uint32_t)sec[i + 28] | ((uint32_t)sec[i + 29] << 8) |
+                             ((uint32_t)sec[i + 30] << 16) | ((uint32_t)sec[i + 31] << 24);
+                entry.attr = attr;
+                entry.isDir = (attr & 0x10) != 0;
+                
+                if (entry.name[0] == '.' && (entry.name[1] == 0 || (entry.name[1] == '.' && entry.name[2] == 0)))
+                    continue;
+                
+                ++count;
+                if (!callback(&entry, userdata)) goto done;
+            }
+        }
+    } else {
+        // Enumerate subdirectory cluster chain
+        uint8_t* clusterBuf = (uint8_t*)0x2E800;
+        uint32_t cl = dirCluster;
+        uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+        
+        while (cl >= 2 && cl < 0xFFF8) {
+            if (!ReadCluster(cl, clusterBuf)) return -1;
+            
+            for (uint32_t i = 0; i < bytesPerCluster; i += 32) {
+                uint8_t fb = clusterBuf[i];
+                if (fb == 0x00) goto done;
+                if (fb == 0xE5) continue;
+                uint8_t attr = clusterBuf[i + 11];
+                if (attr == 0x0F) continue;
+                
+                DirEntry entry;
+                int ni = 0;
+                for (int j = 0; j < 8; ++j) {
+                    int8_t c = (int8_t)clusterBuf[i + j];
+                    if (c == ' ') break;
+                    entry.name[ni++] = c;
+                }
+                int8_t ext[4]; int ei = 0;
+                for (int j = 0; j < 3; ++j) {
+                    int8_t c = (int8_t)clusterBuf[i + 8 + j];
+                    if (c == ' ') break;
+                    ext[ei++] = c;
+                }
+                if (!(attr & 0x10) && ei > 0) {
+                    entry.name[ni++] = '.';
+                    for (int k = 0; k < ei; ++k) entry.name[ni++] = ext[k];
+                }
+                entry.name[ni] = 0;
+                entry.size = (uint32_t)clusterBuf[i + 28] | ((uint32_t)clusterBuf[i + 29] << 8) |
+                             ((uint32_t)clusterBuf[i + 30] << 16) | ((uint32_t)clusterBuf[i + 31] << 24);
+                entry.attr = attr;
+                entry.isDir = (attr & 0x10) != 0;
+                
+                if (entry.name[0] == '.' && (entry.name[1] == 0 || (entry.name[1] == '.' && entry.name[2] == 0)))
+                    continue;
+                
+                ++count;
+                if (!callback(&entry, userdata)) goto done;
+            }
+            
+            cl = NextCluster(cl);
+        }
+    }
+    
+done:
+    return count;
+}

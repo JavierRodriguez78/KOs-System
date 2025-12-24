@@ -4,6 +4,7 @@
 #include "include/net/ethernet.hpp"
 #include "include/net/nic.hpp"
 #include "include/net/arp.hpp"
+#include <lib/syscalls.hpp>
 
 namespace kos {
 namespace net {
@@ -45,13 +46,14 @@ bool send_udp_packet(const uint8_t* payload, uint32_t payload_len,
     // Build UDP packet
     uint8_t udp_buf[1024];
     
-    // Get source IP from config
-    kos::net::ipv4::Config cfg = kos::net::ipv4::GetConfig();
+    // Get source IP from config via syscall
+    kos::sys::NetConfig syscfg;
+    if (kos_sys_syscall_get_net_config(&syscfg) < 0) return false;
     unsigned parts[4] = {0,0,0,0};
     int pi = 0;
     unsigned val = 0;
-    for (int i = 0; cfg.ip[i] != '\0'; ++i) {
-        char ch = cfg.ip[i];
+    for (int i = 0; syscfg.ip[i] != '\0'; ++i) {
+        char ch = syscfg.ip[i];
         if (ch >= '0' && ch <= '9') {
             val = val * 10 + (unsigned)(ch - '0');
             if (val > 255) return false;
@@ -88,9 +90,9 @@ bool send_udp_packet(const uint8_t* payload, uint32_t payload_len,
         eth->dst[i] = have_mac ? mac.b[i] : 0xFF;
     }
     
-    // Source MAC from NIC
+    // Source MAC from NIC via syscall
     uint8_t smac[6];
-    if (kos_nic_get_mac(smac)) {
+    if (kos_sys_syscall_get_mac_address(smac) == 0) {
         for (int i = 0; i < 6; ++i) eth->src[i] = smac[i];
     } else {
         for (int i = 0; i < 6; ++i) eth->src[i] = 0x00;
@@ -101,9 +103,9 @@ bool send_udp_packet(const uint8_t* payload, uint32_t payload_len,
     uint8_t* out = frame + sizeof(EthernetHeader);
     for (uint32_t i = 0; i < ip_len; ++i) out[i] = ip_buf[i];
     
-    // Send via NIC
+    // Send via NIC syscall
     uint32_t frame_len = sizeof(EthernetHeader) + ip_len;
-    return kos_nic_send_frame(frame, frame_len);
+    return kos_sys_syscall_send_ethernet_frame(frame, frame_len) > 0;
 }
 
 } // namespace net

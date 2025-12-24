@@ -70,6 +70,7 @@ namespace kos {
         public:
             virtual int32_t ReadFile(const int8_t* path, uint8_t* outBuf, uint32_t maxLen) override;
             virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;
+            virtual int32_t EnumDir(const int8_t* path, DirEnumCallback callback, void* userdata) override;
     };
 
 }}

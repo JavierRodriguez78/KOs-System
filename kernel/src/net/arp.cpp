@@ -3,6 +3,7 @@
 #include "include/net/ethernet.hpp"
 #include "include/net/nic.hpp"
 #include "include/net/ipv4.hpp"
+#include <lib/syscalls.hpp>
 
 namespace kos {
 namespace net {
@@ -57,7 +58,7 @@ void arp_send_request(const IPv4Addr& ip) {
     kos::net::EthernetHeader* eth = reinterpret_cast<kos::net::EthernetHeader*>(frame);
     for (int i = 0; i < 6; ++i) { eth->dst[i] = 0xFF; }
     kos::common::uint8_t mac[6];
-    if (kos_nic_get_mac(mac)) { for (int i = 0; i < 6; ++i) eth->src[i] = mac[i]; }
+    if (kos_sys_syscall_get_mac_address(mac) == 0) { for (int i = 0; i < 6; ++i) eth->src[i] = mac[i]; }
     else { for (int i = 0; i < 6; ++i) eth->src[i] = 0x00; }
     eth->ethertype = kos::net::ETHERTYPE_ARP;
     ArpPacket* arp = reinterpret_cast<ArpPacket*>(frame + sizeof(kos::net::EthernetHeader));
@@ -67,17 +68,18 @@ void arp_send_request(const IPv4Addr& ip) {
     arp->proto_size = 4;
     arp->op = 1; // request
     // Sender MAC/IP
-    if (kos_nic_get_mac(mac)) { for (int i = 0; i < 6; ++i) arp->sha[i] = mac[i]; }
+    if (kos_sys_syscall_get_mac_address(mac) == 0) { for (int i = 0; i < 6; ++i) arp->sha[i] = mac[i]; }
     else { for (int i = 0; i < 6; ++i) arp->sha[i] = 0x00; }
     for (int i = 0; i < 6; ++i) arp->tha[i] = 0x00;
     kos::common::uint8_t ipb[4]; ip_be_to_bytes(ip.addr, ipb);
-    // sip=0.0.0.0, tip=target
-    kos::net::ipv4::Config cfg = kos::net::ipv4::GetConfig();
-    kos::common::uint32_t sip_be = parse_ipv4_be_str(cfg.ip);
+    // sip=source IP, tip=target
+    kos::sys::NetConfig syscfg;
+    kos_sys_syscall_get_net_config(&syscfg);
+    kos::common::uint32_t sip_be = parse_ipv4_be_str(syscfg.ip);
     kos::common::uint8_t sipb[4]; ip_be_to_bytes(sip_be, sipb);
     for (int i = 0; i < 4; ++i) arp->sip[i] = sipb[i];
     for (int i = 0; i < 4; ++i) arp->tip[i] = ipb[i];
-    (void)kos_nic_send_frame(frame, sizeof(frame));
+    (void)kos_sys_syscall_send_ethernet_frame(frame, sizeof(frame));
 }
 
 bool arp_ingest(const kos::common::uint8_t* frame, kos::common::uint32_t len) {

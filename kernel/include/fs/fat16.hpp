@@ -34,6 +34,7 @@ namespace kos {
                 // Append-oriented write: appends 'len' bytes to file or creates it if missing.
                 virtual int32_t WriteFile(const int8_t* path, const uint8_t* data, uint32_t len) override;
                 virtual int32_t Mkdir(const int8_t* path, int32_t parents) override;
+                virtual int32_t EnumDir(const int8_t* path, DirEnumCallback callback, void* userdata) override;
 
             private:
                 BlockDevice* dev;

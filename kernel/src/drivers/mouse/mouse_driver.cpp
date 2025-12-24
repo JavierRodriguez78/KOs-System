@@ -196,7 +196,11 @@ void MouseDriver::PollOnce() {
     auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
     uint8_t status = ps2.ReadStatus();
     if ((status & MOUSE_STATUS_OUTPUT_BUFFER) == 0) return; // nothing
-    // Do not require AUX bit: some emulators/hosts may not set it reliably
+    
+    // Check AUX bit (bit 5) - if set, data is from mouse; if clear, data is from keyboard
+    // Only read if data is from mouse (AUX bit set)
+    if ((status & MOUSE_STATUS_AUX) == 0) return; // data is for keyboard, not mouse
+    
     uint8_t b = ps2.ReadData();
     static bool s_mouse_poll_tty = false;
     pbuf[poff] = b;

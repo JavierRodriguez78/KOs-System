@@ -51,6 +51,7 @@ namespace kos{
         extern "C" void app_cat() __attribute__((weak));
         extern "C" void app_reboot() __attribute__((weak));
         extern "C" void app_ifconfig() __attribute__((weak));
+        extern "C" void app_tree() __attribute__((weak));
 
 
         void CommandRegistry::Init() {
@@ -66,6 +67,7 @@ namespace kos{
             if (app_cat)     Register((const int8_t*)"cat",    app_cat);
             if (app_reboot)  Register((const int8_t*)"reboot", app_reboot);
             if (app_ifconfig)Register((const int8_t*)"ifconfig", app_ifconfig);
+            if (app_tree)    Register((const int8_t*)"tree",   app_tree);
             // Add more here as they are exposed via app.hpp
         }
 

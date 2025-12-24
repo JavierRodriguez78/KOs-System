@@ -11,13 +11,16 @@
 #include <drivers/usb/usb_core.hpp>
 #include <arch/x86/hardware/pci/peripheral_component_intercontroller.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
+#include <arch/x86/hardware/port/port8bit.hpp>
 #include <console/logger.hpp>
 #include <ui/input.hpp>
 #include <process/scheduler.hpp>
 #include <kernel/globals.hpp>
+#include <lib/serial.hpp>
 
 using namespace kos;
 using namespace kos::process;
+using namespace kos::arch::x86::hardware::port;
 using namespace kos::drivers::keyboard;
 using namespace kos::drivers::net;
 using namespace kos::drivers::mouse;
@@ -90,6 +93,95 @@ namespace kos {
             // Enable preemptive scheduling now that interrupts are active
             g_scheduler->EnablePreemption();
             Logger::LogStatus("Preemptive scheduling enabled", true);
+
+            // Verify and fix keyboard after all initialization
+            // First MASK IRQ1 in PIC to prevent any keyboard interrupts during our work
+            Logger::Log("Verifying keyboard setup...");
+            Port8Bit picMasterData(0x21);
+            uint8_t picMask = picMasterData.Read();
+            picMasterData.Write(picMask | 0x02);  // Mask IRQ1
+            kos::lib::serial_write("[PIC] Masked IRQ1 for setup\n");
+            
+            auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+            const char* hex = "0123456789ABCDEF";
+            
+            // Flush any stale data first
+            int flushed = 0;
+            while (ps2.ReadStatus() & 0x01) { (void)ps2.ReadData(); flushed++; }
+            if (flushed) {
+                kos::lib::serial_write("[PS2] Flushed stale: ");
+                kos::lib::serial_putc('0' + flushed);
+                kos::lib::serial_write("\n");
+            }
+            
+            // Check PS/2 controller config
+            ps2.WaitWrite(); ps2.WriteCommand(0x20);
+            ps2.WaitRead();
+            uint8_t cfg = ps2.ReadData();
+            kos::lib::serial_write("[PS2] Config: 0x");
+            kos::lib::serial_putc(hex[(cfg >> 4) & 0xF]);
+            kos::lib::serial_putc(hex[cfg & 0xF]);
+            kos::lib::serial_write("\n");
+            
+            // Ensure keyboard IRQ enabled (bit 0) and port enabled (bit 4 clear)
+            bool needFix = !(cfg & 0x01) || (cfg & 0x10);
+            if (needFix) {
+                cfg |= 0x01;   // Enable keyboard IRQ
+                cfg &= ~0x10;  // Enable keyboard port clock
+                ps2.WaitWrite(); ps2.WriteCommand(0x60);
+                ps2.WaitWrite(); ps2.WriteData(cfg);
+                kos::lib::serial_write("[PS2] Fixed config\n");
+            }
+            
+            // Ensure first PS/2 port is enabled
+            ps2.WaitWrite(); ps2.WriteCommand(0xAE);
+            
+            // Send keyboard reset (0xFF)
+            kos::lib::serial_write("[KBD] Sending reset...\n");
+            ps2.WaitWrite(); ps2.WriteData(0xFF);
+            
+            // Wait for 0xFA ACK then 0xAA self-test
+            bool gotAA = false;
+            for (int i = 0; i < 1000000 && !gotAA; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t resp = ps2.ReadData();
+                    kos::lib::serial_write("[KBD] resp: 0x");
+                    kos::lib::serial_putc(hex[(resp >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[resp & 0xF]);
+                    kos::lib::serial_write("\n");
+                    if (resp == 0xAA) gotAA = true;
+                }
+            }
+            
+            // Send enable scanning (0xF4)
+            kos::lib::serial_write("[KBD] Enabling scanning...\n");
+            ps2.WaitWrite(); ps2.WriteData(0xF4);
+            
+            // Wait for ACK
+            for (int i = 0; i < 100000; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t ack = ps2.ReadData();
+                    kos::lib::serial_write("[KBD] Enable resp: 0x");
+                    kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[ack & 0xF]);
+                    kos::lib::serial_write("\n");
+                    break;
+                }
+            }
+            
+            // Flush any remaining data before unmasking
+            while (ps2.ReadStatus() & 0x01) { (void)ps2.ReadData(); }
+            
+            // Now unmask IRQ1 - keyboard should be ready
+            picMask = picMasterData.Read();
+            picMask &= ~0x02;  // Unmask IRQ1
+            picMasterData.Write(picMask);
+            kos::lib::serial_write("[PIC] Unmasked IRQ1, mask=0x");
+            kos::lib::serial_putc(hex[(picMask >> 4) & 0xF]);
+            kos::lib::serial_putc(hex[picMask & 0xF]);
+            kos::lib::serial_write("\n");
+            
+            Logger::LogStatus("Keyboard verification complete", true);
         }
     }
  }

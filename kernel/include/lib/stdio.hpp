@@ -74,6 +74,8 @@ namespace kos {
             // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
             // Kept as opaque pointer signature for C/C++ compatibility with ApiTableC.
             int32_t (*net_list_sockets)(void* out, int32_t max, int32_t want_tcp, int32_t want_udp, int32_t listening_only);
+            // Enumerate directory entries. Calls callback for each entry. Returns count or <0 on error.
+            int32_t (*enumdir)(const int8_t* path, int32_t (*callback)(const void*, void*), void* userdata);
         };
 
         /*

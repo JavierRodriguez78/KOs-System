@@ -985,3 +985,81 @@ int32_t FAT32::Rename(const int8_t* src, const int8_t* dst) {
     uint8_t* dirBuf = (uint8_t*)0x3D000; if (!ReadCluster(entryCl, dirBuf)) return -1; dirBuf[entryOff] = 0xE5; if (!WriteCluster(entryCl, dirBuf)) return -1;
     return 0;
 }
+
+int32_t FAT32::EnumDir(const int8_t* path, DirEnumCallback callback, void* userdata) {
+    if (!mountedFlag || !callback) return -1;
+    
+    // Resolve directory cluster
+    uint32_t dirCl = bpb.rootCluster;
+    if (path && !(path[0] == '/' && path[1] == 0)) {
+        const int8_t* p = (path[0] == '/') ? (path + 1) : path;
+        int8_t comp[13];
+        while (*p) {
+            int ci = 0; while (*p && *p != '/' && ci < 12) comp[ci++] = *p++;
+            comp[ci] = 0; if (*p == '/') ++p; if (ci == 0) continue;
+            for (int i = 0; comp[i]; ++i) if (comp[i] >= 'a' && comp[i] <= 'z') comp[i] -= ('a' - 'A');
+            uint32_t childCl = 0, childSz = 0;
+            if (!FindShortNameInDirCluster(dirCl, comp, childCl, childSz)) return -1;
+            dirCl = childCl;
+        }
+    }
+    
+    uint8_t* clusterBuf = (uint8_t*)0x22000;
+    int32_t count = 0;
+    uint32_t cl = dirCl;
+    
+    while (cl >= 2 && cl < 0x0FFFFFF8) {
+        if (!ReadCluster(cl, clusterBuf)) return -1;
+        uint32_t bytesPerCluster = bpb.bytesPerSector * bpb.sectorsPerCluster;
+        
+        for (uint32_t i = 0; i < bytesPerCluster; i += 32) {
+            uint8_t fb = clusterBuf[i];
+            if (fb == 0x00) goto done; // End of entries
+            if (fb == 0xE5) continue;  // Deleted
+            uint8_t attr = clusterBuf[i + 11];
+            if (attr == 0x0F) continue; // LFN entry
+            
+            DirEntry entry;
+            // Build short name
+            int ni = 0;
+            for (int j = 0; j < 8; ++j) {
+                int8_t c = (int8_t)clusterBuf[i + j];
+                if (c == ' ') break;
+                entry.name[ni++] = c;
+            }
+            // Check for extension
+            int8_t ext[4]; int ei = 0;
+            for (int j = 0; j < 3; ++j) {
+                int8_t c = (int8_t)clusterBuf[i + 8 + j];
+                if (c == ' ') break;
+                ext[ei++] = c;
+            }
+            // Add extension if not a directory
+            if (!(attr & 0x10) && ei > 0) {
+                entry.name[ni++] = '.';
+                for (int k = 0; k < ei; ++k) entry.name[ni++] = ext[k];
+            }
+            entry.name[ni] = 0;
+            
+            entry.size = (uint32_t)clusterBuf[i + 28] | ((uint32_t)clusterBuf[i + 29] << 8) |
+                         ((uint32_t)clusterBuf[i + 30] << 16) | ((uint32_t)clusterBuf[i + 31] << 24);
+            entry.attr = attr;
+            entry.isDir = (attr & 0x10) != 0;
+            
+            // Skip . and .. entries
+            if (entry.name[0] == '.' && (entry.name[1] == 0 || (entry.name[1] == '.' && entry.name[2] == 0))) {
+                continue;
+            }
+            
+            ++count;
+            if (!callback(&entry, userdata)) goto done;
+        }
+        
+        uint32_t next = NextCluster(cl);
+        if (next >= 0x0FFFFFF8 || next == 0) break;
+        cl = next;
+    }
+    
+done:
+    return count;
+}

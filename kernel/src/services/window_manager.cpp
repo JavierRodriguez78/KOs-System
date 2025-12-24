@@ -38,10 +38,24 @@ static uint32_t s_prev_mouse_pk = 0;    // track mouse packet counter between fr
 static int s_mouse_evt_flash = 0;       // frames to flash event indicator when new packets arrive
 static uint32_t s_prev_kbd_ev = 0;      // track keyboard event counter
 static int s_kbd_evt_flash = 0;         // frames to flash indicator when keys arrive
+static uint32_t s_login_handler_calls = 0; // debug: count calls to login handler
 // File-scope keyboard handler that forwards keys to LoginScreen
 class LoginKeyboardHandler : public kos::drivers::keyboard::KeyboardEventHandler {
 public:
-    virtual void OnKeyDown(int8_t c) override { kos::ui::LoginScreen::OnKeyDown(c); }
+    virtual void OnKeyDown(int8_t c) override { 
+        ++s_login_handler_calls;
+        kos::lib::serial_write("[LoginHandler] OnKeyDown called, char=");
+        if (c >= 32 && c <= 126) {
+            kos::lib::serial_putc((char)c);
+        } else {
+            kos::lib::serial_write("0x");
+            const char* hex = "0123456789ABCDEF";
+            kos::lib::serial_putc(hex[((uint8_t)c >> 4) & 0xF]);
+            kos::lib::serial_putc(hex[(uint8_t)c & 0xF]);
+        }
+        kos::lib::serial_write("\n");
+        kos::ui::LoginScreen::OnKeyDown(c); 
+    }
     virtual void OnKeyUp(int8_t) override {}
 };
 static LoginKeyboardHandler s_login_handler;
@@ -182,9 +196,46 @@ bool WindowManager::Start() {
             kos::ui::BringToFront(s_login_win_id);
             kos::ui::SetFocusedWindow(s_login_win_id);
             kos::ui::LoginScreen::Initialize(s_login_win_id);
-            // Swap keyboard handler to capture login input
+            // Swap keyboard handler to capture login input - use global override for reliability
+            kos::lib::serial_write("[WM] Setting login handler via global override\n");
+            ::kos::g_keyboard_handler_override = &s_login_handler;
+            
+            // Also try to set via driver if available
             if (::kos::g_keyboard_driver_ptr) {
+                kos::lib::serial_write("[WM] Also setting via driver. Driver ptr=");
+                const char* hex = "0123456789ABCDEF";
+                uintptr_t drvAddr = (uintptr_t)::kos::g_keyboard_driver_ptr;
+                for (int i = 7; i >= 0; --i) {
+                    kos::lib::serial_putc(hex[(drvAddr >> (i*4)) & 0xF]);
+                }
+                kos::lib::serial_write(" Handler ptr=");
+                uintptr_t hndAddr = (uintptr_t)&s_login_handler;
+                for (int i = 7; i >= 0; --i) {
+                    kos::lib::serial_putc(hex[(hndAddr >> (i*4)) & 0xF]);
+                }
+                kos::lib::serial_write("\n");
                 ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
+                
+                // Re-enable keyboard scanning to ensure it works after all initialization
+                auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+                // Flush any stale data
+                while (ps2.ReadStatus() & 0x01) { (void)ps2.ReadData(); }
+                // Send enable scanning command (0xF4)
+                ps2.WaitWrite();
+                ps2.WriteData(0xF4);
+                // Wait for ACK
+                for (int i = 0; i < 10000; ++i) {
+                    if (ps2.ReadStatus() & 0x01) {
+                        uint8_t ack = ps2.ReadData();
+                        kos::lib::serial_write("[WM] Keyboard re-enable ACK: 0x");
+                        kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                        kos::lib::serial_putc(hex[ack & 0xF]);
+                        kos::lib::serial_write("\n");
+                        break;
+                    }
+                }
+            } else {
+                kos::lib::serial_write("[WM] ERROR: g_keyboard_driver_ptr is NULL!\n");
             }
         }
     }
@@ -253,6 +304,9 @@ bool WindowManager::Start() {
         if (::kos::g_kbd_events != s_prev_kbd_ev) { s_kbd_evt_flash = 15; s_prev_kbd_ev = ::kos::g_kbd_events; }
         else if (s_kbd_evt_flash > 0) { --s_kbd_evt_flash; }
         if (s_kbd_evt_flash > 0) { writeStr2("[KEY]"); }
+        // Show login handler call count for debugging
+        writeStr2(" L:"); 
+        { uint32_t lc = s_login_handler_calls; char tmp[16]; int n=0; if(lc==0){tmp[n++]='0';} else { char r[16]; int ri=0; while(lc&&ri<16){ r[ri++]=char('0'+(lc%10)); lc/=10;} while(ri) tmp[n++]=r[--ri]; } for(int i=0;i<n;++i) buf2[bi++]=tmp[i]; }
         buf2[bi]=0;
         for (int i=0; buf2[i]; ++i) {
             char ch = buf2[i]; if (ch < 32 || ch > 127) ch='?';
@@ -265,6 +319,16 @@ bool WindowManager::Start() {
 }
 
 void WindowManager::Tick() {
+    // Debug: log that Tick is being called (first few times only)
+    static uint32_t s_tick_entry_count = 0;
+    if (s_tick_entry_count < 3) {
+        kos::lib::serial_write("[WM] Tick() called #");
+        char buf[12]; int i = 0; uint32_t tc = ++s_tick_entry_count;
+        while (tc && i < 11) { buf[i++] = '0' + (tc % 10); tc /= 10; }
+        while (i--) kos::lib::serial_putc(buf[i]);
+        kos::lib::serial_write("\n");
+    }
+    
     // Poll E1000 for received packets
     e1000_rx_poll();
     
@@ -314,13 +378,27 @@ void WindowManager::Tick() {
         kos::ui::UpdateInteractions();
     }
     // Ensure login keyboard handler stays active while login is shown
-    if (s_login_active && ::kos::g_keyboard_driver_ptr) {
+    // Set handler EVERY tick to ensure it stays correct even if something else changes it
+    if (s_login_active) {
+        // Always set the global override - this is the most reliable method
+        ::kos::g_keyboard_handler_override = &s_login_handler;
+        
         static bool logged_handler_set = false;
-        if (!logged_handler_set) {
-            kos::console::Logger::Log("WM: Setting login keyboard handler");
-            logged_handler_set = true;
+        if (::kos::g_keyboard_driver_ptr) {
+            if (!logged_handler_set) {
+                kos::console::Logger::Log("WM: Setting login keyboard handler");
+                kos::lib::serial_write("[WM-Tick] Setting login handler now\n");
+                logged_handler_set = true;
+            }
+            ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
+        } else {
+            // Driver pointer is NULL - global override will still work
+            static bool logged_null = false;
+            if (!logged_null) {
+                kos::lib::serial_write("[WM-Tick] WARNING: g_keyboard_driver_ptr is NULL, using global override only\n");
+                logged_null = true;
+            }
         }
-        ::kos::g_keyboard_driver_ptr->SetHandler(&s_login_handler);
     }
     // Consume a few UI events for diagnostics (kept lightweight to avoid spam)
     {
@@ -367,14 +445,33 @@ void WindowManager::Tick() {
         }
     }
     // Also poll keyboard here as an extra safety net in graphics mode
+    // Drain all buffered scancodes (up to a limit to avoid infinite loops)
     if (::kos::g_keyboard_driver_ptr) {
-        ::kos::g_keyboard_driver_ptr->PollOnce();
+        for (int i = 0; i < 16 && ::kos::g_keyboard_driver_ptr->PollOnce(); ++i) {
+            // PollOnce returns true if a key was processed; keep draining
+        }
     }
     
     // Debug: periodically log input status
     static uint32_t tick_count = 0;
     if ((++tick_count % 300) == 0) { // Every ~10 seconds at 30Hz
-        kos::lib::serial_write("[WM-Tick] kbd_src=");
+        const char* hex = "0123456789ABCDEF";
+        
+        // Log PS/2 controller status
+        auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
+        uint8_t ps2_status = ps2.ReadStatus();
+        kos::lib::serial_write("[WM-Tick] PS2_status=0x");
+        kos::lib::serial_putc(hex[(ps2_status >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[ps2_status & 0xF]);
+        
+        // Log PIC master mask (port 0x21)
+        uint8_t pic_mask;
+        asm volatile("inb $0x21, %0" : "=a"(pic_mask));
+        kos::lib::serial_write(" PIC_mask=0x");
+        kos::lib::serial_putc(hex[(pic_mask >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[pic_mask & 0xF]);
+        
+        kos::lib::serial_write(" kbd_src=");
         kos::lib::serial_putc('0' + ::kos::g_kbd_input_source);
         kos::lib::serial_write(" kbd_events=");
         // Simple decimal output
@@ -401,7 +498,8 @@ void WindowManager::Tick() {
             // Close login window
             if (s_login_win_id) { kos::ui::CloseWindow(s_login_win_id); s_login_win_id = 0; }
             s_login_active = false;
-            // Restore keyboard handler to shell
+            // Restore keyboard handler to shell - clear global override first
+            ::kos::g_keyboard_handler_override = nullptr;
             static kos::console::ShellKeyboardHandler s_shell_handler;
             if (::kos::g_keyboard_driver_ptr) {
                 ::kos::g_keyboard_driver_ptr->SetHandler(&s_shell_handler);

@@ -218,6 +218,36 @@ extern "C" int32_t sys_net_list_sockets(void* out, int32_t max, int32_t want_tcp
     return w;
 }
 
+// Directory enumeration syscall - wraps filesystem EnumDir
+// The callback signature differs between C app (returns int) and kernel (returns bool)
+// We adapt it here
+
+// Static data for enumdir callback adapter
+struct EnumdirCallbackData {
+    int32_t (*user_cb)(const void*, void*);
+    void* user_data;
+};
+
+static bool enumdir_adapter(const kos::fs::DirEntry* entry, void* data) {
+    EnumdirCallbackData* cd = reinterpret_cast<EnumdirCallbackData*>(data);
+    // Call user callback with entry as void*, returns 0 to stop, non-zero to continue
+    int32_t result = cd->user_cb(reinterpret_cast<const void*>(entry), cd->user_data);
+    return result != 0;
+}
+
+extern "C" int32_t sys_enumdir(const int8_t* path, int32_t (*callback)(const void*, void*), void* userdata) {
+    if (!kos::fs::g_fs_ptr || !callback) return -1;
+    
+    // Resolve path
+    int8_t absBuf[160];
+    const int8_t* cwd = table()->cwd ? table()->cwd : (const int8_t*)"/";
+    const int8_t* use = path && path[0] ? path : cwd;
+    normalize_abs_path(use, cwd, absBuf, (int)sizeof(absBuf));
+    
+    EnumdirCallbackData cbData = { callback, userdata };
+    return kos::fs::g_fs_ptr->EnumDir(absBuf, enumdir_adapter, &cbData);
+}
+
 // --- Simple argument storage for current process/app ---
 static int32_t g_argc = 0;
 static const int8_t* g_argv_vec[16];
@@ -410,4 +440,6 @@ extern "C" void InitSysApi() {
     t->rename = &sys_rename;
     // Networking: socket enumeration (stub)
     t->net_list_sockets = &sys_net_list_sockets;
+    // Directory enumeration
+    t->enumdir = &sys_enumdir;
 }

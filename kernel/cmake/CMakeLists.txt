@@ -201,6 +201,7 @@ add_app(reboot)
 add_app(date)
 add_app(shutdown)
 add_app(mv)
+add_app(tree)
 add_app_cpp(lscpu)
 add_app_cpp(kcursers_demo)
 add_app_cpp(ifconfig)
@@ -210,7 +211,7 @@ add_app(ss)
 add_app(sshd)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf lscpu.elf kcursers_demo.elf ifconfig.elf ss.elf sshd.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf tree.elf lscpu.elf kcursers_demo.elf ifconfig.elf ss.elf sshd.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
@@ -247,34 +248,38 @@ add_custom_command(TARGET iso POST_BUILD
 # -----------------------
 # Define disk image path early so qemu targets can reference it
 set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
+
+# Network configuration for E1000 NIC with user-mode networking (NAT)
+set(QEMU_NET_OPTS -netdev user,id=net0 -device e1000,netdev=net0)
+
 add_custom_target(qemu
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS}
     DEPENDS iso diskimg
     USES_TERMINAL
 )
 
 add_custom_target(qemu-vvfat
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS}
     DEPENDS iso
     USES_TERMINAL
 )
 
 # Read-only QEMU run (avoids write-lock on disk.img). Good for quick boot/log checks.
 add_custom_target(qemu-ro
-    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS}
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(debug
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS}
     DEPENDS iso
     USES_TERMINAL
 )
 
 add_custom_target(gdb
     COMMAND ${CMAKE_COMMAND} -E echo ">>> Start Qemu in Debug && GDB mode..."
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio &
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=fat:rw:${KOS_ROOT_DIR}/disk,format=raw,if=ide,index=0 -s -S -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS} &
     COMMAND sleep 1
     COMMAND gdb -x ${KOS_ROOT_DIR}/.gdbinit
     DEPENDS iso
@@ -285,14 +290,14 @@ add_custom_target(gdb
 # - qemu-gtk: Uses GTK display backend and std VGA; good on WSL/Wayland
 # - qemu-usb: Same as gtk but enables USB keyboard/mouse (your OS needs USB stack)
 add_custom_target(qemu-gtk
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log ${QEMU_NET_OPTS}
     DEPENDS iso diskimg
     USES_TERMINAL
     COMMAND ${CMAKE_COMMAND} -E echo "Serial output saved to: ${CMAKE_BINARY_DIR}/serial.log"
 )
 
 add_custom_target(qemu-gtk-view
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log &
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial file:${CMAKE_BINARY_DIR}/serial.log ${QEMU_NET_OPTS} &
     COMMAND sleep 2
     COMMAND tail -f ${CMAKE_BINARY_DIR}/serial.log
     DEPENDS iso diskimg
@@ -300,7 +305,7 @@ add_custom_target(qemu-gtk-view
 )
 
 add_custom_target(qemu-usb
-    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=on -device usb-kbd -device usb-mouse -serial file:${CMAKE_BINARY_DIR}/serial.log
+    COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=on -device usb-kbd -device usb-mouse -serial file:${CMAKE_BINARY_DIR}/serial.log ${QEMU_NET_OPTS}
     DEPENDS iso diskimg
     USES_TERMINAL
     COMMAND ${CMAKE_COMMAND} -E echo "Serial output saved to: ${CMAKE_BINARY_DIR}/serial.log"

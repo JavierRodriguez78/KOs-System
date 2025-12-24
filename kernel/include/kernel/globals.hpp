@@ -3,6 +3,7 @@
 #include <console/shell.hpp>
 #include <fs/filesystem.hpp>
 #include <kernel/boot_options.hpp>
+#include <drivers/keyboard/keyboard_handler.hpp>
 
 namespace kos {
     namespace fs { 
@@ -18,6 +19,9 @@ namespace kos {
         } 
     }
     extern drivers::keyboard::KeyboardDriver* g_keyboard_driver_ptr;
+    // Global keyboard handler override - when set, this handler receives all keyboard events
+    // This bypasses the keyboard driver's internal handler member
+    extern drivers::keyboard::KeyboardEventHandler* g_keyboard_handler_override;
     // Pointer to a MouseEventHandler used by MouseDriver; defined in kernel_globals.cpp
     extern kos::drivers::mouse::MouseEventHandler* g_mouse_ui_handler_ptr;
     extern kos::console::Shell* g_shell;

@@ -6,6 +6,8 @@
 #include "include/net/nic.hpp"
 #include "include/net/arp.hpp"
 #include <lib/string.hpp>
+#include <lib/syscalls.hpp>
+#include <drivers/net/e1000/e1000_poll.h>
 
 namespace kos {
 namespace net {
@@ -200,15 +202,16 @@ bool dns_resolve(const char* hostname, uint32_t dns_server_ip,
                  uint32_t timeout_ms, uint32_t* ip_out) {
     if (!hostname || !ip_out) return false;
     
-    // Get DNS server from config if not provided
+    // Get DNS server from config if not provided via syscall
     if (dns_server_ip == 0) {
-        kos::net::ipv4::Config cfg = kos::net::ipv4::GetConfig();
+        kos::sys::NetConfig syscfg;
+        if (kos_sys_syscall_get_net_config(&syscfg) < 0) return false;
         // Parse DNS server IP from config
         unsigned parts[4] = {0,0,0,0};
         int pi = 0;
         unsigned val = 0;
-        for (int i = 0; cfg.dns[i] != '\0'; ++i) {
-            char ch = cfg.dns[i];
+        for (int i = 0; syscfg.dns[i] != '\0'; ++i) {
+            char ch = syscfg.dns[i];
             if (ch >= '0' && ch <= '9') {
                 val = val * 10 + (unsigned)(ch - '0');
                 if (val > 255) return false;
@@ -242,6 +245,8 @@ bool dns_resolve(const char* hostname, uint32_t dns_server_ip,
     // Wait for response (simple polling for now)
     // TODO: Implement proper timeout mechanism
     for (uint32_t i = 0; i < timeout_ms && !g_dns_response_ready; ++i) {
+        // Poll NIC for incoming packets
+        e1000_rx_poll();
         // Simple delay loop (very rough, ~1ms per iteration)
         for (volatile int j = 0; j < 10000; ++j);
     }
@@ -256,59 +261,5 @@ bool dns_resolve(const char* hostname, uint32_t dns_server_ip,
 } // namespace net
 } // namespace kos
 
-// C API wrapper for ping and other applications
-extern "C" {
-    
-int kos_dns_resolve(const char* hostname, char* ip_str_out, int ip_str_size) {
-    if (!hostname || !ip_str_out || ip_str_size < 16) return -1;
-    
-    uint32_t ip_be = 0;
-    bool resolved = kos::net::dns::dns_resolve(hostname, 0, 5000, &ip_be);
-    
-    if (!resolved) return -1;
-    
-    // Convert IP to dotted decimal string
-    unsigned char b1 = (ip_be >> 24) & 0xFF;
-    unsigned char b2 = (ip_be >> 16) & 0xFF;
-    unsigned char b3 = (ip_be >> 8) & 0xFF;
-    unsigned char b4 = ip_be & 0xFF;
-    
-    int written = 0;
-    // Simple snprintf alternative
-    char buf[16];
-    int pos = 0;
-    
-    // Convert each byte to string
-    auto itoa = [](unsigned char val, char* b) -> int {
-        if (val == 0) { b[0] = '0'; return 1; }
-        int len = 0;
-        char tmp[4];
-        while (val > 0) {
-            tmp[len++] = '0' + (val % 10);
-            val /= 10;
-        }
-        for (int i = 0; i < len; ++i) {
-            b[i] = tmp[len - 1 - i];
-        }
-        return len;
-    };
-    
-    pos += itoa(b1, buf + pos);
-    buf[pos++] = '.';
-    pos += itoa(b2, buf + pos);
-    buf[pos++] = '.';
-    pos += itoa(b3, buf + pos);
-    buf[pos++] = '.';
-    pos += itoa(b4, buf + pos);
-    buf[pos] = '\0';
-    
-    // Copy to output
-    for (int i = 0; i <= pos && i < ip_str_size - 1; ++i) {
-        ip_str_out[i] = buf[i];
-    }
-    ip_str_out[pos < ip_str_size ? pos : ip_str_size - 1] = '\0';
-    
-    return 0;
-}
-
-}
+// Note: kos_dns_resolve C API is now provided by syscall_app_stubs.cpp
+// to ensure it runs in kernel context with access to kernel's network state

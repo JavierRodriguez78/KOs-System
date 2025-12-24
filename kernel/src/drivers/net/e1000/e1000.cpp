@@ -250,6 +250,8 @@ void E1000Driver::rx_poll() {
         // Check if descriptor has data (DD bit)
         if (!(desc->status & 1)) break;
         
+        Logger::Log("e1000: RX packet received!");
+        
         // Process received packet
         if (desc->length > 0 && desc->errors == 0) {
             e1000_submit_rx_frame(rx_buffers_[head], desc->length);

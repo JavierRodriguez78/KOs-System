@@ -53,6 +53,8 @@ typedef struct ApiTableC {
     // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
     // Signature: out points to an array of kos_sockinfo_t; fields are const char* and integers.
     int32_t (*net_list_sockets)(void* out, int32_t max, int32_t want_tcp, int32_t want_udp, int32_t listening_only);
+    // Enumerate directory entries. Calls callback for each entry. Returns count or <0 on error.
+    int32_t (*enumdir)(const int8_t* path, int32_t (*callback)(const void* entry, void* userdata), void* userdata);
 } ApiTableC;
 
 static inline ApiTableC* kos_sys_table(void) {
@@ -150,6 +152,25 @@ static inline int32_t kos_net_list_sockets(kos_sockinfo_t* out, int32_t max,
                                            int32_t listening_only) {
     if (kos_sys_table()->net_list_sockets)
         return kos_sys_table()->net_list_sockets((void*)out, max, want_tcp, want_udp, listening_only);
+    return -1;
+}
+
+// Directory entry structure for enumeration (matches kernel DirEntry)
+typedef struct kos_direntry_t {
+    int8_t name[13];    // 8.3 name + null terminator
+    uint32_t size;      // File size in bytes (0 for directories)
+    uint8_t attr;       // FAT attributes (0x10 = directory)
+    uint8_t isDir;      // Convenience flag (1 = directory, 0 = file)
+} kos_direntry_t;
+
+// Directory entry enumeration callback type
+// Returns non-zero to continue, 0 to stop
+typedef int32_t (*kos_enumdir_callback_t)(const void* entry, void* userdata);
+
+// Enumerate directory entries
+static inline int32_t kos_enumdir(const int8_t* path, kos_enumdir_callback_t callback, void* userdata) {
+    if (kos_sys_table()->enumdir)
+        return kos_sys_table()->enumdir(path, callback, userdata);
     return -1;
 }
 

@@ -42,9 +42,15 @@ int kos_sys_syscall_get_mac_address(common::uint8_t mac[6]) {
     if (!mac) return -1;
     
     if (kos_nic_get_mac(mac)) {
+        // Log MAC in hex manually
         char mac_str[32];
-        kos::sys::snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-                           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        static const char hex[] = "0123456789abcdef";
+        for (int i = 0; i < 6; ++i) {
+            mac_str[i*3]     = hex[(mac[i] >> 4) & 0xF];
+            mac_str[i*3 + 1] = hex[mac[i] & 0xF];
+            mac_str[i*3 + 2] = (i < 5) ? ':' : '\0';
+        }
+        mac_str[17] = '\0';
         console::Logger::LogKV("  Returning MAC", mac_str);
         return 0;
     }
