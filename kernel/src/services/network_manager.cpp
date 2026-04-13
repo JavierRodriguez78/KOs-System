@@ -9,6 +9,7 @@
 #include <net/interface.hpp>
 #include "include/net/nic.hpp"
 #include <drivers/net/e1000/e1000_poll.h>
+#include <net/ethernet.hpp>
 
 using namespace kos::console;
 using namespace kos::memory;
@@ -25,6 +26,78 @@ extern kos::fs::Filesystem* get_fs();
 
 static void lc(char* s) { while (*s) { if (*s>='A' && *s<='Z') *s = char(*s - 'A' + 'a'); ++s; } }
 static void trimr(char* s) { int l = (int)String::strlen((const int8_t*)s); while (l>0 && (s[l-1]==' '||s[l-1]=='\t'||s[l-1]=='\r')) s[--l]=0; }
+
+static uint32_t parse_ipv4_be(const char* s) {
+    unsigned parts[4] = {0,0,0,0};
+    int pi = 0;
+    unsigned val = 0;
+    if (!s) return 0;
+    for (int i = 0; s[i] != 0; ++i) {
+        char ch = s[i];
+        if (ch >= '0' && ch <= '9') {
+            val = val * 10 + (unsigned)(ch - '0');
+            if (val > 255) return 0;
+        } else if (ch == '.') {
+            if (pi > 2) return 0;
+            parts[pi++] = val;
+            val = 0;
+        } else {
+            return 0;
+        }
+    }
+    if (pi != 3) return 0;
+    parts[3] = val;
+    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+}
+
+static void ip_be_to_bytes(uint32_t be, uint8_t out[4]) {
+    out[0] = (uint8_t)((be >> 24) & 0xFF);
+    out[1] = (uint8_t)((be >> 16) & 0xFF);
+    out[2] = (uint8_t)((be >> 8) & 0xFF);
+    out[3] = (uint8_t)(be & 0xFF);
+}
+
+struct ArpProbePacket {
+    uint16_t hw_type;
+    uint16_t proto_type;
+    uint8_t hw_size;
+    uint8_t proto_size;
+    uint16_t op;
+    uint8_t sha[6];
+    uint8_t sip[4];
+    uint8_t tha[6];
+    uint8_t tip[4];
+} __attribute__((packed));
+
+static bool send_arp_probe(uint32_t src_ip_be, uint32_t target_ip_be) {
+    if (src_ip_be == 0 || target_ip_be == 0) return false;
+
+    uint8_t smac[6] = {0};
+    if (!kos_nic_get_mac(smac)) return false;
+
+    uint8_t frame[sizeof(kos::net::EthernetHeader) + sizeof(ArpProbePacket)];
+    kos::net::EthernetHeader* eth = reinterpret_cast<kos::net::EthernetHeader*>(frame);
+    for (int i = 0; i < 6; ++i) {
+        eth->dst[i] = 0xFF;
+        eth->src[i] = smac[i];
+    }
+    eth->ethertype = kos::net::ETHERTYPE_ARP;
+
+    ArpProbePacket* arp = reinterpret_cast<ArpProbePacket*>(frame + sizeof(kos::net::EthernetHeader));
+    arp->hw_type = 1;
+    arp->proto_type = kos::net::ETHERTYPE_IPV4;
+    arp->hw_size = 6;
+    arp->proto_size = 4;
+    arp->op = 1;
+    for (int i = 0; i < 6; ++i) {
+        arp->sha[i] = smac[i];
+        arp->tha[i] = 0;
+    }
+    ip_be_to_bytes(src_ip_be, arp->sip);
+    ip_be_to_bytes(target_ip_be, arp->tip);
+
+    return kos_nic_send_frame(frame, sizeof(frame));
+}
 
 bool NetworkManagerService::loadConfig() {
     // Defaults
@@ -203,6 +276,18 @@ bool NetworkManagerService::Start() {
 
     // Initialize NIC RX dispatch to route frames to ARP/IP/ICMP handlers
     kos::net::rx_dispatch_init();
+
+    // Deterministic startup traffic: ARP probes exercise NIC TX path and usually produce RX replies in QEMU.
+    {
+        const uint32_t src_ip = parse_ipv4_be(cfg_.ip);
+        const uint32_t gw_ip = parse_ipv4_be(cfg_.gw);
+        const uint32_t dns_ip = parse_ipv4_be(cfg_.dns);
+        const bool sent_gw = send_arp_probe(src_ip, gw_ip);
+        const bool sent_dns = send_arp_probe(src_ip, dns_ip);
+        Logger::LogStatus("NetworkManager: ARP probe gateway", sent_gw);
+        Logger::LogStatus("NetworkManager: ARP probe DNS", sent_dns);
+    }
+
     // Without a NIC driver/stack we cannot actually bring up a link; report capability
     Logger::Log("NetworkManager: NOTE: NIC driver and TCP/IP stack not present yet; internet connectivity not available");
 

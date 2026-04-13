@@ -35,4 +35,6 @@ namespace kos {
     extern kos::common::uint8_t g_mouse_input_source;
     // Keyboard event counter for UI diagnostics
     extern kos::common::uint32_t g_kbd_events;
+    // Flag to disable keyboard polling during initialization (prevents race conditions)
+    extern bool g_kbd_poll_enabled;
 }

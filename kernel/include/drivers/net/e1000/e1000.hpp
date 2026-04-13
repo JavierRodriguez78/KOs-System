@@ -52,6 +52,11 @@ namespace kos {
                         */
                         void rx_poll();
 
+                        /*
+                        * @brief Emit one-shot RX-path hardware register snapshot to logger
+                        */
+                        void snapshot_rx_registers();
+
                     private:
                         /*
                         * @brief Probe the PCI bus for the E1000 device.
@@ -65,6 +70,11 @@ namespace kos {
                         * @return true if initialization succeeded, false otherwise
                         */
                         bool init_hardware();
+
+                        /*
+                        * @brief Enable PCI memory and bus-mastering for DMA
+                        */
+                        bool enable_pci_bus_mastering();
                         
                         /*
                         * @brief Read MAC address from device
@@ -107,12 +117,16 @@ namespace kos {
                         * @var device_id
                         */
                         uint16_t device_{0};
+                        uint16_t bus_{0};
+                        uint16_t dev_{0};
+                        uint16_t fn_{0};
                         
                         /*
                         * @brief E1000 device I/O base address.
                         * @var io_base
                         */
                         uint32_t io_base_{0};
+                        bool bar0_is_mmio_{true};
                         
                         /*
                         * @brief E1000 MMIO base address (virtual)

@@ -48,7 +48,7 @@ void LoginScreen::OnKeyDown(int8_t c) {
     ++s_key_count;
     
     // Debug: log all key events to serial for troubleshooting
-    kos::lib::serial_write("[LOGIN] Key: ");
+        kos::lib::serial_write("[LOGIN] OnKeyDown: received key ");
     if (c >= 32 && c <= 126) {
         kos::lib::serial_putc((char)c);
     } else {
@@ -115,8 +115,25 @@ void LoginScreen::drawText(uint32_t x, uint32_t y, const char* text, uint32_t fg
 }
 
 void LoginScreen::Render() {
-    if (!s_ready) return;
-    WindowDesc d; if (!kos::ui::GetWindowDesc(s_win_id, d)) return;
+    if (!s_ready) {
+        // Debug: log if not ready
+        static bool logged_not_ready = false;
+        if (!logged_not_ready) {
+            kos::lib::serial_write("[LOGIN-Render] s_ready=false, skipping\n");
+            logged_not_ready = true;
+        }
+        return;
+    }
+    WindowDesc d; 
+    if (!kos::ui::GetWindowDesc(s_win_id, d)) {
+        // Debug: log if window not found
+        static bool logged_no_window = false;
+        if (!logged_no_window) {
+            kos::lib::serial_write("[LOGIN-Render] GetWindowDesc failed for win_id\n");
+            logged_no_window = true;
+        }
+        return;
+    }
     const uint32_t th = kos::ui::TitleBarHeight();
     const uint32_t padX = 12; const uint32_t padY = 12;
     uint32_t x0 = d.x + padX; uint32_t y0 = d.y + th + padY;

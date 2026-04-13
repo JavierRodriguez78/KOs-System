@@ -12,6 +12,7 @@
 #include <lib/stdio.hpp>
 #include <fs/filesystem.hpp>
 #include <memory/heap.hpp>
+#include <drivers/net/e1000/e1000_poll.h>
 
 using namespace kos::console;
 using namespace kos::process;
@@ -187,6 +188,7 @@ void ThreadedShell::ExecuteCommand() {
         TTY::Write("  ps             - Show scheduler statistics (threaded)\n");
         TTY::Write("  threads        - Show all threads (threaded)\n");
         TTY::Write("  yield          - Yield CPU to other threads\n");
+        TTY::Write("  rxsnap         - One-shot E1000 RX register snapshot\n");
         TTY::Write("\nThread Management:\n");
         TTY::Write("  kill <id>      - Kill thread by ID (hex)\n");
         TTY::Write("  suspend <id>   - Suspend thread by ID (hex)\n");
@@ -232,6 +234,15 @@ void ThreadedShell::ExecuteCommand() {
         } else {
             TTY::Write("Scheduler not initialized\n");
         }
+        input_buffer_pos = 0;
+        return;
+    }
+
+    // Fast-path: one-shot RX register snapshot for E1000 diagnostics
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"rxsnap", 6) == 0 && command[6] == '\0') {
+        TTY::Write("Capturing E1000 RX snapshot...\n");
+        e1000_rx_snapshot();
+        TTY::Write("Snapshot logged to kernel logger\n");
         input_buffer_pos = 0;
         return;
     }

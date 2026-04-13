@@ -47,28 +47,33 @@ namespace kos {
             kos::drivers::usb::UsbCore::Init();
 
             Logger::Log("Loading device drivers");
+            auto registerDriver = [&](const char* name, kos::drivers::Driver* driver) {
+                const bool ok = drvManager.AddDriver(driver);
+                Logger::LogStatus(name, ok);
+            };
+
             static ShellKeyboardHandler skbhandler;
             static KeyboardDriver keyboard(interrupts, &skbhandler);
             // Expose keyboard driver globally for optional polling fallback
             g_keyboard_driver_ptr = &keyboard;
-            drvManager.AddDriver(&keyboard);
+            registerDriver("Keyboard driver registered", &keyboard);
 
             // In graphics mode, route mouse events to UI input
             static MouseDriver mouse(interrupts, g_mouse_ui_handler_ptr);
             
             // Expose pointer for fallback polling path invoked by WindowManager
             g_mouse_driver_ptr = &mouse;
-            drvManager.AddDriver(&mouse);
+            registerDriver("Mouse driver registered", &mouse);
 
             // Add scaffold NIC drivers; they will self-probe for matching PCI devices
             static rtl8139::Rtl8139Driver nic_rtl8139;
             static e1000::E1000Driver   nic_e1000;
             static rtl8169::Rtl8169Driver nic_rtl8169;
             static rtl8822be::Rtl8822beDriver nic_rtl8822be;
-            drvManager.AddDriver(&nic_rtl8139);
-            drvManager.AddDriver(&nic_e1000);
-            drvManager.AddDriver(&nic_rtl8169);
-            drvManager.AddDriver(&nic_rtl8822be);
+            registerDriver("RTL8139 driver registered", &nic_rtl8139);
+            registerDriver("E1000 driver registered", &nic_e1000);
+            registerDriver("RTL8169 driver registered", &nic_rtl8169);
+            registerDriver("RTL8822BE driver registered", &nic_rtl8822be);
             PeripheralComponentIntercontroller PCIController;
             PCIController.SelectDrivers(&drvManager);
             Logger::Log("Initializing Hardware, Stage 2");
@@ -180,6 +185,10 @@ namespace kos {
             kos::lib::serial_putc(hex[(picMask >> 4) & 0xF]);
             kos::lib::serial_putc(hex[picMask & 0xF]);
             kos::lib::serial_write("\n");
+            
+            // Enable keyboard polling now that initialization is complete
+            g_kbd_poll_enabled = true;
+            kos::lib::serial_write("[KBD] Polling enabled\n");
             
             Logger::LogStatus("Keyboard verification complete", true);
         }

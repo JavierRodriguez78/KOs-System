@@ -23,6 +23,21 @@ extern "C" void e1000_submit_rx_frame(const kos::common::uint8_t* frame, kos::co
 
 E1000Driver::E1000Driver() {}
 
+bool E1000Driver::enable_pci_bus_mastering() {
+    PeripheralComponentIntercontroller pci;
+    const uint32_t PCI_COMMAND_OFFSET = 0x04;
+    const uint32_t PCI_COMMAND_IO = 0x1;
+    const uint32_t PCI_COMMAND_MEMORY = 0x2;
+    const uint32_t PCI_COMMAND_BUS_MASTER = 0x4;
+
+    uint32_t cmd = pci.Read(bus_, dev_, fn_, PCI_COMMAND_OFFSET);
+    cmd |= (PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_BUS_MASTER);
+    pci.Write(bus_, dev_, fn_, PCI_COMMAND_OFFSET, cmd);
+
+    const uint32_t verify = pci.Read(bus_, dev_, fn_, PCI_COMMAND_OFFSET);
+    return (verify & PCI_COMMAND_BUS_MASTER) != 0;
+}
+
 uint32_t E1000Driver::mmio_read32(uint32_t reg) {
     if (!mmio_base_) return 0;
     volatile uint32_t* addr = reinterpret_cast<volatile uint32_t*>(mmio_base_ + reg);
@@ -105,7 +120,7 @@ bool E1000Driver::init_hardware() {
 
 bool E1000Driver::init_tx_ring() {
     // Allocate TX descriptors (must be 16-byte aligned)
-    tx_descs_ = (TxDesc*)Heap::Alloc(sizeof(TxDesc) * TX_DESC_COUNT);
+    tx_descs_ = (TxDesc*)Heap::Alloc(sizeof(TxDesc) * TX_DESC_COUNT, 16);
     if (!tx_descs_) return false;
     
     // Allocate TX buffers
@@ -117,7 +132,7 @@ bool E1000Driver::init_tx_ring() {
     
     // Initialize TX descriptors
     for (uint32_t i = 0; i < TX_DESC_COUNT; ++i) {
-        tx_buffers_[i] = (uint8_t*)Heap::Alloc(TX_BUFFER_SIZE);
+        tx_buffers_[i] = (uint8_t*)Heap::Alloc(TX_BUFFER_SIZE, 16);
         if (!tx_buffers_[i]) {
             // Cleanup on failure
             for (uint32_t j = 0; j < i; ++j) {
@@ -128,7 +143,17 @@ bool E1000Driver::init_tx_ring() {
             return false;
         }
         
-        tx_descs_[i].addr = (uint64_t)(uintptr_t)tx_buffers_[i];
+        const phys_addr_t tx_buf_phys = Paging::GetPhys((virt_addr_t)(uintptr_t)tx_buffers_[i]);
+        if (!tx_buf_phys) {
+            for (uint32_t j = 0; j <= i; ++j) {
+                if (tx_buffers_[j]) Heap::Free(tx_buffers_[j]);
+            }
+            Heap::Free(tx_buffers_);
+            Heap::Free(tx_descs_);
+            return false;
+        }
+
+        tx_descs_[i].addr = (uint64_t)(uint32_t)tx_buf_phys;
         tx_descs_[i].length = 0;
         tx_descs_[i].cso = 0;
         tx_descs_[i].cmd = 0;
@@ -139,9 +164,14 @@ bool E1000Driver::init_tx_ring() {
     
     tx_head_ = 0;
     tx_tail_ = 0;
+
+    const phys_addr_t tx_desc_phys = Paging::GetPhys((virt_addr_t)(uintptr_t)tx_descs_);
+    if (!tx_desc_phys) {
+        return false;
+    }
     
     // Configure TX registers
-    mmio_write32(REG_TDBAL, (uint32_t)(uintptr_t)tx_descs_);
+    mmio_write32(REG_TDBAL, (uint32_t)tx_desc_phys);
     mmio_write32(REG_TDBAH, 0);
     mmio_write32(REG_TDLEN, TX_DESC_COUNT * sizeof(TxDesc));
     mmio_write32(REG_TDH, 0);
@@ -157,7 +187,7 @@ bool E1000Driver::init_tx_ring() {
 
 bool E1000Driver::init_rx_ring() {
     // Allocate RX descriptors (must be 16-byte aligned)
-    rx_descs_ = (RxDesc*)Heap::Alloc(sizeof(RxDesc) * RX_DESC_COUNT);
+    rx_descs_ = (RxDesc*)Heap::Alloc(sizeof(RxDesc) * RX_DESC_COUNT, 16);
     if (!rx_descs_) return false;
     
     // Allocate RX buffers
@@ -169,7 +199,7 @@ bool E1000Driver::init_rx_ring() {
     
     // Initialize RX descriptors
     for (uint32_t i = 0; i < RX_DESC_COUNT; ++i) {
-        rx_buffers_[i] = (uint8_t*)Heap::Alloc(RX_BUFFER_SIZE);
+        rx_buffers_[i] = (uint8_t*)Heap::Alloc(RX_BUFFER_SIZE, 16);
         if (!rx_buffers_[i]) {
             // Cleanup on failure
             for (uint32_t j = 0; j < i; ++j) {
@@ -180,7 +210,17 @@ bool E1000Driver::init_rx_ring() {
             return false;
         }
         
-        rx_descs_[i].addr = (uint64_t)(uintptr_t)rx_buffers_[i];
+        const phys_addr_t rx_buf_phys = Paging::GetPhys((virt_addr_t)(uintptr_t)rx_buffers_[i]);
+        if (!rx_buf_phys) {
+            for (uint32_t j = 0; j <= i; ++j) {
+                if (rx_buffers_[j]) Heap::Free(rx_buffers_[j]);
+            }
+            Heap::Free(rx_buffers_);
+            Heap::Free(rx_descs_);
+            return false;
+        }
+
+        rx_descs_[i].addr = (uint64_t)(uint32_t)rx_buf_phys;
         rx_descs_[i].length = 0;
         rx_descs_[i].checksum = 0;
         rx_descs_[i].status = 0;
@@ -190,16 +230,21 @@ bool E1000Driver::init_rx_ring() {
     
     rx_head_ = 0;
     rx_tail_ = RX_DESC_COUNT - 1;
+
+    const phys_addr_t rx_desc_phys = Paging::GetPhys((virt_addr_t)(uintptr_t)rx_descs_);
+    if (!rx_desc_phys) {
+        return false;
+    }
     
     // Configure RX registers
-    mmio_write32(REG_RDBAL, (uint32_t)(uintptr_t)rx_descs_);
+    mmio_write32(REG_RDBAL, (uint32_t)rx_desc_phys);
     mmio_write32(REG_RDBAH, 0);
     mmio_write32(REG_RDLEN, RX_DESC_COUNT * sizeof(RxDesc));
     mmio_write32(REG_RDH, 0);
     mmio_write32(REG_RDT, RX_DESC_COUNT - 1);
     
     // Enable RX
-    mmio_write32(REG_RCTL, RCTL_EN | RCTL_BAM);  // Enable RX, broadcast accept
+    mmio_write32(REG_RCTL, RCTL_EN | RCTL_BAM | (1u << 26));  // Enable RX, broadcast accept, strip CRC
     
     Logger::Log("e1000: RX ring initialized");
     return true;
@@ -248,12 +293,15 @@ void E1000Driver::rx_poll() {
         RxDesc* desc = &rx_descs_[head];
         
         // Check if descriptor has data (DD bit)
-        if (!(desc->status & 1)) break;
+        if (!(desc->status & 1)) {
+            break;
+        }
         
         Logger::Log("e1000: RX packet received!");
         
-        // Process received packet
-        if (desc->length > 0 && desc->errors == 0) {
+        // Process only complete, error-free packets
+        const bool complete = (desc->status & (1u << 1)) != 0; // EOP
+        if (complete && desc->length > 0 && desc->errors == 0) {
             e1000_submit_rx_frame(rx_buffers_[head], desc->length);
         }
         
@@ -271,6 +319,27 @@ void E1000Driver::rx_poll() {
     }
     
     rx_head_ = head;
+}
+
+void E1000Driver::snapshot_rx_registers() {
+    const uint32_t rctl = mmio_read32(REG_RCTL);
+    const uint32_t ims = mmio_read32(REG_IMS);
+    const uint32_t icr = mmio_read32(REG_ICR); // read-to-clear
+    const uint32_t rdh = mmio_read32(REG_RDH);
+    const uint32_t rdt = mmio_read32(REG_RDT);
+
+    char buf[32];
+    Logger::Log("e1000: RX register snapshot");
+    kos::sys::snprintf(buf, sizeof(buf), "0x%08X", rctl);
+    Logger::LogKV("e1000.rx.rctl", buf);
+    kos::sys::snprintf(buf, sizeof(buf), "0x%08X", ims);
+    Logger::LogKV("e1000.rx.ims", buf);
+    kos::sys::snprintf(buf, sizeof(buf), "0x%08X", icr);
+    Logger::LogKV("e1000.rx.icr", buf);
+    kos::sys::snprintf(buf, sizeof(buf), "0x%08X", rdh);
+    Logger::LogKV("e1000.rx.rdh", buf);
+    kos::sys::snprintf(buf, sizeof(buf), "0x%08X", rdt);
+    Logger::LogKV("e1000.rx.rdt", buf);
 }
 
 static bool e1000_tx_impl(const kos::common::uint8_t* frame, kos::common::uint32_t len) {
@@ -302,6 +371,14 @@ extern "C" void e1000_rx_poll() {
     }
 }
 
+extern "C" void e1000_rx_snapshot() {
+    if (!g_e1000_instance) {
+        Logger::Log("e1000: snapshot requested but driver is inactive");
+        return;
+    }
+    g_e1000_instance->snapshot_rx_registers();
+}
+
 void E1000Driver::Activate() {
     Logger::Log("e1000: Activate() called");
     
@@ -312,6 +389,16 @@ void E1000Driver::Activate() {
     
     Logger::Log("e1000: device detected");
     log_device();
+
+    if (!bar0_is_mmio_) {
+        Logger::Log("e1000: BAR0 is I/O space, MMIO path not supported");
+        return;
+    }
+
+    if (!enable_pci_bus_mastering()) {
+        Logger::Log("e1000: failed to enable PCI bus mastering");
+        return;
+    }
     
     char buf[32];
     kos::sys::snprintf(buf, sizeof(buf), "0x%08X", io_base_);
@@ -366,9 +453,19 @@ bool E1000Driver::probe_once() {
             int functions = pci.DeviceHasFunctions(bus, dev) ? 8 : 1;
             for (int fn = 0; fn < functions; ++fn) {
                 auto d = pci.GetDeviceDescriptor(bus, dev, fn);
-                if (d.vendor_id == PCI_VENDOR_INTEL && d.device_id == PCI_DEVICE_82540EM) {
+                const bool is_supported =
+                    (d.vendor_id == PCI_VENDOR_INTEL) &&
+                    (d.device_id == PCI_DEVICE_82540EM ||
+                     d.device_id == PCI_DEVICE_82545EM ||
+                     d.device_id == PCI_DEVICE_82543GC);
+
+                if (is_supported) {
                     vendor_ = d.vendor_id; device_ = d.device_id; irq_ = (uint8_t)d.interrupt;
+                    bus_ = (uint16_t)bus;
+                    dev_ = (uint16_t)dev;
+                    fn_ = (uint16_t)fn;
                     uint32_t bar0 = pci.Read(bus, dev, fn, PCI_BAR0_OFFSET);
+                    bar0_is_mmio_ = (bar0 & 0x1u) == 0;
                     io_base_ = (bar0 & PCI_BAR_ADDR_MASK); // handle I/O vs MMIO elsewhere later
                     found_ = true;
                     return true;
@@ -381,6 +478,10 @@ bool E1000Driver::probe_once() {
 
 void E1000Driver::log_device() {
     if (!found_) return;
-    Logger::LogKV("e1000.vendor", "0x8086");
-    Logger::LogKV("e1000.device", "0x100E");
+    char vbuf[16];
+    char dbuf[16];
+    kos::sys::snprintf(vbuf, sizeof(vbuf), "0x%04X", vendor_);
+    kos::sys::snprintf(dbuf, sizeof(dbuf), "0x%04X", device_);
+    Logger::LogKV("e1000.vendor", vbuf);
+    Logger::LogKV("e1000.device", dbuf);
 }

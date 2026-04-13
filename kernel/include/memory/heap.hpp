@@ -8,7 +8,7 @@
 namespace kos { 
     namespace memory {
 
-        // Minimal kernel heap: bump allocator that grows by mapping new pages via PMM+Paging
+        // Kernel heap allocator: page-backed allocator with split/coalesce support.
         class Heap {
             public:
                 // Initialize heap at the given base virtual address and map 'initialPages' pages
@@ -17,10 +17,13 @@ namespace kos {
                 // Allocate 'size' bytes; alignment at least 'align' (power of two). Returns 0 on failure.
                 static void* Alloc(uint32_t size, uint32_t align = 8);
 
-                // Free is a no-op for the simple bump allocator
+                // Free previously allocated memory; ignored for invalid/null pointers.
                 static void Free(void* ptr);
 
-                // Current break and end (debugging)
+                // Currently live allocated bytes (payload only).
+                static uint32_t Used();
+
+                // Current mapped heap extent (debugging / compatibility)
                 static virt_addr_t Brk();
                 static virt_addr_t End();
 

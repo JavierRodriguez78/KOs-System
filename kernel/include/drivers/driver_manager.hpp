@@ -16,7 +16,7 @@ namespace kos
             
             public:
                 DriverManager();
-                void AddDriver(Driver*);
+                bool AddDriver(Driver*);
                 void ActivateAll();
         };
     }

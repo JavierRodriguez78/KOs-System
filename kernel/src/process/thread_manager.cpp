@@ -504,8 +504,11 @@ extern "C" void keyboard_thread() {
     // Keyboard input handler - processes keyboard events in separate thread
     while (true) {
         // Fallback polling: if IRQ1 hasn't produced input yet or host drops PS/2 interrupts
+        // Poll multiple times to drain any queued data (including mouse data that might block)
         if (::kos::g_keyboard_driver_ptr) {
-            ::kos::g_keyboard_driver_ptr->PollOnce();
+            for (int i = 0; i < 32 && ::kos::g_keyboard_driver_ptr->PollOnce(); ++i) {
+                // Keep draining until no more data or limit reached
+            }
         }
         
         SchedulerAPI::YieldThread();

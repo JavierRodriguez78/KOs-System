@@ -28,6 +28,7 @@ drivers::keyboard::KeyboardEventHandler* g_keyboard_handler_override = nullptr;
 kos::common::uint8_t g_kbd_input_source = 0;
 kos::common::uint8_t g_mouse_input_source = 0;
 kos::common::uint32_t g_kbd_events = 0;
+bool g_kbd_poll_enabled = false; // Disabled until keyboard init complete
 }
 
 typedef void (*constructor)();

@@ -11,10 +11,18 @@ DriverManager::DriverManager()
 };
 
 
-void DriverManager::AddDriver(Driver* drv)
+bool DriverManager::AddDriver(Driver* drv)
 {
+    if (drv == 0)
+        return false;
+
+    const int maxDrivers = static_cast<int>(sizeof(drivers) / sizeof(drivers[0]));
+    if (numDrivers >= maxDrivers)
+        return false;
+
     drivers[numDrivers] = drv;
     numDrivers++;
+    return true;
 };
 
 void DriverManager::ActivateAll()

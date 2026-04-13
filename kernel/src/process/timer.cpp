@@ -3,6 +3,9 @@
 #include <arch/x86/hardware/interrupts/interrupt_manager.hpp>
 #include <console/logger.hpp>
 #include <console/tty.hpp>
+#include <kernel/globals.hpp>
+#include <drivers/keyboard/keyboard_driver.hpp>
+#include <drivers/ps2/ps2.hpp>
 
 using namespace kos::process;
 using namespace kos::console;
@@ -57,6 +60,16 @@ SchedulerTimerHandler::SchedulerTimerHandler(InterruptManager* interrupt_manager
 
 uint32_t SchedulerTimerHandler::HandleInterrupt(uint32_t esp) {
     tick_count++;
+    
+    // Poll keyboard every tick to work around IRQ1 not firing in some environments
+    // This is a fallback when keyboard interrupts don't work properly
+    // Only poll if enabled (disabled during keyboard initialization to avoid race conditions)
+    if (::kos::g_kbd_poll_enabled && ::kos::g_keyboard_driver_ptr) {
+        // Poll up to 4 times per tick to drain queued data
+        for (int i = 0; i < 4; ++i) {
+            if (!::kos::g_keyboard_driver_ptr->PollOnce()) break;
+        }
+    }
     
     // Call scheduler's timer tick handler and get potentially new ESP
     if (scheduler) {

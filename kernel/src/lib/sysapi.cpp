@@ -285,10 +285,7 @@ extern "C" uint32_t sys_get_heap_size() {
 }
 
 extern "C" uint32_t sys_get_heap_used() {
-    // Heap used is the difference between brk and base (0x02000000)
-    virt_addr_t brk = kos::memory::Heap::Brk();
-    const virt_addr_t base = 0x02000000;
-    return (brk >= base) ? (uint32_t)(brk - base) : 0;
+    return kos::memory::Heap::Used();
 }
 
 // Helper: normalize and make absolute path based on cwd

@@ -251,6 +251,7 @@ set(DISK_IMG ${KOS_ROOT_DIR}/../disk.img)
 
 # Network configuration for E1000 NIC with user-mode networking (NAT)
 set(QEMU_NET_OPTS -netdev user,id=net0 -device e1000,netdev=net0)
+set(QEMU_NET_OPTS_INBOUND -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555 -device e1000,netdev=net0)
 
 add_custom_target(qemu
     COMMAND qemu-system-i386 -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display sdl,gl=off -machine usb=off -serial mon:stdio ${QEMU_NET_OPTS}
@@ -314,6 +315,14 @@ add_custom_target(qemu-usb
 # Debug-focused QEMU run with verbose logging and snapshot mode (no disk writes)
 add_custom_target(qemu-log
     COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg -display gtk,gl=off -vga std -machine usb=off -serial mon:stdio -no-reboot -no-shutdown -d guest_errors,int
+    DEPENDS iso diskimg
+    USES_TERMINAL
+)
+
+# Headless inbound traffic diagnostic run:
+# host can connect to localhost:5555 (TCP/UDP) to force inbound packets toward guest.
+add_custom_target(qemu-inbound-test
+    COMMAND qemu-system-i386 -snapshot -boot d -cdrom ${ISO_OUT} -drive file=${DISK_IMG},format=raw,if=ide,index=0 -m 512 -smp 1 -accel tcg,thread=single -display none -serial file:${CMAKE_BINARY_DIR}/serial-inbound.log -monitor none ${QEMU_NET_OPTS_INBOUND}
     DEPENDS iso diskimg
     USES_TERMINAL
 )

@@ -7,3 +7,13 @@ clear
 echo Booting KOS... welcome!
 
 hello
+
+# Targeted network exercise for E1000 validation in QEMU user-mode networking
+ping -c 2 10.0.2.2
+
+# Allocation-heavy runtime exercise
+free
+lshw
+ifconfig
+memtest
+ss

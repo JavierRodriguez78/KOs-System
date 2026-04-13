@@ -12,6 +12,8 @@ namespace kos {
                 // PCI identification
                 static constexpr uint16_t PCI_VENDOR_INTEL = 0x8086;
                 static constexpr uint16_t PCI_DEVICE_82540EM = 0x100E; // QEMU/VirtualBox default
+                static constexpr uint16_t PCI_DEVICE_82545EM = 0x100F;
+                static constexpr uint16_t PCI_DEVICE_82543GC = 0x1004;
 
                 // PCI BARs
                 static constexpr uint8_t  PCI_BAR0_OFFSET   = 0x10;      // Config space offset for BAR0
@@ -36,6 +38,7 @@ namespace kos {
                 static constexpr uint32_t REG_TDT    = 0x3818; // Transmit Descriptor Tail
                 static constexpr uint32_t REG_TCTL   = 0x0400; // Transmit Control
                 static constexpr uint32_t REG_TIPG   = 0x0410; // Transmit Inter-Packet Gap
+                static constexpr uint32_t REG_ICR    = 0x00C0; // Interrupt Cause Read (read-to-clear)
                 static constexpr uint32_t REG_IMS    = 0x00D0; // Interrupt Mask Set
                 static constexpr uint32_t REG_IMC    = 0x00D8; // Interrupt Mask Clear
 

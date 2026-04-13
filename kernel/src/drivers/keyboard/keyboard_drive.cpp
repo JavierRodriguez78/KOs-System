@@ -117,6 +117,14 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
     const char* hex = "0123456789ABCDEF";
     kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
     kos::lib::serial_putc(hex[key & 0xF]);
+    
+    // Extra info: log if it's a special scancode
+    if (key == 0xFA) kos::lib::serial_write("=ACK");
+    else if (key == 0xFE) kos::lib::serial_write("=RESEND");
+    else if (key == 0xAA) kos::lib::serial_write("=SELF_TEST_OK");
+    else if (key == 0xE0) kos::lib::serial_write("=EXTENDED");
+    else if (key >= 0x80 && key < 0xE0) kos::lib::serial_write("=RELEASE");
+    
     kos::lib::serial_write("\n");
 
     // Use global handler override if set, otherwise use instance handler
@@ -251,11 +259,14 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 
             default:
             {
-                // Suppress noisy scancode debug in normal builds; enable with -DKBD_DEBUG
-                #ifdef KBD_DEBUG
-                tty.Write("KEYBOARD 0X");
-                tty.WriteHex(key);
-                #endif
+                // Log unmapped scancodes for debugging
+                if (key < 0x60) {  // Only log likely keyboard scancodes, not special codes
+                    kos::lib::serial_write("[KBD] Unmapped scancode: 0x");
+                    const char* hex = "0123456789ABCDEF";
+                    kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[key & 0xF]);
+                    kos::lib::serial_write("\n");
+                }
                 break; // ch remains 0
             }
         }
@@ -313,6 +324,9 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 
 // Fallback: poll controller status and process one scancode identically to interrupt path.
 bool KeyboardDriver::PollOnce() {
+    // Don't poll if keyboard initialization hasn't completed yet
+    if (!::kos::g_kbd_poll_enabled) return false;
+    
     // Check output buffer full
     auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
     uint8_t status = ps2.ReadStatus();
@@ -321,8 +335,12 @@ bool KeyboardDriver::PollOnce() {
     static int poll_count = 0;
     static int had_data_count = 0;
     static int aux_skip_count = 0;
+    const char* hex = "0123456789ABCDEF";
     if ((++poll_count % 1000) == 0) {
-        kos::lib::serial_write("[KBD-Poll] checked=");
+        kos::lib::serial_write("[KBD-Poll] status=0x");
+        kos::lib::serial_putc(hex[(status >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[status & 0xF]);
+        kos::lib::serial_write(" checked=");
         char buf[12]; int i = 0; uint32_t pc = poll_count;
         while (pc && i < 11) { buf[i++] = '0' + (pc % 10); pc /= 10; }
         while (i--) kos::lib::serial_putc(buf[i]);
@@ -342,9 +360,11 @@ bool KeyboardDriver::PollOnce() {
     
     // Check if data is from keyboard (bit 5 = 0) or mouse (bit 5 = 1)
     // If AUX bit is set, this data is for the mouse, not keyboard
+    // IMPORTANT: Still read and discard the byte to avoid blocking the controller
     if (status & 0x20) {
         ++aux_skip_count;
-        return false;
+        (void)ps2.ReadData(); // Consume and discard mouse data
+        return true; // Return true to allow caller to continue polling
     }
     
     ++had_data_count;
@@ -353,7 +373,6 @@ bool KeyboardDriver::PollOnce() {
     
     // ALWAYS log polled keys
     kos::lib::serial_write("[P]");
-    const char* hex = "0123456789ABCDEF";
     kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
     kos::lib::serial_putc(hex[key & 0xF]);
     kos::lib::serial_write("\n");
