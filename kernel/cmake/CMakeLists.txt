@@ -92,6 +92,7 @@ add_library(kernel_objs OBJECT
     ${KOS_ROOT_DIR}/src/libc/stdio.c
 )
 target_compile_options(kernel_objs PRIVATE -m32 -march=i386 -mno-sse -mno-mmx -mno-sse2)
+target_compile_definitions(kernel_objs PRIVATE KOS_INPUT_DEBUG=$<IF:$<BOOL:${KOS_INPUT_DEBUG}>,1,0>)
 target_include_directories(kernel_objs PRIVATE ${KOS_INCLUDE_DIR} ${KOS_ROOT_DIR})
 
 # Link kernel using ld and the provided linker script

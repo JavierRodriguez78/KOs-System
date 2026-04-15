@@ -78,6 +78,53 @@ Commit your Changes (git commit -m 'Add some AmazingFeature')
 Push to the Branch (git push origin feature/AmazingFeature)
 Open a Pull Request
 
+## Input And Login Notes
+
+Current behavior after recent stability fixes:
+
+- Text mode keyboard input is interrupt-driven (IRQ1) and does not use keyboard polling.
+- Graphics mode login also receives keyboard input from IRQ1 and updates UI through the Window Manager tick loop.
+- Service ticking in graphics mode is driven by the main kernel loop to keep UI repaint deterministic.
+- Deferred shell startup is used in graphics mode: the shell starts after successful login.
+
+Why this matters:
+
+- Avoids duplicate key delivery caused by mixing polling and IRQ reads.
+- Avoids startup stalls caused by services touching framebuffer directly after compositor/window manager initialization.
+- Keeps text mode input path stable while allowing graphics mode login and UI interaction.
+
+## Input Debug Toggle (KOS_INPUT_DEBUG)
+
+Input diagnostics are controlled with a centralized build flag.
+
+- Enable verbose input debug logs:
+
+```bash
+cmake -S . -B build -DKOS_INPUT_DEBUG=ON
+cmake --build build -j$(nproc)
+cmake --build build --target iso -j$(nproc)
+```
+
+- Disable verbose input debug logs (recommended for normal/prod runs):
+
+```bash
+cmake -S . -B build -DKOS_INPUT_DEBUG=OFF
+cmake --build build -j$(nproc)
+cmake --build build --target iso -j$(nproc)
+```
+
+- Alternative with presets (single configure/build command):
+
+```bash
+# Debug logs ON
+cmake --preset debug-input-on
+cmake --build --preset debug-input-on-iso
+
+# Debug logs OFF
+cmake --preset debug-input-off
+cmake --build --preset debug-input-off-iso
+```
+
 
 ## Roadmap
 

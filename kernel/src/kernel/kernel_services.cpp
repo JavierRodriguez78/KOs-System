@@ -46,7 +46,9 @@ void RegisterAndStartServices()
     WindowManager::SetMousePollMode(kos::g_mouse_poll_mode);
     ServiceManager::InitAndStart();
     Logger::Log("Kernel: services started");
-    ServiceAPI::StartManagerThread();
+    // NOTE: Do NOT call StartManagerThread() here — multitasking is not active yet.
+    // Thread creation before StartMultitasking() results in a thread that never runs.
+    // StartManagerThread() is called from kernel_main.cpp after StartMultitasking().
 
     // If present, spawn /bin/init as the first userspace process (assign PID 1)
     if (g_fs_ptr) {

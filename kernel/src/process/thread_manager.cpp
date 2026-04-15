@@ -104,18 +104,9 @@ void ThreadManager::CreateSystemThreads() {
         
     }
     
-    // Create shell thread only when running the threaded shell (graphics mode)
-    // In text mode, the classic shell runs on the main path to avoid input routing conflicts.
-    if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics) {
-        uint32_t shell_id = CreateSystemThread((void*)shell_thread, 8192,
-                                              PRIORITY_HIGH, THREAD_SHELL, "shell-thread", main_thread->task_id);
-        if (shell_id) {
-            shell_thread = g_scheduler->FindTask(shell_id);
-                if (Logger::IsDebugEnabled()) {
-                    Logger::Log("Created shell thread");
-                }
-        }
-    }
+    // Do not start the graphics shell here.
+    // In graphics mode it is started lazily after GUI login succeeds so the
+    // login window can own input first and the main kernel path can keep ticking.
     
     // Create keyboard handler thread
     uint32_t keyboard_id = CreateSystemThread((void*)keyboard_thread, 4096,

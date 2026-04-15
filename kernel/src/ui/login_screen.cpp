@@ -4,7 +4,6 @@
 #include <graphics/framebuffer.hpp>
 #include <lib/string.hpp>
 #include <console/tty.hpp>
-#include <lib/serial.hpp>
 
 using namespace kos::ui;
 using namespace kos::gfx;
@@ -19,7 +18,6 @@ char     LoginScreen::s_pass[32] = {0};
 int      LoginScreen::s_pass_len = 0;
 bool     LoginScreen::s_focus_user = true;
 char     LoginScreen::s_message[96] = {0};
-static uint32_t s_key_count = 0;  // Track total keys received by OnKeyDown
 
 void LoginScreen::Initialize(uint32_t windowId) {
     s_win_id = windowId;
@@ -27,16 +25,6 @@ void LoginScreen::Initialize(uint32_t windowId) {
     s_authenticated = false;
     s_user_len = 0; s_pass_len = 0; s_focus_user = true;
     s_message[0] = 0;
-    
-    // Debug log initialization
-    kos::lib::serial_write("[LOGIN] Initialize: win_id=");
-    const char* hex = "0123456789ABCDEF";
-    for (int i = 7; i >= 0; --i) {
-        kos::lib::serial_putc(hex[(windowId >> (i * 4)) & 0xF]);
-    }
-    kos::lib::serial_write(" ready=");
-    kos::lib::serial_putc(s_ready ? '1' : '0');
-    kos::lib::serial_write("\n");
 }
 
 static inline void clampAppend(char* buf, int& len, int max, char c) {
@@ -44,27 +32,6 @@ static inline void clampAppend(char* buf, int& len, int max, char c) {
 }
 
 void LoginScreen::OnKeyDown(int8_t c) {
-    // Increment key counter for visual debugging
-    ++s_key_count;
-    
-    // Debug: log all key events to serial for troubleshooting
-        kos::lib::serial_write("[LOGIN] OnKeyDown: received key ");
-    if (c >= 32 && c <= 126) {
-        kos::lib::serial_putc((char)c);
-    } else {
-        kos::lib::serial_write("0x");
-        const char* hex = "0123456789ABCDEF";
-        kos::lib::serial_putc(hex[((uint8_t)c >> 4) & 0xF]);
-        kos::lib::serial_putc(hex[(uint8_t)c & 0xF]);
-    }
-    kos::lib::serial_write(" ready=");
-    kos::lib::serial_putc(s_ready ? '1' : '0');
-    kos::lib::serial_write(" auth=");
-    kos::lib::serial_putc(s_authenticated ? '1' : '0');
-    kos::lib::serial_write(" focus=");
-    kos::lib::serial_putc(s_focus_user ? 'U' : 'P');
-    kos::lib::serial_write("\n");
-    
     if (!s_ready || s_authenticated) return;
     if (c == '\n') {
         // Try auth via UserService
@@ -115,25 +82,9 @@ void LoginScreen::drawText(uint32_t x, uint32_t y, const char* text, uint32_t fg
 }
 
 void LoginScreen::Render() {
-    if (!s_ready) {
-        // Debug: log if not ready
-        static bool logged_not_ready = false;
-        if (!logged_not_ready) {
-            kos::lib::serial_write("[LOGIN-Render] s_ready=false, skipping\n");
-            logged_not_ready = true;
-        }
-        return;
-    }
+    if (!s_ready) return;
     WindowDesc d; 
-    if (!kos::ui::GetWindowDesc(s_win_id, d)) {
-        // Debug: log if window not found
-        static bool logged_no_window = false;
-        if (!logged_no_window) {
-            kos::lib::serial_write("[LOGIN-Render] GetWindowDesc failed for win_id\n");
-            logged_no_window = true;
-        }
-        return;
-    }
+    if (!kos::ui::GetWindowDesc(s_win_id, d)) return;
     const uint32_t th = kos::ui::TitleBarHeight();
     const uint32_t padX = 12; const uint32_t padY = 12;
     uint32_t x0 = d.x + padX; uint32_t y0 = d.y + th + padY;
@@ -179,19 +130,4 @@ void LoginScreen::Render() {
     // Status/error message
     if (s_message[0]) drawText(x0, y0 + 74, s_message, 0xFFFF6B6Bu, d.bg);
     
-    // Debug: show current input lengths and key count
-    char debugBuf[64];
-    int di = 0;
-    auto writeNum = [&](uint32_t v) {
-        if (v == 0) { debugBuf[di++] = '0'; return; }
-        char rev[12]; int ri = 0;
-        while (v && ri < 11) { rev[ri++] = '0' + (v % 10); v /= 10; }
-        while (ri--) debugBuf[di++] = rev[ri];
-    };
-    debugBuf[di++] = 'U'; debugBuf[di++] = ':'; writeNum((uint32_t)s_user_len);
-    debugBuf[di++] = ' '; debugBuf[di++] = 'P'; debugBuf[di++] = ':'; writeNum((uint32_t)s_pass_len);
-    debugBuf[di++] = ' '; debugBuf[di++] = 'F'; debugBuf[di++] = ':'; debugBuf[di++] = s_focus_user ? 'U' : 'P';
-    debugBuf[di++] = ' '; debugBuf[di++] = 'K'; debugBuf[di++] = ':'; writeNum(s_key_count);
-    debugBuf[di] = 0;
-    drawText(x0, y0 + 90, debugBuf, 0xFF606060u, d.bg);
 }

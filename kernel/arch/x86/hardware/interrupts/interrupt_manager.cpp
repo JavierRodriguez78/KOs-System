@@ -4,6 +4,7 @@
 #include <arch/x86/hardware/interrupts/interrupt_handler.hpp>
 #include <arch/x86/hardware/interrupts/interrupt_constants.hpp>
 #include <common/panic.hpp>
+#include <kernel/input_debug.hpp>
 #include <lib/serial.hpp>
 using namespace kos::common;
 using namespace kos::arch::x86::hardware::interrupts;
@@ -149,15 +150,20 @@ uint16_t InterruptManager::HardwareInterruptOffset()
 void InterruptManager::Activate()
 {
     static TTY tty;
+#if KOS_INPUT_DEBUG
     tty.Write("\n\n=== INTERRUPT MANAGER ACTIVATION ===\n");
     tty.Write("[INT] Activating interrupt manager...\n");
+#endif
     
     if(ActiveInterruptManager != 0) {
+#if KOS_INPUT_DEBUG
         tty.Write("[INT] Deactivating previous manager\n");
+#endif
         ActiveInterruptManager->Deactivate();
     }
     
     ActiveInterruptManager = this;
+#if KOS_INPUT_DEBUG
     tty.Write("[INT] Set as active manager\n");
     
     // Check if interrupts are currently enabled
@@ -166,6 +172,7 @@ void InterruptManager::Activate()
     tty.Write("[INT] Flags before STI: ");
     tty.WriteHex(flags);
     tty.Write("\n");
+#endif
     
     asm("sti");
 }
@@ -233,19 +240,28 @@ static inline void print_hex32(uint32_t v) {
 
 uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
 {
-    // Debug: log all hardware interrupts
+#if KOS_INPUT_DEBUG
+    // Debug: rate-limit hardware IRQ logs to avoid heavy serial I/O in ISR.
     if (interrupt >= hardwareInterruptOffset && interrupt < hardwareInterruptOffset + 16) {
-        kos::lib::serial_write("[INT]");
-        const char* hex = "0123456789ABCDEF";
-        kos::lib::serial_putc(hex[(interrupt >> 4) & 0xF]);
-        kos::lib::serial_putc(hex[interrupt & 0xF]);
-        kos::lib::serial_write(" h=");
-        uintptr_t h = (uintptr_t)handlers[interrupt];
-        for (int i = 7; i >= 0; --i) {
-            kos::lib::serial_putc(hex[(h >> (i*4)) & 0xF]);
+        const uint8_t irq = (uint8_t)(interrupt - hardwareInterruptOffset);
+        static uint32_t s_irq_log_count[16] = {0};
+        uint32_t count = ++s_irq_log_count[irq];
+        // Never spam timer IRQ0. For other IRQs, log first few and then periodically.
+        bool shouldLog = (irq != 0) && (count <= 8 || (count % 256u) == 0u);
+        if (shouldLog) {
+            kos::lib::serial_write("[INT]");
+            const char* hex = "0123456789ABCDEF";
+            kos::lib::serial_putc(hex[(interrupt >> 4) & 0xF]);
+            kos::lib::serial_putc(hex[interrupt & 0xF]);
+            kos::lib::serial_write(" h=");
+            uintptr_t h = (uintptr_t)handlers[interrupt];
+            for (int i = 7; i >= 0; --i) {
+                kos::lib::serial_putc(hex[(h >> (i*4)) & 0xF]);
+            }
+            kos::lib::serial_write("\n");
         }
-        kos::lib::serial_write("\n");
     }
+#endif
 
     if(handlers[interrupt] !=0)
     {

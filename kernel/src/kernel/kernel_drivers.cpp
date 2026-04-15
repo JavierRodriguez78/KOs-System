@@ -16,6 +16,7 @@
 #include <ui/input.hpp>
 #include <process/scheduler.hpp>
 #include <kernel/globals.hpp>
+#include <kernel/input_debug.hpp>
 #include <lib/serial.hpp>
 
 using namespace kos;
@@ -123,10 +124,12 @@ namespace kos {
             ps2.WaitWrite(); ps2.WriteCommand(0x20);
             ps2.WaitRead();
             uint8_t cfg = ps2.ReadData();
+#if KOS_INPUT_DEBUG
             kos::lib::serial_write("[PS2] Config: 0x");
             kos::lib::serial_putc(hex[(cfg >> 4) & 0xF]);
             kos::lib::serial_putc(hex[cfg & 0xF]);
             kos::lib::serial_write("\n");
+#endif
             
             // Ensure keyboard IRQ enabled (bit 0) and port enabled (bit 4 clear)
             bool needFix = !(cfg & 0x01) || (cfg & 0x10);
@@ -142,7 +145,9 @@ namespace kos {
             ps2.WaitWrite(); ps2.WriteCommand(0xAE);
             
             // Send keyboard reset (0xFF)
+#if KOS_INPUT_DEBUG
             kos::lib::serial_write("[KBD] Sending reset...\n");
+#endif
             ps2.WaitWrite(); ps2.WriteData(0xFF);
             
             // Wait for 0xFA ACK then 0xAA self-test
@@ -150,26 +155,100 @@ namespace kos {
             for (int i = 0; i < 1000000 && !gotAA; ++i) {
                 if (ps2.ReadStatus() & 0x01) {
                     uint8_t resp = ps2.ReadData();
+#if KOS_INPUT_DEBUG
                     kos::lib::serial_write("[KBD] resp: 0x");
                     kos::lib::serial_putc(hex[(resp >> 4) & 0xF]);
                     kos::lib::serial_putc(hex[resp & 0xF]);
                     kos::lib::serial_write("\n");
+#endif
                     if (resp == 0xAA) gotAA = true;
                 }
             }
             
             // Send enable scanning (0xF4)
+#if KOS_INPUT_DEBUG
             kos::lib::serial_write("[KBD] Enabling scanning...\n");
+#endif
             ps2.WaitWrite(); ps2.WriteData(0xF4);
             
             // Wait for ACK
             for (int i = 0; i < 100000; ++i) {
                 if (ps2.ReadStatus() & 0x01) {
                     uint8_t ack = ps2.ReadData();
+#if KOS_INPUT_DEBUG
                     kos::lib::serial_write("[KBD] Enable resp: 0x");
                     kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
                     kos::lib::serial_putc(hex[ack & 0xF]);
                     kos::lib::serial_write("\n");
+#endif
+                    break;
+                }
+            }
+
+            // DISABLED: Some keyboards don't reliably handle Set 1 forcing.
+            // Instead, use full Set 2 scancode map which is more compatible.
+            // Original code tried to force Set 1 but decoder still used Set 2 fallback.
+            /*
+            kos::lib::serial_write("[KBD] Forcing scancode set 1...\n");
+            ps2.WaitWrite(); ps2.WriteData(0xF0);
+            for (int i = 0; i < 100000; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t ack = ps2.ReadData();
+                    kos::lib::serial_write("[KBD] F0 resp: 0x");
+                    kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[ack & 0xF]);
+                    kos::lib::serial_write("\n");
+                    break;
+                }
+            }
+
+            ps2.WaitWrite(); ps2.WriteData(0x01);
+            for (int i = 0; i < 100000; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t ack = ps2.ReadData();
+                    kos::lib::serial_write("[KBD] Set1 resp: 0x");
+                    kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[ack & 0xF]);
+                    kos::lib::serial_write("\n");
+                    break;
+                }
+            }
+            */
+            
+            // Small delay to let keyboard settle after enable scanning
+            for (volatile int delay = 0; delay < 50000; ++delay) {}
+            
+            // Send LED test command (0xED) to verify keyboard is responsive
+#if KOS_INPUT_DEBUG
+            kos::lib::serial_write("[KBD] Sending LED test...\n");
+#endif
+            ps2.WaitWrite(); ps2.WriteData(0xED);
+            
+            // Wait for ACK
+            for (int i = 0; i < 100000; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t ack = ps2.ReadData();
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[KBD] LED test resp: 0x");
+                    kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[ack & 0xF]);
+                    kos::lib::serial_write("\n");
+#endif
+                    break;
+                }
+            }
+            
+            // Send LED mask (all off)
+            ps2.WaitWrite(); ps2.WriteData(0x00);
+            for (int i = 0; i < 100000; ++i) {
+                if (ps2.ReadStatus() & 0x01) {
+                    uint8_t ack = ps2.ReadData();
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[KBD] LED mask resp: 0x");
+                    kos::lib::serial_putc(hex[(ack >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[ack & 0xF]);
+                    kos::lib::serial_write("\n");
+#endif
                     break;
                 }
             }
@@ -181,16 +260,74 @@ namespace kos {
             picMask = picMasterData.Read();
             picMask &= ~0x02;  // Unmask IRQ1
             picMasterData.Write(picMask);
+#if KOS_INPUT_DEBUG
             kos::lib::serial_write("[PIC] Unmasked IRQ1, mask=0x");
             kos::lib::serial_putc(hex[(picMask >> 4) & 0xF]);
             kos::lib::serial_putc(hex[picMask & 0xF]);
             kos::lib::serial_write("\n");
+#endif
             
-            // Enable keyboard polling now that initialization is complete
-            g_kbd_poll_enabled = true;
-            kos::lib::serial_write("[KBD] Polling enabled\n");
+            // Disable polling - interrupts are working correctly and polling 
+            // causes duplicate character delivery when both paths process the same byte.
+            // g_kbd_poll_enabled = true;
+            g_kbd_poll_enabled = false;
+#if KOS_INPUT_DEBUG
+            kos::lib::serial_write("[KBD] Polling DISABLED (using interrupts)\n");
+#endif
             
             Logger::LogStatus("Keyboard verification complete", true);
+
+                    // Re-enable PS/2 mouse after the keyboard reset sequence.
+                    // The keyboard reset (0xFF -> 0xAA) can in some implementations reset
+                    // the PS/2 controller config, disabling IRQ12 / aux port.
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[MOUSE] Re-init after keyboard reset\n");
+#endif
+
+                    // Enable auxiliary port
+                    ps2.WaitWrite(); ps2.WriteCommand(0xA8);
+
+                    // Read current config and verify IRQ12 is enabled
+                    ps2.WaitWrite(); ps2.WriteCommand(0x20);
+                    ps2.WaitRead();
+                    uint8_t mcfg = ps2.ReadData();
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[MOUSE] post-kbd cfg=0x");
+                    kos::lib::serial_putc(hex[(mcfg >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[mcfg & 0xF]);
+                    kos::lib::serial_write("\n");
+#endif
+
+                    // Force IRQ12 enabled (bit1) and aux port clock enabled (bit5 clear)
+                    mcfg |= 0x02;    // Enable IRQ12
+                    mcfg &= ~0x20u;  // Enable port 2 clock
+                    ps2.WaitWrite(); ps2.WriteCommand(0x60);
+                    ps2.WaitWrite(); ps2.WriteData(mcfg);
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[MOUSE] new cfg=0x");
+                    kos::lib::serial_putc(hex[(mcfg >> 4) & 0xF]);
+                    kos::lib::serial_putc(hex[mcfg & 0xF]);
+                    kos::lib::serial_write("\n");
+#endif
+
+                    // Re-enable mouse data reporting (0xF4)
+                    ps2.WaitWrite(); ps2.WriteCommand(0xD4); // Route to mouse (Write to Second PS/2 Port)
+                    ps2.WaitWrite(); ps2.WriteData(0xF4);    // Enable Data Reporting
+                    for (int i = 0; i < 100000; ++i) {
+                        if (ps2.ReadStatus() & 0x01) {
+                            uint8_t mack = ps2.ReadData();
+#if KOS_INPUT_DEBUG
+                            kos::lib::serial_write("[MOUSE] F4 re-enable ack=0x");
+                            kos::lib::serial_putc(hex[(mack >> 4) & 0xF]);
+                            kos::lib::serial_putc(hex[mack & 0xF]);
+                            kos::lib::serial_write("\n");
+#endif
+                            break;
+                        }
+                    }
+#if KOS_INPUT_DEBUG
+                    kos::lib::serial_write("[MOUSE] Re-init complete\n");
+#endif
         }
     }
  }

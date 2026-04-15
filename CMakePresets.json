@@ -1,0 +1,64 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "debug-input-on",
+      "displayName": "Debug Input ON",
+      "inherits": "base",
+      "cacheVariables": {
+        "KOS_INPUT_DEBUG": "ON"
+      }
+    },
+    {
+      "name": "debug-input-off",
+      "displayName": "Debug Input OFF",
+      "inherits": "base",
+      "cacheVariables": {
+        "KOS_INPUT_DEBUG": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-input-on-all",
+      "displayName": "Build all (Debug Input ON)",
+      "configurePreset": "debug-input-on",
+      "jobs": 0
+    },
+    {
+      "name": "debug-input-on-iso",
+      "displayName": "Build iso (Debug Input ON)",
+      "configurePreset": "debug-input-on",
+      "targets": [
+        "iso"
+      ],
+      "jobs": 0
+    },
+    {
+      "name": "debug-input-off-all",
+      "displayName": "Build all (Debug Input OFF)",
+      "configurePreset": "debug-input-off",
+      "jobs": 0
+    },
+    {
+      "name": "debug-input-off-iso",
+      "displayName": "Build iso (Debug Input OFF)",
+      "configurePreset": "debug-input-off",
+      "targets": [
+        "iso"
+      ],
+      "jobs": 0
+    }
+  ]
+}

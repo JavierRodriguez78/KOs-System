@@ -40,6 +40,7 @@
 #include <process/timer.hpp>
 #include <console/threaded_shell.hpp>
 #include <services/service_manager.hpp>
+#include <services/service_manager.hpp>
 #include <services/banner_service.hpp>
 #include <services/time_service.hpp>
 #include <services/filesystem_service.hpp>
@@ -71,6 +72,12 @@ namespace {
     constexpr uint8_t kIdePrimaryIrq = 14;                  // Primary IDE IRQ line number
     constexpr uint32_t kMainThreadSleepMs = 1000;           // Sleep duration for main kernel thread loop
     constexpr char kInitialShellPromptKey = '\n';          // Key injected to force initial prompt render
+}
+
+// Entry point for the shell thread in graphics mode.
+// Must be a plain function (not lambda) so it can be cast to void*.
+static void shell_thread_entry() {
+    kos::console::ThreadedShellAPI::StartShell();
 }
 
 // Mouse handler that routes events into the UI input system when graphics is available
@@ -202,6 +209,14 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     // Start the threading system and threaded shell
     ThreadManagerAPI::StartMultitasking();
     Logger::LogStatus("Multitasking environment started", true);
+    // Now that multitasking is active, use a single ServiceManager tick driver per mode:
+    // - Graphics mode: main kernel loop (reliable and already confirmed running)
+    // - Text mode: background service-manager thread
+    bool mgrStarted = false;
+    if (kos::g_display_mode != kos::kernel::DisplayMode::Graphics) {
+        mgrStarted = kos::services::ServiceAPI::StartManagerThread();
+    }
+    Logger::LogStatus("ServiceManager thread startup", mgrStarted);
     boot.Advance(BootStage::MultitaskingStart);
     
     // If graphics mode selected and available, mark graphics stage
@@ -211,34 +226,24 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     // Start user interaction depending on selected display mode
     if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics && kos::gfx::IsAvailable()) {
-        // Initialize and start threaded shell (graphics)
-        if (ThreadedShellAPI::InitializeShell()) {
-            Logger::LogStatus("Threaded shell initialized", true);
-            ThreadedShellAPI::StartShell();
-            ThreadedShellAPI::ProcessKeyInput(kInitialShellPromptKey);
-            boot.Advance(BootStage::ShellInit);
-        } else {
-            Logger::LogStatus("Failed to initialize threaded shell", false);
-            // Fallback to text shell if graphics shell fails
-            g_shell = &g_shell_instance;
-            Logger::LogStatus("Starting fallback text shell...", true);
-            g_shell_instance.Run();
-            boot.Advance(BootStage::ShellInit);
-        }
+        // Graphics mode: defer shell initialization until after GUI login succeeds.
+        boot.Advance(BootStage::ShellInit);
     } else {
-        // Text mode: start classic shell
+        // Text mode: start classic shell (blocks here — intentional for text mode)
         g_shell = &g_shell_instance;
         Logger::LogStatus("Starting text shell...", true);
         g_shell_instance.Run();
         boot.Advance(BootStage::ShellInit);
     }
 
-    // Main kernel thread continues to run
+    // Main kernel thread continues to run.
+    // Fallback ticking only: when manager thread is alive, avoid concurrent TickAll().
     boot.Advance(BootStage::Complete);
-    // Log a compact summary of per-stage timing once boot is complete.
     boot.LogTimingSummary();
     while(1) {
-        SchedulerAPI::YieldThread();
-        SchedulerAPI::SleepThread(kMainThreadSleepMs); // Sleep 1 second
+        if (!mgrStarted) {
+            kos::services::ServiceManager::TickAll();
+        }
+        SchedulerAPI::SleepThread(16); // ~60 Hz — drives GUI, kbd/mouse polling
     }
 }

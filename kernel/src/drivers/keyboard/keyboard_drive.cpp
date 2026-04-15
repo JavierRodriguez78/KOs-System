@@ -3,9 +3,81 @@
 #include <console/logger.hpp>
 #include <console/tty.hpp>
 #include <kernel/globals.hpp>
+#include <kernel/input_debug.hpp>
 #include <lib/serial.hpp>
 using namespace kos::drivers::keyboard;
 using namespace kos::console;
+
+// Complete PS/2 Keyboard Set 2 scancode map for make (press) codes only.
+// This is the primary input mode after keyboard reset; using full table for reliability.
+static int8_t map_set2_make(uint8_t key) {
+    switch (key) {
+        // Function keys - silently ignore for now (return 0)
+        case 0x07: return 0;  // F12
+        case 0x0B: return 0;  // F10 (not mapped)
+        case 0x0C: return 0;  // F9  (not mapped)
+        case 0x05: return 0;  // F4  (not mapped)
+        case 0x06: return 0;  // F5  (not mapped)
+        case 0x04: return 0;  // F3  (not mapped)
+
+        // Control keys
+        case 0x0D: return 0x09;  // Tab
+        case 0x66: return '\b';  // Backspace
+        case 0x5A: return '\n';  // Enter
+        case 0x76: return 0x1B;  // Escape
+        case 0x29: return ' ';   // Space
+
+        // Main number row (top)
+        case 0x16: return '1'; case 0x1E: return '2'; case 0x26: return '3'; case 0x25: return '4';
+        case 0x2E: return '5'; case 0x36: return '6'; case 0x3D: return '7'; case 0x3E: return '8';
+        case 0x46: return '9'; case 0x45: return '0';
+        
+        // Symbols on number row
+        case 0x4E: return '-';  // Minus/underscore
+        case 0x55: return '=';  // Equal/plus
+        case 0x5D: return '\\'; // Backslash/pipe
+
+        // QWERTY top row
+        case 0x15: return 'q'; case 0x1D: return 'w'; case 0x24: return 'e'; case 0x2D: return 'r';
+        case 0x2C: return 't'; case 0x35: return 'y'; case 0x3C: return 'u'; case 0x43: return 'i';
+        case 0x44: return 'o'; case 0x4D: return 'p';
+
+        // Bracket symbols
+        case 0x54: return '[';  // Left bracket
+        case 0x5B: return ']';  // Right bracket
+
+        // ASDF middle row
+        case 0x1C: return 'a'; case 0x1B: return 's'; case 0x23: return 'd'; case 0x2B: return 'f';
+        case 0x34: return 'g'; case 0x33: return 'h'; case 0x3B: return 'j'; case 0x42: return 'k';
+        case 0x4B: return 'l';
+
+        // Punctuation symbols
+        case 0x4C: return ';';  // Semicolon/colon
+        case 0x52: return '\''; // Apostrophe/quote
+
+        // ZXCV bottom row
+        case 0x1A: return 'z'; case 0x22: return 'x'; case 0x21: return 'c'; case 0x2A: return 'v';
+        case 0x32: return 'b'; case 0x31: return 'n'; case 0x3A: return 'm';
+
+        // Punctuation/symbols
+        case 0x41: return ',';  // Comma/less
+        case 0x49: return '.';  // Period/greater
+        case 0x4A: return '/';  // Forward slash/question
+
+        // Modifier keys (track state but don't deliver character)
+        case 0x12: return 0;  // Left Shift  
+        case 0x59: return 0;  // Right Shift
+        case 0x14: return 0;  // Left Ctrl
+        case 0x11: return 0;  // Left Alt
+        
+        // PrintScreen, ScrollLock, Pause - ignore
+        case 0x7E: return 0;  // ScrollLock (with E0)
+        case 0x77: return 0;  // Pause
+        
+        // Unrecognized codes - return 0 (will be handled by SET 1 path if enabled)
+        default: return 0;
+    }
+}
 
 
 KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
@@ -22,6 +94,7 @@ KeyboardDriver::~KeyboardDriver()
 
 void KeyboardDriver::SetHandler(KeyboardEventHandler* newHandler) {
     handler = newHandler;
+#if KOS_INPUT_DEBUG
     // Debug log
     kos::lib::serial_write("[KBD] SetHandler: old handler replaced, new ptr=");
     const char* hex = "0123456789ABCDEF";
@@ -30,6 +103,7 @@ void KeyboardDriver::SetHandler(KeyboardEventHandler* newHandler) {
         kos::lib::serial_putc(hex[(addr >> (i*4)) & 0xF]);
     }
     kos::lib::serial_write("\n");
+#endif
 }
 
 
@@ -102,36 +176,67 @@ void KeyboardDriver::Activate()
   
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 {
+#if KOS_INPUT_DEBUG
     // Immediate log at entry
     kos::lib::serial_write("!");
+#endif
     
     auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
     uint8_t key = ps2.ReadData();
 
-    // Mark that we received some keyboard activity, even if it's a modifier/release
+#if KOS_INPUT_DEBUG
+    const char* hex = "0123456789ABCDEF";
+#endif
+    
+    // Filter out ACK and other special bytes that should not be processed as scancodes
+    // ACK (0xFA), RESEND (0xFE), and SELF_TEST_OK (0xAA) are responses to commands, not scancodes
+    if (key == 0xFA || key == 0xFE || key == 0xAA) {
+#if KOS_INPUT_DEBUG
+        kos::lib::serial_write("[I]");
+        kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[key & 0xF]);
+        if (key == 0xFA) kos::lib::serial_write("=ACK");
+        else if (key == 0xFE) kos::lib::serial_write("=RESEND");
+        else if (key == 0xAA) kos::lib::serial_write("=SELF_TEST_OK");
+        kos::lib::serial_write(" (ignored)\n");
+#endif
+        return esp;  // Ignore and return immediately
+    }
+    
+    // Mark that we received actual keyboard activity (scancodes/releases, not control bytes)
     ::kos::g_kbd_input_source = 1;
     ++::kos::g_kbd_events;
     
-    // ALWAYS log - no filtering
+#if KOS_INPUT_DEBUG
+    // Log the scancode
     kos::lib::serial_write("[I]");
-    const char* hex = "0123456789ABCDEF";
     kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
     kos::lib::serial_putc(hex[key & 0xF]);
     
     // Extra info: log if it's a special scancode
-    if (key == 0xFA) kos::lib::serial_write("=ACK");
-    else if (key == 0xFE) kos::lib::serial_write("=RESEND");
-    else if (key == 0xAA) kos::lib::serial_write("=SELF_TEST_OK");
-    else if (key == 0xE0) kos::lib::serial_write("=EXTENDED");
+    if (key == 0xE0) kos::lib::serial_write("=EXTENDED");
     else if (key >= 0x80 && key < 0xE0) kos::lib::serial_write("=RELEASE");
     
     kos::lib::serial_write("\n");
+#endif
 
     // Use global handler override if set, otherwise use instance handler
     KeyboardEventHandler* activeHandler = ::kos::g_keyboard_handler_override ? ::kos::g_keyboard_handler_override : handler;
     
     if(activeHandler == 0)
         return esp;
+
+    // Handle set-2 break prefix: F0 <make-code>
+    // SET 2 is still used for break codes but primary char decoding is SET 1
+    static bool s_set2_break = false;
+    if (key == 0xF0) {
+        s_set2_break = true;
+        return esp;
+    }
+    if (s_set2_break) {
+        s_set2_break = false;
+        return esp;
+    }
 
     // Handle extended scancode prefix 0xE0 (for extended keys like right Ctrl, keypad '/').
     if (key == 0xE0) {
@@ -260,6 +365,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             default:
             {
                 // Log unmapped scancodes for debugging
+#if KOS_INPUT_DEBUG
                 if (key < 0x60) {  // Only log likely keyboard scancodes, not special codes
                     kos::lib::serial_write("[KBD] Unmapped scancode: 0x");
                     const char* hex = "0123456789ABCDEF";
@@ -267,6 +373,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                     kos::lib::serial_putc(hex[key & 0xF]);
                     kos::lib::serial_write("\n");
                 }
+#endif
                 break; // ch remains 0
             }
         }
@@ -283,6 +390,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
             }
             
             // Debug: log first few characters delivered to handler
+#if KOS_INPUT_DEBUG
             static int char_count = 0;
             if (char_count < 5) {
                 kos::lib::serial_write("[KBD-IRQ] delivering char: ");
@@ -297,10 +405,12 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                 kos::lib::serial_write("\n");
                 ++char_count;
             }
+#endif
             
             activeHandler->OnKeyDown(ch);
             
             // Debug: verify handler isn't null
+#if KOS_INPUT_DEBUG
             static int handler_check = 0;
             if (handler_check++ < 3) {
                 kos::lib::serial_write("[KBD] activeHandler ptr=");
@@ -311,6 +421,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                 }
                 kos::lib::serial_write("\n");
             }
+#endif
             
             // mark source as IRQ
             ::kos::g_kbd_input_source = 1;
@@ -331,51 +442,85 @@ bool KeyboardDriver::PollOnce() {
     auto& ps2 = kos::drivers::ps2::PS2Controller::Instance();
     uint8_t status = ps2.ReadStatus();
     
-    // Debug: log poll attempts occasionally, including status register
+    // Debug: log poll attempts more frequently to diagnose PS/2 status
+#if KOS_INPUT_DEBUG
     static int poll_count = 0;
     static int had_data_count = 0;
     static int aux_skip_count = 0;
+    static int obf_seen = 0;
+#endif
+#if KOS_INPUT_DEBUG
     const char* hex = "0123456789ABCDEF";
-    if ((++poll_count % 1000) == 0) {
-        kos::lib::serial_write("[KBD-Poll] status=0x");
-        kos::lib::serial_putc(hex[(status >> 4) & 0xF]);
-        kos::lib::serial_putc(hex[status & 0xF]);
-        kos::lib::serial_write(" checked=");
+#endif
+    
+    // Log every poll status to understand what's happening
+#if KOS_INPUT_DEBUG
+    if ((++poll_count % 100) == 0) {
+        // Check if OBF was ever seen
+        if (status & 0x01) {
+            ++obf_seen;
+        }
+        kos::lib::serial_write("[KBD-Poll] check#");
         char buf[12]; int i = 0; uint32_t pc = poll_count;
         while (pc && i < 11) { buf[i++] = '0' + (pc % 10); pc /= 10; }
         while (i--) kos::lib::serial_putc(buf[i]);
-        kos::lib::serial_write(" kbd_data=");
-        i = 0; pc = had_data_count;
-        if (pc == 0) { kos::lib::serial_write("0"); }
-        else { while (pc && i < 11) { buf[i++] = '0' + (pc % 10); pc /= 10; } while (i--) kos::lib::serial_putc(buf[i]); }
-        kos::lib::serial_write(" aux_skip=");
-        i = 0; pc = aux_skip_count;
+        kos::lib::serial_write(" status=0x");
+        kos::lib::serial_putc(hex[(status >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[status & 0xF]);
+        kos::lib::serial_write(" obf_freq=");
+        i = 0; pc = obf_seen;
         if (pc == 0) { kos::lib::serial_write("0"); }
         else { while (pc && i < 11) { buf[i++] = '0' + (pc % 10); pc /= 10; } while (i--) kos::lib::serial_putc(buf[i]); }
         kos::lib::serial_write("\n");
     }
+#endif
     
     // Check if output buffer has data (bit 0)
     if ((status & 0x01) == 0) return false;
     
-    // Check if data is from keyboard (bit 5 = 0) or mouse (bit 5 = 1)
-    // If AUX bit is set, this data is for the mouse, not keyboard
-    // IMPORTANT: Still read and discard the byte to avoid blocking the controller
+    // If AUX is set the pending byte belongs to the mouse.
+    // Forward one byte to mouse polling so keyboard polling does not stall
+    // behind a mouse byte at the head of the shared PS/2 output buffer.
     if (status & 0x20) {
+#if KOS_INPUT_DEBUG
         ++aux_skip_count;
-        (void)ps2.ReadData(); // Consume and discard mouse data
-        return true; // Return true to allow caller to continue polling
+#endif
+        if (::kos::g_mouse_driver_ptr) {
+            ::kos::g_mouse_driver_ptr->PollOnce();
+            return true; // continue draining this tick
+        }
+        return false;
     }
     
+#if KOS_INPUT_DEBUG
     ++had_data_count;
+#endif
+#if KOS_INPUT_DEBUG
     static bool s_tty_notified = false;
+#endif
     uint8_t key = ps2.ReadData();
     
+    // Filter out ACK and other special bytes - these should not be processed as scancodes
+    if (key == 0xFA || key == 0xFE || key == 0xAA) {
+#if KOS_INPUT_DEBUG
+        kos::lib::serial_write("[P]");
+        kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
+        kos::lib::serial_putc(hex[key & 0xF]);
+        if (key == 0xFA) kos::lib::serial_write("=ACK");
+        else if (key == 0xFE) kos::lib::serial_write("=RESEND");
+        else if (key == 0xAA) kos::lib::serial_write("=SELF_TEST_OK");
+        kos::lib::serial_write(" (ignored)\n");
+#endif
+        return true; // Continue polling to drain other data
+    }
+    
     // ALWAYS log polled keys
+#if KOS_INPUT_DEBUG
     kos::lib::serial_write("[P]");
     kos::lib::serial_putc(hex[(key >> 4) & 0xF]);
     kos::lib::serial_putc(hex[key & 0xF]);
     kos::lib::serial_write("\n");
+#endif
     ::kos::g_kbd_input_source = 2; // mark as polled activity
     ++::kos::g_kbd_events;
     
@@ -383,6 +528,15 @@ bool KeyboardDriver::PollOnce() {
     KeyboardEventHandler* activeHandler = ::kos::g_keyboard_handler_override ? ::kos::g_keyboard_handler_override : handler;
     
     if(activeHandler == 0) return false;
+
+    // Handle set-2 break prefix in polling path as well.
+    // SET 2 is still used for break codes but primary char decoding is SET 1
+    static bool s_set2_break_poll = false;
+    if (key == 0xF0) { s_set2_break_poll = true; return true; }
+    if (s_set2_break_poll) { s_set2_break_poll = false; return true; }
+
+    // Skip to SET 1 decoding (primary method) - avoid redundant SET 2 false decoding
+
     if (key == 0xE0) { e0Prefix = true; return true; }
     if (key & 0x80) {
         uint8_t code = key & 0x7F;
@@ -403,7 +557,9 @@ bool KeyboardDriver::PollOnce() {
         }
         static bool s_first_poll_logged = false;
         if (!s_first_poll_logged) { Logger::LogKV("KBD", "first-poll"); s_first_poll_logged = true; }
+#if KOS_INPUT_DEBUG
         if (!s_tty_notified) { kos::console::TTY::Write((const int8_t*)"[KBD] using POLL\n"); s_tty_notified = true; }
+#endif
         ::kos::g_kbd_input_source = 2;
         return true;
     }
@@ -422,7 +578,9 @@ bool KeyboardDriver::PollOnce() {
         activeHandler->OnKeyDown(ch);
         static bool s_first_poll_logged = false;
         if (!s_first_poll_logged) { Logger::LogKV("KBD", "first-poll"); s_first_poll_logged = true; }
+    #if KOS_INPUT_DEBUG
         if (!s_tty_notified) { kos::console::TTY::Write((const int8_t*)"[KBD] using POLL\n"); s_tty_notified = true; }
+    #endif
         ::kos::g_kbd_input_source = 2;
         ++::kos::g_kbd_events;
     }

@@ -12,6 +12,7 @@
 #include <memory/heap.hpp>
 #include <process/timer.hpp>
 #include <common/types.hpp>
+#include <lib/serial.hpp>
 
 using namespace kos::console;
 using namespace kos::fs;
@@ -211,15 +212,19 @@ void ServiceManager::TickAll() {
             if (interval == 0) {
                 // Skip periodic ticking for services that don't want it
             } else {
-                // Always tick if this is the first tick (last_tick_ms == 0) or enough time passed
-                // Also tick if UptimeMs returns 0 (timer not yet initialized)
+                // Always tick if this is the first tick, while timer is not ready,
+                // or when enough time passed per service interval.
                 bool firstTick = (node->last_tick_ms == 0);
-                bool timerNotReady = (now == 0 && node->last_tick_ms == 0);
+                bool timerNotReady = (now == 0);
                 bool intervalElapsed = (now >= node->last_tick_ms && (now - node->last_tick_ms) >= interval);
                 
                 if (firstTick || timerNotReady || intervalElapsed) {
                     node->svc->Tick();
-                    node->last_tick_ms = (now > 0) ? now : 1; // Avoid 0 to mark as ticked
+                    // Keep last_tick_ms at 0 until timer becomes valid; otherwise
+                    // services can get stuck forever if startup happens before timer updates.
+                    if (now > 0) {
+                        node->last_tick_ms = now;
+                    }
                 }
             }
         }
@@ -249,10 +254,22 @@ static void service_manager_thread() {
 // Implement the public API in the proper namespace as declared in the header
 namespace kos { namespace services { namespace ServiceAPI {
     bool StartManagerThread() {
-        if (!g_thread_manager) return false;
-        uint32_t tid = ThreadManagerAPI::CreateSystemThread((void*)service_manager_thread,
+        static bool s_started = false;
+        static uint32_t s_tid = 0;
+        if (s_started) return true;
+        if (!g_thread_manager) {
+            Logger::Log("ServiceManager: thread manager not ready");
+            return false;
+        }
+        s_tid = ThreadManagerAPI::CreateSystemThread((void*)service_manager_thread,
             THREAD_SYSTEM_SERVICE, 4096, PRIORITY_LOW, "service-manager");
-        return tid != 0;
+        if (s_tid == 0) {
+            Logger::Log("ServiceManager: failed to create manager thread");
+            return false;
+        }
+        s_started = true;
+        Logger::Log("ServiceManager: manager thread created");
+        return true;
     }
 } } }
 

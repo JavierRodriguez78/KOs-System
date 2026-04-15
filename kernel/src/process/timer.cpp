@@ -6,6 +6,7 @@
 #include <kernel/globals.hpp>
 #include <drivers/keyboard/keyboard_driver.hpp>
 #include <drivers/ps2/ps2.hpp>
+#include <services/service_manager.hpp>
 
 using namespace kos::process;
 using namespace kos::console;
@@ -61,21 +62,26 @@ SchedulerTimerHandler::SchedulerTimerHandler(InterruptManager* interrupt_manager
 uint32_t SchedulerTimerHandler::HandleInterrupt(uint32_t esp) {
     tick_count++;
     
-    // Poll keyboard every tick to work around IRQ1 not firing in some environments
-    // This is a fallback when keyboard interrupts don't work properly
-    // Only poll if enabled (disabled during keyboard initialization to avoid race conditions)
+    // Poll keyboard every tick as fallback for missing IRQ1
     if (::kos::g_kbd_poll_enabled && ::kos::g_keyboard_driver_ptr) {
-        // Poll up to 4 times per tick to drain queued data
         for (int i = 0; i < 4; ++i) {
             if (!::kos::g_keyboard_driver_ptr->PollOnce()) break;
         }
     }
-    
+
+    // Drive service ticking from the timer ISR only in text mode.
+    // In graphics mode, services are ticked from the main kernel loop to avoid
+    // concurrent TickAll() calls that can race window/input updates.
+    static uint32_t s_svc_tick_div = 0;
+    if (kos::g_display_mode != kos::kernel::DisplayMode::Graphics && ++s_svc_tick_div >= 3) { // 100 Hz / 3 ≈ 33 Hz
+        s_svc_tick_div = 0;
+        kos::services::ServiceManager::TickAll();
+    }
+
     // Call scheduler's timer tick handler and get potentially new ESP
     if (scheduler) {
         esp = scheduler->OnTimerTick(esp);
     }
     
-    // Return potentially modified ESP (if context switch occurred)
     return esp;
 }
