@@ -32,8 +32,8 @@ static uint32_t t = 0;
 static uint32_t s_mouse_win_id = 0; // small diagnostics window for mouse position
 static uint32_t s_login_win_id = 0; // login window id during pre-login
 static bool s_login_active = false;
-// 0=never, 1=until first packet, 2=always (default)
-static uint8_t s_mouse_poll_mode = 2;
+// 0=never, 1=until first packet (default), 2=always
+static uint8_t s_mouse_poll_mode = 1;
 static bool s_taskbar_enabled = true;
 static uint32_t s_terminal_counter = 1; // for titling Terminal N
 static uint32_t s_prev_mouse_pk = 0;    // track mouse packet counter between frames
@@ -57,12 +57,39 @@ static LoginKeyboardHandler s_login_handler;
 
 // Special taskbar hit ids
 static constexpr uint32_t kTaskbarSpawnBtnId = 0xFFFFFFFFu; // sentinel for "+" button
+static constexpr uint32_t kTaskbarRebootBtnId = 0xFFFFFFFEu; // sentinel for reboot button
+
+extern "C" void app_reboot() __attribute__((weak));
 
 // Taskbar layout constants
 static constexpr uint32_t kTaskbarHeight = 22; // bottom panel height
 static constexpr uint32_t kTaskbarPad = 4;
 static constexpr uint32_t kTaskButtonW = 120; // fixed width per window button
 static constexpr uint32_t kTaskButtonH = 18;  // inside bar
+
+static void TaskbarRebootSystem() {
+    // Prefer the registered reboot app entrypoint used by the text shell.
+    if (app_reboot) {
+        app_reboot();
+        return;
+    }
+
+    // Fallback: keyboard controller reset + triple-fault if needed.
+    auto io_outb = [](uint16_t port, uint8_t val) {
+        __asm__ __volatile__("outb %0, %1" : : "a"(val), "Nd"(port));
+    };
+    auto io_inb = [](uint16_t port) -> uint8_t {
+        uint8_t ret;
+        __asm__ __volatile__("inb %1, %0" : "=a"(ret) : "Nd"(port));
+        return ret;
+    };
+
+    while (io_inb(0x64) & 0x02u) { }
+    io_outb(0x64, 0xFE);
+    struct { uint16_t limit; uint32_t base; } __attribute__((packed)) null_idt = {0, 0};
+    __asm__ __volatile__("lidt %0\n\tint $0x03" : : "m"(null_idt));
+    for (;;) { __asm__ __volatile__("hlt"); }
+}
 
 struct TaskbarButtonGeom { uint32_t x,y,w,h; uint32_t winId; bool minimized; bool focused; };
 static TaskbarButtonGeom s_taskButtons[16];
@@ -72,8 +99,9 @@ static void BuildTaskbarButtons() {
     s_taskButtonCount = 0;
     if (!s_taskbar_enabled) return;
     const auto& fb = kos::gfx::GetInfo();
-    // Leave space for a small "+" spawn button at the far left
+    // Leave space for a small "+" spawn button at the far left and reboot button at the far right.
     const uint32_t spawnW = 20;
+    const uint32_t rebootW = 28;
     uint32_t x = kTaskbarPad + spawnW + 4;
     uint32_t y = fb.height - kTaskbarHeight + (kTaskbarHeight - kTaskButtonH)/2;
     for (uint32_t i=0;i<kos::ui::GetWindowCount() && s_taskButtonCount < 16; ++i) {
@@ -84,7 +112,7 @@ static void BuildTaskbarButtons() {
         TaskbarButtonGeom& b = s_taskButtons[s_taskButtonCount++];
         b.x = x; b.y = y; b.w = kTaskButtonW; b.h = kTaskButtonH; b.winId = wid; b.minimized = (st == kos::ui::WindowState::Minimized); b.focused = (wid == kos::ui::GetFocusedWindow());
         x += kTaskButtonW + 4;
-        if (x + kTaskButtonW + kTaskbarPad > fb.width) break; // no more space
+        if (x + kTaskButtonW + kTaskbarPad + rebootW + 4 > fb.width) break; // no more space
     }
 }
 
@@ -99,6 +127,13 @@ static uint32_t TaskbarHitTest(int mx, int my) {
     const uint32_t spawnH = kTaskButtonH;
     if ((uint32_t)mx >= spawnX && (uint32_t)mx < spawnX + spawnW && (uint32_t)my >= spawnY && (uint32_t)my < spawnY + spawnH) {
         return kTaskbarSpawnBtnId;
+    }
+    // Reboot button at far right
+    const uint32_t rebootW = 28;
+    const uint32_t rebootX = fb.width - kTaskbarPad - rebootW;
+    const uint32_t rebootY = spawnY;
+    if ((uint32_t)mx >= rebootX && (uint32_t)mx < rebootX + rebootW && (uint32_t)my >= rebootY && (uint32_t)my < rebootY + spawnH) {
+        return kTaskbarRebootBtnId;
     }
     for (uint32_t i=0;i<s_taskButtonCount;++i) {
         const auto& b = s_taskButtons[i];
@@ -304,6 +339,8 @@ void WindowManager::Tick() {
         if (tbWin == kTaskbarSpawnBtnId) {
             // Create a new terminal window on '+' button click
             WindowManager::SpawnTerminal();
+        } else if (tbWin == kTaskbarRebootBtnId) {
+            TaskbarRebootSystem();
         } else if (tbWin) {
             if (kos::ui::GetWindowState(tbWin) == kos::ui::WindowState::Minimized) {
                 kos::ui::RestoreWindow(tbWin);
@@ -361,11 +398,31 @@ void WindowManager::Tick() {
             }
         }
     }
-    // Poll mouse each tick when needed: before first IRQ packet or in always mode.
+    // Poll mouse as a fallback only. Avoid mixing IRQ + poll streams because that can desync pointer motion.
     static uint32_t s_no_pkt_ticks = 0;
     static bool s_notified_no_irq = false;
+    static bool s_seen_irq_mouse = false;
+    static uint32_t s_ticks_since_irq = 0;
     if (::kos::g_mouse_driver_ptr) {
-        bool needPoll = (drivers::mouse::g_mouse_packets == 0) || (s_mouse_poll_mode == 2);
+        if (::kos::g_mouse_input_source == 1) {
+            s_seen_irq_mouse = true;
+            s_ticks_since_irq = 0;
+        } else if (s_ticks_since_irq < 0xFFFFFFFFu) {
+            ++s_ticks_since_irq;
+        }
+
+        bool needPoll = false;
+        if (s_mouse_poll_mode == 2) {
+            // Always mode: use poll until IRQ is seen, then only if IRQ has been silent for a while.
+            needPoll = (!s_seen_irq_mouse) || (s_ticks_since_irq > 8);
+        } else if (s_mouse_poll_mode == 1) {
+            // Compatibility mode: poll only until IRQ is seen.
+            needPoll = !s_seen_irq_mouse;
+        } else {
+            // Never mode
+            needPoll = false;
+        }
+
         if (needPoll) {
             for (int i = 0; i < 16; ++i) {
                 uint32_t before = drivers::mouse::g_mouse_packets;
@@ -512,6 +569,24 @@ void WindowManager::Tick() {
             kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, 0xFF000000u);
             // Draw '+' centered using 8x8 glyphs: '+' is ASCII 0x2B
             const uint8_t* glyph = kos::gfx::kFont8x8Basic['+' - 32];
+            uint32_t gx = x + (w/2) - 4;
+            uint32_t gy = y + (h/2) - 4;
+            kos::gfx::Compositor::DrawGlyph8x8(gx, gy, glyph, 0xFFFFFFFFu, base);
+        }
+        // Reboot button at far right
+        {
+            uint32_t w = 28, h = kTaskButtonH;
+            uint32_t x = fbinfo.width - kTaskbarPad - w;
+            uint32_t y = barY + (kTaskbarHeight - h)/2;
+            uint32_t base = 0xFF7A1F1Fu;
+            kos::gfx::Compositor::FillRect(x, y, w, h, base);
+            // Outline
+            kos::gfx::Compositor::FillRect(x, y, w, 1, 0xFF000000u);
+            kos::gfx::Compositor::FillRect(x, y + h - 1, w, 1, 0xFF000000u);
+            kos::gfx::Compositor::FillRect(x, y, 1, h, 0xFF000000u);
+            kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, 0xFF000000u);
+            // Draw "R" centered.
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic['R' - 32];
             uint32_t gx = x + (w/2) - 4;
             uint32_t gy = y + (h/2) - 4;
             kos::gfx::Compositor::DrawGlyph8x8(gx, gy, glyph, 0xFFFFFFFFu, base);

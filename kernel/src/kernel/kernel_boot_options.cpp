@@ -51,7 +51,7 @@ namespace {
     }
 } // anonymous
 
-BootOptions::BootOptions() : mousePollMode(MOUSE_POLL_ALWAYS), debugEnabled(false), rebootOnPanic(false) {}
+BootOptions::BootOptions() : mousePollMode(MOUSE_POLL_ONCE), debugEnabled(false), rebootOnPanic(false) {}
 
 BootOptions BootOptions::ParseFromMultiboot(const void* mb_info, kos::common::uint32_t magic) {
     BootOptions opts;

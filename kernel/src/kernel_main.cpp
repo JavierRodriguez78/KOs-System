@@ -194,7 +194,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
         kos::ui::InitInput();
         const auto& fbInfo = kos::gfx::GetInfo();
         kos::ui::SetCursorPos((int)(fbInfo.width/2), (int)(fbInfo.height/2));
-        kos::ui::SetMouseSensitivity(2, 1);
+        kos::ui::SetMouseSensitivity(1, 1);
         Logger::LogKV("Input", "initialized");
     }
     boot.Advance(BootStage::InputInit);

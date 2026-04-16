@@ -9,7 +9,7 @@ using namespace kos;
 using namespace kos::kernel;
 
 MultibootKernel::MultibootKernel(const void* mb_info_, kos::common::uint32_t magic_)
-    : mb_info(mb_info_), magic(magic_), mousePollMode(2), memLowerKB(0), memUpperKB(0) {}
+    : mb_info(mb_info_), magic(magic_), mousePollMode(1), memLowerKB(0), memUpperKB(0) {}
 
 void MultibootKernel::Init()
 {
@@ -23,8 +23,8 @@ void MultibootKernel::Init()
         kos::gfx::Clear32(0xFF1E1E20u);
     }
 
-    // Default mouse poll mode
-    mousePollMode = 2;
+    // Default mouse poll mode: poll only until first packet is observed.
+    mousePollMode = 1;
 
     // Parse Multiboot v1 mem fields if present and keep mem info
     if (magic == 0x2BADB002 && mb_info) {
