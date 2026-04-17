@@ -312,3 +312,8 @@ const User* UserService::Find(const int8_t* name) const {
     int32_t idx = IndexOf(name);
     return (idx >= 0) ? &m_users[idx] : nullptr;
 }
+
+const User* UserService::UserAt(int32_t index) const {
+    if (index < 0 || index >= m_user_count) return nullptr;
+    return &m_users[index];
+}

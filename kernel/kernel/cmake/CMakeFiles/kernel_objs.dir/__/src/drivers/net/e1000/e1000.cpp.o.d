@@ -1,0 +1,28 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/drivers/net/e1000/e1000.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/drivers/net/e1000/e1000.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/net/e1000/e1000.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/driver.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/net/e1000/e1000_consts.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/stdint.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/logger.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/rtc/rtc.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/string.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/pci/peripheral_component_intercontroller.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port32bit.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/driver_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/net/nic.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/paging.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/heap.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stdio.hpp \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stddef.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/string.hpp

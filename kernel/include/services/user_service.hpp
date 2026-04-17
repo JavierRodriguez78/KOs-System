@@ -47,6 +47,7 @@ namespace services {
         // Query
         int32_t UserCount() const;
         const User* Find(const int8_t* name) const;
+        const User* UserAt(int32_t index) const;
 
     private:
         static const int32_t kMaxUsers = 16;

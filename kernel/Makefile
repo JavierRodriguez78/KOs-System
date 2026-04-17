@@ -624,6 +624,32 @@ mv.elf/fast:
 .PHONY : mv.elf/fast
 
 #=============================================================================
+# Target rules for targets named tree_obj
+
+# Build rule for target.
+tree_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tree_obj
+.PHONY : tree_obj
+
+# fast build rule for target.
+tree_obj/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/tree_obj.dir/build.make kernel/cmake/CMakeFiles/tree_obj.dir/build
+.PHONY : tree_obj/fast
+
+#=============================================================================
+# Target rules for targets named tree.elf
+
+# Build rule for target.
+tree.elf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tree.elf
+.PHONY : tree.elf
+
+# fast build rule for target.
+tree.elf/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/tree.elf.dir/build.make kernel/cmake/CMakeFiles/tree.elf.dir/build
+.PHONY : tree.elf/fast
+
+#=============================================================================
 # Target rules for targets named lscpu_obj
 
 # Build rule for target.
@@ -897,6 +923,19 @@ qemu-log/fast:
 .PHONY : qemu-log/fast
 
 #=============================================================================
+# Target rules for targets named qemu-inbound-test
+
+# Build rule for target.
+qemu-inbound-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 qemu-inbound-test
+.PHONY : qemu-inbound-test
+
+# fast build rule for target.
+qemu-inbound-test/fast:
+	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/qemu-inbound-test.dir/build.make kernel/cmake/CMakeFiles/qemu-inbound-test.dir/build
+.PHONY : qemu-inbound-test/fast
+
+#=============================================================================
 # Target rules for targets named diskimg
 
 # Build rule for target.
@@ -985,6 +1024,7 @@ help:
 	@echo "... qemu"
 	@echo "... qemu-gtk"
 	@echo "... qemu-gtk-view"
+	@echo "... qemu-inbound-test"
 	@echo "... qemu-log"
 	@echo "... qemu-ro"
 	@echo "... qemu-usb"
@@ -994,6 +1034,7 @@ help:
 	@echo "... ss.elf"
 	@echo "... sshd.elf"
 	@echo "... top.elf"
+	@echo "... tree.elf"
 	@echo "... vdi"
 	@echo "... app_support_objs"
 	@echo "... cat_obj"
@@ -1020,6 +1061,7 @@ help:
 	@echo "... ss_obj"
 	@echo "... sshd_obj"
 	@echo "... top_obj"
+	@echo "... tree_obj"
 .PHONY : help
 
 

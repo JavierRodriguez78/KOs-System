@@ -7,6 +7,9 @@
 namespace kos { 
     namespace ui {
 
+    // Special coordinate value to request automatic placement.
+    constexpr uint32_t kAutoCoord = 0xFFFFFFFFu;
+
         enum class HitRegion : uint8_t {
             None = 0,
             Client = 1,
@@ -30,13 +33,21 @@ namespace kos {
             WF_Resizable = 1 << 0,
             WF_Minimizable = 1 << 1,
             WF_Maximizable = 1 << 2,
-            WF_Closable    = 1 << 3
+            WF_Closable    = 1 << 3,
+            WF_Frameless   = 1 << 4
         };
 
         enum class WindowState : uint8_t {
             Normal = 0,
             Minimized,
             Maximized
+        };
+
+        enum class WindowRole : uint8_t {
+            Normal = 0,
+            Dialog,
+            Utility,
+            Dock
         };
 
         // UI event system for interaction notifications
@@ -64,6 +75,8 @@ namespace kos {
             kos::gfx::WindowDesc desc;
             // Window manager state
             WindowState state;
+            WindowRole role;
+            uint32_t parentId; // 0 for none; used by transient/dialog relationships
             uint32_t flags; // WindowFlags
             // Geometry to restore from when un-maximizing
             kos::gfx::Rect restore;
@@ -71,9 +84,26 @@ namespace kos {
 
         // Initialize UI framework
         bool Init();
+        // Set a global work area (usable desktop region) used by placement, move,
+        // resize, and maximize operations.
+        void SetWorkArea(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+        // Reset work area to full framebuffer.
+        void ResetWorkArea();
+        // Query current work area.
+        bool GetWorkArea(kos::gfx::Rect& outArea);
         // Create a window and return its id
+    // x/y can be kAutoCoord to let the framework choose placement.
     uint32_t CreateWindow(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t bg, const char* title,
                   uint32_t flags = (WF_Resizable | WF_Minimizable | WF_Maximizable | WF_Closable));
+        // Extended creation with explicit role hint for placement and future policy.
+        uint32_t CreateWindowEx(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t bg, const char* title,
+                                WindowRole role,
+                                uint32_t flags = (WF_Resizable | WF_Minimizable | WF_Maximizable | WF_Closable),
+                                uint32_t parentWindowId = 0);
+        // Convenience helper for transient dialogs centered over parent.
+        uint32_t CreateDialogWindow(uint32_t parentWindowId,
+                                    uint32_t w, uint32_t h, uint32_t bg, const char* title,
+                                    uint32_t flags = (WF_Minimizable | WF_Closable));
         // Render all windows using the compositor
         void RenderAll();
 
@@ -118,6 +148,10 @@ namespace kos {
         void UpdateInteractions();
         // Poll one UI event from the internal queue; returns false if no events
         bool PollEvent(UIEvent& outEvent);
+
+        // Query role metadata for policy consumers.
+        WindowRole GetWindowRole(uint32_t windowId);
+        uint32_t GetWindowParent(uint32_t windowId);
 
     }
 

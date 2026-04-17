@@ -1,0 +1,23 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_init.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/kernel/init.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/pmm.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/paging.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/heap.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/scheduler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/timer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/interrupts/interrupt_handler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/port/port_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga_constants.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/pipe.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/sync.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/logger.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../arch/x86/hardware/rtc/rtc.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/string.h

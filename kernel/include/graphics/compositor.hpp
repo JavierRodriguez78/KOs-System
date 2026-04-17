@@ -34,6 +34,10 @@ namespace kos {
             // Fill a rectangle in backbuffer with a solid color (clamped to screen)
             static void FillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color);
 
+            // Clip drawing operations to a window client region.
+            static void SetClipRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+            static void ClearClipRect();
+
         private:
             static bool s_ready;
             static uint32_t* s_backbuf; // backbuffer mapped to system RAM

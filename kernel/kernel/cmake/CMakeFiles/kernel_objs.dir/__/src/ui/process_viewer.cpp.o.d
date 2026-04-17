@@ -1,0 +1,19 @@
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: \
+ /mnt/e/proyectos/kos-system/kernel/src/ui/process_viewer.cpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/ui/process_viewer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/common/types.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/compositor.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/framebuffer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/font8x8_basic.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/ui/framework.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread_manager.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/thread.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/sync.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/process/scheduler.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/string.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/libc/stdint.h \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stddef.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga_constants.hpp
