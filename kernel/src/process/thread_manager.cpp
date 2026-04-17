@@ -492,18 +492,11 @@ extern "C" void shell_thread() {
 extern "C" void keyboard_thread() {
     Logger::Log("Keyboard thread started");
     
-    // Keyboard input handler - processes keyboard events in separate thread
+    // Keyboard input is primarily IRQ-driven.
+    // Fallback polling is owned by timer/text mode and window manager/graphics mode.
     while (true) {
-        // Fallback polling: if IRQ1 hasn't produced input yet or host drops PS/2 interrupts
-        // Poll multiple times to drain any queued data (including mouse data that might block)
-        if (::kos::g_keyboard_driver_ptr) {
-            for (int i = 0; i < 32 && ::kos::g_keyboard_driver_ptr->PollOnce(); ++i) {
-                // Keep draining until no more data or limit reached
-            }
-        }
-        
         SchedulerAPI::YieldThread();
-        SchedulerAPI::SleepThread(10); // 10ms polling
+        SchedulerAPI::SleepThread(10);
     }
 }
 

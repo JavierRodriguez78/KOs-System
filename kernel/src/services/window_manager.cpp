@@ -5,6 +5,7 @@
 #include <ui/framework.hpp>
 #include <ui/input.hpp>
 #include <ui/login_screen.hpp>
+#include <ui/process_viewer.hpp>
 #include <graphics/terminal.hpp>
 #include <graphics/font8x8_basic.hpp>
 #include <services/service_manager.hpp>
@@ -31,11 +32,12 @@ namespace kos { namespace services {
 static uint32_t t = 0;
 static uint32_t s_mouse_win_id = 0; // small diagnostics window for mouse position
 static uint32_t s_login_win_id = 0; // login window id during pre-login
+static uint32_t s_process_monitor_win_id = 0; // process monitor window id
 static bool s_login_active = false;
 // 0=never, 1=until first packet (default), 2=always
 static uint8_t s_mouse_poll_mode = 1;
 static bool s_taskbar_enabled = true;
-static uint32_t s_terminal_counter = 1; // for titling Terminal N
+static uint32_t s_terminal_counter = 1; // for titling Shell N
 static uint32_t s_prev_mouse_pk = 0;    // track mouse packet counter between frames
 static int s_mouse_evt_flash = 0;       // frames to flash event indicator when new packets arrive
 static uint32_t s_prev_kbd_ev = 0;      // track keyboard event counter
@@ -153,12 +155,12 @@ uint32_t WindowManager::SpawnTerminal() {
     uint32_t x = 8 + (s_terminal_counter % 6) * 24;
     uint32_t y = 24 + (s_terminal_counter % 6) * 16;
     char title[32];
-    // First terminal is just "Terminal", subsequent are "Terminal N"
+    // First window is "Shell", subsequent are "Shell N"
     if (s_terminal_counter <= 1) {
-        title[0]='T'; title[1]='e'; title[2]='r'; title[3]='m'; title[4]='i'; title[5]='n'; title[6]='a'; title[7]='l'; title[8]=0;
+        title[0]='S'; title[1]='h'; title[2]='e'; title[3]='l'; title[4]='l'; title[5]=0;
     } else {
         // Simple decimal append
-        const char base[] = "Terminal ";
+        const char base[] = "Shell ";
         int bi=0; while (base[bi]) { title[bi]=base[bi]; ++bi; }
         uint32_t n = s_terminal_counter;
         // convert n to decimal
@@ -170,16 +172,29 @@ uint32_t WindowManager::SpawnTerminal() {
     uint32_t newId = kos::ui::CreateWindow(x, y, termW, termH, 0xFF000000u, title);
     if (!newId) return 0;
 
-    // Close previous terminal window if any, then rebind renderer to new window
+    // Close previous terminal window if any, then rebind renderer to new window.
+    // Ensure the terminal backend is initialized before rendering/writing to it.
     uint32_t oldId = kos::gfx::Terminal::GetWindowId();
-    kos::gfx::Terminal::SetWindow(newId);
+    if (!kos::gfx::Terminal::IsActive()) {
+        if (!kos::gfx::Terminal::Initialize(newId, 80, 25, true)) {
+            kos::ui::CloseWindow(newId);
+            return 0;
+        }
+    } else {
+        kos::gfx::Terminal::SetWindow(newId);
+    }
     kos::ui::BringToFront(newId);
     kos::ui::SetFocusedWindow(newId);
     // Ensure a clean buffer and fresh prompt (skip boot logs)
     kos::console::TTY::Clear();
     kos::console::TTY::DiscardPreinitBuffer();
     kos::gfx::Terminal::Clear();
+    kos::console::TTY::SetColor(10, 0);
+    kos::console::TTY::Write((const int8_t*)"[GUI SHELL] ");
     kos::console::TTY::SetAttr(0x07);
+    kos::console::TTY::Write((const int8_t*)"Mismo prompt y comandos que el entorno texto\n");
+    kos::console::TTY::SetAttr(0x07);
+    kos::console::TTY::SetColor(14, 0);
     kos::console::TTY::Write((const int8_t*)"kos[00]:/");
     kos::console::TTY::SetColor(11, 0);
     kos::console::TTY::Write((const int8_t*)"");
@@ -254,12 +269,37 @@ bool WindowManager::Start() {
             }
         }
     }
-    // No demo window to avoid overlapping the terminal visually
+    // Create process monitor window to display system processes
+    {
+        const auto& fbinfo = kos::gfx::GetInfo();
+        uint32_t w = 720, h = 420;
+        uint32_t x = (fbinfo.width > w + 16 ? 8 : 0);
+        uint32_t y = (fbinfo.height > h + 64 ? 60 : 24);
+        s_process_monitor_win_id = kos::ui::CreateWindow(x, y, w, h, 0xFF1F1F2E, "System Process Monitor",
+                                                         kos::ui::WF_Resizable | kos::ui::WF_Minimizable | 
+                                                         kos::ui::WF_Maximizable | kos::ui::WF_Closable);
+        if (s_process_monitor_win_id) {
+            // Initialize the process viewer with the window
+            kos::ui::ProcessViewer::Initialize(s_process_monitor_win_id);
+            kos::ui::ProcessViewer::RefreshProcessList();
+            kos::ui::BringToFront(s_process_monitor_win_id);
+            // Don't steal focus from login
+            if (s_login_active && s_login_win_id) {
+                kos::ui::SetFocusedWindow(s_login_win_id);
+            } else if (kos::gfx::Terminal::IsActive()) {
+                kos::ui::SetFocusedWindow(kos::gfx::Terminal::GetWindowId());
+            }
+        }
+    }
 
     // Draw an initial frame immediately so the window is visible even before the service ticker runs
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background
     kos::gfx::Compositor::BeginFrame(wallpaper);
     kos::ui::RenderAll();
+    // Render all content layered by z-order
+    if (s_process_monitor_win_id) {
+        kos::ui::ProcessViewer::Render();
+    }
     if (s_login_active) {
         kos::ui::LoginScreen::Render();
     } else if (kos::gfx::Terminal::IsActive()) {
@@ -448,13 +488,21 @@ void WindowManager::Tick() {
             s_no_pkt_ticks = 0; s_notified_no_irq = true; // we have packets; suppress notice
         }
     }
-    // Also poll keyboard here as an extra safety net in graphics mode
-    // Drain all buffered scancodes (up to a limit to avoid infinite loops)
-    static uint32_t poll_attempt_count = 0;
-    if (::kos::g_keyboard_driver_ptr) {
-        ++poll_attempt_count;
+    // Keyboard fallback polling in graphics mode: avoid mixing IRQ + poll paths.
+    // Use polling only until IRQ input is seen, or if IRQ goes silent for a while.
+    static bool s_seen_irq_kbd = false;
+    static uint32_t s_ticks_since_kbd_irq = 0;
+    if (::kos::g_kbd_input_source == 1) {
+        s_seen_irq_kbd = true;
+        s_ticks_since_kbd_irq = 0;
+    } else if (s_ticks_since_kbd_irq < 0xFFFFFFFFu) {
+        ++s_ticks_since_kbd_irq;
+    }
+
+    bool needKbdPoll = (!s_seen_irq_kbd) || (s_ticks_since_kbd_irq > 8);
+    if (::kos::g_keyboard_driver_ptr && needKbdPoll) {
         for (int i = 0; i < 16 && ::kos::g_keyboard_driver_ptr->PollOnce(); ++i) {
-            // PollOnce returns true if a key was processed; keep draining
+            // Drain buffered keyboard bytes while in fallback mode.
         }
     }
 
@@ -517,6 +565,16 @@ void WindowManager::Tick() {
     kos::gfx::Compositor::BeginFrame(wallpaper);
     // Render all UI windows
     kos::ui::RenderAll();
+    // Render process monitor if visible
+    if (s_process_monitor_win_id) {
+        kos::ui::ProcessViewer::Render();
+        // Refresh process list every ~30 ticks (for smooth updates)
+        static uint32_t refresh_counter = 0;
+        if (++refresh_counter >= 30) {
+            kos::ui::ProcessViewer::RefreshProcessList();
+            refresh_counter = 0;
+        }
+    }
     // Render login screen contents if active
     if (s_login_active) {
         kos::ui::LoginScreen::Render();

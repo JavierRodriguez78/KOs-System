@@ -27,12 +27,6 @@ ShellKeyboardHandler::~ShellKeyboardHandler(){
 
 
 void ShellKeyboardHandler::OnKeyDown(int8_t c){
-    // One-time log to confirm the shell handler is receiving keys
-    {
-        static bool s_first_key_seen = false;
-        if (!s_first_key_seen) { kos::console::Logger::LogKV("KEY", "first-to-shell"); s_first_key_seen = true; }
-        if (c == '\n') { kos::console::Logger::LogKV("KEY", "enter"); }
-    }
     // Offer key to app-facing queue so applications can poll (non-blocking)
     sys_offer_key(c);
     // Always prioritize routing to shell in graphics mode to avoid input blockage.
@@ -64,12 +58,12 @@ void ShellKeyboardHandler::OnKeyDown(int8_t c){
         }
     }
     #endif
-    // Route to shell: prefer terminal when active; if focus is unknown, allow input by default
+    // Route to shell: in graphics mode require terminal focus (or no focus)
     bool routeToShell = true;
     #ifndef KOS_BUILD_APPS
     if (kos::gfx::Terminal::IsActive()) {
-        // Always route to shell when terminal active (ignore focus entirely for robustness)
-        routeToShell = true;
+        uint32_t focused = kos::ui::GetFocusedWindow();
+        routeToShell = (focused == 0 || focused == kos::gfx::Terminal::GetWindowId());
     } else {
         routeToShell = !consumed; // fallback behavior
     }

@@ -1,4 +1,5 @@
 #include <console/threaded_shell.hpp>
+#include <console/shell.hpp>
 #include <process/thread_manager.hpp>
 #include <process/scheduler.hpp>
 #include <process/pipe.hpp>
@@ -12,6 +13,7 @@
 #include <lib/stdio.hpp>
 #include <fs/filesystem.hpp>
 #include <memory/heap.hpp>
+#include <services/user_service.hpp>
 #include <drivers/net/e1000/e1000_poll.h>
 
 using namespace kos::console;
@@ -74,6 +76,12 @@ bool ThreadedShell::Initialize() {
         return false;
     }
     
+    static bool s_registry_initialized = false;
+    if (!s_registry_initialized) {
+        kos::console::CommandRegistry::Init();
+        s_registry_initialized = true;
+    }
+
     // Create shell input pipe
     uint32_t pipe_id = PipeAPI::CreatePipe("shell-input", 1024, 32);
     if (!pipe_id) {
@@ -125,17 +133,22 @@ void ThreadedShell::MainLoop() {
 }
 
 void ThreadedShell::ShowPrompt() {
-    // Prefix: kos[ID]:
-    TTY::Write("kos[");
-    TTY::WriteHex(shell_thread_id);
-    TTY::Write("]:");
+    // Prefix compatible with text shell: user@kos:
+    const auto* usvc = kos::services::GetUserService();
+    const int8_t* uname = usvc ? usvc->CurrentUserName() : (const int8_t*)"user";
+    bool isRoot = usvc ? usvc->IsSuperuser() : false;
+
+    TTY::SetColor(10, 0);
+    TTY::Write(uname);
+    TTY::SetAttr(0x07);
+    TTY::Write("@kos:");
 
     // Current directory with basename colorized (closest VGA color to #27F5E7 = light cyan 11)
     const int8_t* cwd = kos::sys::table()->cwd ? kos::sys::table()->cwd : (const int8_t*)"/";
     const int8_t* last_slash = nullptr;
     for (const int8_t* p = cwd; *p; ++p) if (*p == '/') last_slash = p;
     if (!last_slash) {
-        TTY::SetColor(11, 0);
+        TTY::SetColor(14, 0);
         TTY::Write(cwd);
         TTY::SetAttr(0x07);
     } else {
@@ -143,13 +156,15 @@ void ThreadedShell::ShowPrompt() {
         for (int32_t i = 0; i < prefix_len; ++i) TTY::PutChar(cwd[i]);
         const int8_t* base = last_slash + 1;
         if (*base) {
-            TTY::SetColor(11, 0);
+            TTY::SetColor(14, 0);
             TTY::Write(base);
             TTY::SetAttr(0x07);
         }
     }
 
-    TTY::Write("$ ");
+    TTY::SetColor(11, 0);
+    TTY::Write(isRoot ? "# " : "$ ");
+    TTY::SetAttr(0x07);
 }
 
 void ThreadedShell::WaitForInput() {
@@ -179,6 +194,14 @@ void ThreadedShell::ExecuteCommand() {
     char command[64];
     char args[256];
     ParseCommandLine(input_buffer, command, args);
+
+    // Reuse classic shell registry so graphical/threaded shell supports
+    // the same built-in app commands (ls, pwd, mkdir, clear, etc.).
+    if (auto* entry = kos::console::CommandRegistry::Find((const int8_t*)command)) {
+        entry();
+        input_buffer_pos = 0;
+        return;
+    }
     
     // Fast-path: built-in 'help' prints immediately (no separate thread needed)
     if (String::strcmp((const int8_t*)command, (const int8_t*)"help", 4) == 0 && command[4] == '\0') {

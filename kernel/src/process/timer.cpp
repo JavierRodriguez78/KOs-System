@@ -62,8 +62,11 @@ SchedulerTimerHandler::SchedulerTimerHandler(InterruptManager* interrupt_manager
 uint32_t SchedulerTimerHandler::HandleInterrupt(uint32_t esp) {
     tick_count++;
     
-    // Poll keyboard every tick as fallback for missing IRQ1
-    if (::kos::g_kbd_poll_enabled && ::kos::g_keyboard_driver_ptr) {
+    // Poll keyboard only in text mode as fallback for missing IRQ1.
+    // In graphics mode, window manager owns keyboard fallback polling.
+    if (::kos::g_display_mode != kos::kernel::DisplayMode::Graphics
+        && ::kos::g_kbd_poll_enabled
+        && ::kos::g_keyboard_driver_ptr) {
         for (int i = 0; i < 4; ++i) {
             if (!::kos::g_keyboard_driver_ptr->PollOnce()) break;
         }
