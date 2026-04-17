@@ -22,6 +22,7 @@
 #include <lib/stdio.hpp>
 #include <drivers/net/e1000/e1000_poll.h>
 #include <process/thread_manager.hpp>
+#include <process/scheduler.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -45,7 +46,18 @@ static uint32_t s_prev_kbd_ev = 0;      // track keyboard event counter
 static int s_kbd_evt_flash = 0;         // frames to flash indicator when keys arrive
 static bool s_shell_started = false;
 static uint32_t s_clock_win_id = 0; // desktop clock/date widget
-static constexpr uint32_t kDesktopClockTopInset = 44u; // reserved top strip to avoid overlap with clock widget
+static uint32_t s_system_hud_win_id = 0; // desktop CPU/MEM/BAT widget
+static uint32_t s_prev_total_runtime = 0;
+static uint32_t s_prev_idle_runtime = 0;
+static uint8_t  s_last_cpu_pct = 0;
+static constexpr uint32_t kDesktopClockTopInset = 56u; // reserved top strip to avoid overlap with top widgets
+
+static bool TryReadBatteryPercent(uint8_t& outPct) {
+    int32_t pct = kos::sys::get_battery_percent();
+    if (pct < 0 || pct > 100) return false;
+    outPct = static_cast<uint8_t>(pct);
+    return true;
+}
 
 static uint8_t blend8(uint8_t a, uint8_t b, uint32_t t, uint32_t max) {
     if (max == 0) return b;
@@ -182,8 +194,8 @@ static void BuildTaskbarButtons() {
     for (uint32_t i=0;i<kos::ui::GetWindowCount() && s_taskButtonCount < 16; ++i) {
         uint32_t wid; kos::gfx::WindowDesc d; kos::ui::WindowState st; uint32_t fl;
         if (!kos::ui::GetWindowAt(i, wid, d, st, fl)) continue;
-        // Skip non-closable utility windows (Mouse diag, Clock widget)
-        if (wid == s_mouse_win_id || wid == s_clock_win_id) { continue; }
+        // Skip non-closable utility windows (Mouse diag, Clock widget, System HUD)
+        if (wid == s_mouse_win_id || wid == s_clock_win_id || wid == s_system_hud_win_id) { continue; }
         TaskbarButtonGeom& b = s_taskButtons[s_taskButtonCount++];
         b.x = x; b.y = y; b.w = kTaskButtonW; b.h = kTaskButtonH; b.winId = wid; b.minimized = (st == kos::ui::WindowState::Minimized); b.focused = (wid == kos::ui::GetFocusedWindow());
         x += kTaskButtonW + 4;
@@ -376,6 +388,155 @@ static void RenderClockWindowContent() {
     }
 }
 
+static void RenderSystemHudContent() {
+    if (!s_system_hud_win_id) return;
+    kos::gfx::WindowDesc d;
+    if (!kos::ui::GetWindowDesc(s_system_hud_win_id, d)) return;
+
+    constexpr uint32_t kGreen    = 0xFF39FF14u;
+    constexpr uint32_t kYellow   = 0xFFF2E85Cu;
+    constexpr uint32_t kRed      = 0xFFFF5C5Cu;
+    constexpr uint32_t kFgDim    = 0xFF1A7A08u;
+    constexpr uint32_t kShadow   = 0xFF041400u;
+    constexpr uint32_t kBgA      = 0xFF020A02u;
+    constexpr uint32_t kBgB      = 0xFF030C03u;
+    constexpr uint32_t kBorderHi = 0xFF22AA22u;
+    constexpr uint32_t kBorderLo = 0xFF001000u;
+    constexpr uint32_t kBarBg    = 0xFF0A170Au;
+
+    uint32_t cx = d.x + 1, cy = d.y + 1;
+    uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
+    uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
+
+    for (uint32_t j = 0; j < ch; ++j) {
+        for (uint32_t i = 0; i < cw; ++i) {
+            uint32_t tx = (cx + i) / 2u;
+            uint32_t ty = (cy + j) / 2u;
+            kos::gfx::Compositor::FillRect(cx + i, cy + j, 1, 1, (((tx + ty) & 1u) ? kBgA : kBgB));
+        }
+    }
+
+    kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderHi);
+    kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderLo);
+    kos::gfx::Compositor::FillRect(cx, cy, 1, ch, kBorderHi);
+    kos::gfx::Compositor::FillRect(cx + cw - 1, cy, 1, ch, kBorderLo);
+
+    uint32_t totalRuntime = 0;
+    uint32_t idleRuntime = 0;
+    if (kos::process::g_scheduler) {
+        for (uint32_t tid = 1; tid <= 128; ++tid) {
+            kos::process::Thread* task = kos::process::g_scheduler->FindTask(tid);
+            if (!task || task->state == kos::process::TASK_TERMINATED) continue;
+            totalRuntime += task->total_runtime;
+            if (task->priority == kos::process::PRIORITY_IDLE) {
+                idleRuntime += task->total_runtime;
+            } else if (task->name && task->name[0] == 'i' && task->name[1] == 'd') {
+                idleRuntime += task->total_runtime;
+            }
+        }
+    }
+
+    uint32_t dTotal = totalRuntime - s_prev_total_runtime;
+    uint32_t dIdle = idleRuntime - s_prev_idle_runtime;
+    if (dTotal > 0) {
+        uint32_t busy = (dIdle <= dTotal) ? (dTotal - dIdle) : 0u;
+        uint32_t pct = (busy * 100u) / dTotal;
+        if (pct > 100u) pct = 100u;
+        s_last_cpu_pct = static_cast<uint8_t>(pct);
+    }
+    s_prev_total_runtime = totalRuntime;
+    s_prev_idle_runtime = idleRuntime;
+
+    uint32_t totalFrames = 0;
+    uint32_t freeFrames = 0;
+    uint32_t heapSize = 0;
+    uint32_t heapUsed = 0;
+    if (kos::sys::table()) {
+        if (kos::sys::table()->get_total_frames) totalFrames = kos::sys::table()->get_total_frames();
+        if (kos::sys::table()->get_free_frames) freeFrames = kos::sys::table()->get_free_frames();
+        if (kos::sys::table()->get_heap_size) heapSize = kos::sys::table()->get_heap_size();
+        if (kos::sys::table()->get_heap_used) heapUsed = kos::sys::table()->get_heap_used();
+    }
+    uint32_t usedFrames = (totalFrames >= freeFrames) ? (totalFrames - freeFrames) : 0u;
+    uint32_t memPct = (totalFrames > 0) ? ((usedFrames * 100u) / totalFrames) : 0u;
+
+    auto colorByLoad = [&](uint32_t pct) -> uint32_t {
+        if (pct >= 80u) return kRed;
+        if (pct >= 50u) return kYellow;
+        return kGreen;
+    };
+
+    uint8_t batPct = 0;
+    bool hasBattery = TryReadBatteryPercent(batPct);
+    if (batPct > 100u) batPct = 100u;
+
+    auto drawText = [&](uint32_t x, uint32_t y, const char* text, uint32_t fg) {
+        for (uint32_t i = 0; text[i]; ++i) {
+            char c = text[i];
+            if (c < 32 || c > 127) c = '?';
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
+            kos::gfx::Compositor::DrawGlyph8x8(x + i*8 + 1, y + 1, glyph, kShadow, 0);
+            kos::gfx::Compositor::DrawGlyph8x8(x + i*8, y, glyph, fg, 0);
+        }
+    };
+
+    auto drawBar = [&](uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t pct, uint32_t fg) {
+        if (w < 2u || h < 2u) return;
+        if (pct > 100u) pct = 100u;
+        kos::gfx::Compositor::FillRect(x, y, w, h, kBarBg);
+        kos::gfx::Compositor::FillRect(x, y, w, 1, kBorderHi);
+        kos::gfx::Compositor::FillRect(x, y + h - 1, w, 1, kBorderLo);
+        kos::gfx::Compositor::FillRect(x, y, 1, h, kBorderHi);
+        kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, kBorderLo);
+        uint32_t fillW = (w > 2u) ? ((w - 2u) * pct) / 100u : 0u;
+        if (fillW > 0u) {
+            kos::gfx::Compositor::FillRect(x + 1u, y + 1u, fillW, h - 2u, fg);
+        }
+    };
+
+    auto appendDec = [](char* out, int& p, uint32_t v) {
+        char rev[12];
+        int ri = 0;
+        if (v == 0) rev[ri++] = '0';
+        while (v && ri < 12) { rev[ri++] = char('0' + (v % 10u)); v /= 10u; }
+        while (ri) out[p++] = rev[--ri];
+    };
+
+    char line1[40]; int p1 = 0;
+    line1[p1++] = 'C'; line1[p1++] = 'P'; line1[p1++] = 'U'; line1[p1++] = ':'; line1[p1++] = ' ';
+    appendDec(line1, p1, s_last_cpu_pct); line1[p1++] = '%'; line1[p1] = 0;
+
+    char line2[64]; int p2 = 0;
+    line2[p2++] = 'M'; line2[p2++] = 'E'; line2[p2++] = 'M'; line2[p2++] = ':'; line2[p2++] = ' ';
+    appendDec(line2, p2, memPct); line2[p2++] = '%';
+    line2[p2++] = ' '; line2[p2++] = 'H'; line2[p2++] = ':';
+    appendDec(line2, p2, heapUsed / 1024u); line2[p2++] = '/'; appendDec(line2, p2, heapSize / 1024u); line2[p2++] = 'K';
+    line2[p2] = 0;
+
+    char line3[24]; int p3 = 0;
+    line3[p3++] = 'B'; line3[p3++] = 'A'; line3[p3++] = 'T'; line3[p3++] = ':'; line3[p3++] = ' ';
+    if (hasBattery) {
+        appendDec(line3, p3, batPct); line3[p3++] = '%';
+    } else {
+        line3[p3++] = 'N'; line3[p3++] = '/'; line3[p3++] = 'A';
+    }
+    line3[p3] = 0;
+
+    uint32_t tx = cx + 4u;
+    uint32_t cpuColor = colorByLoad(s_last_cpu_pct);
+    uint32_t memColor = colorByLoad(memPct);
+    uint32_t batColor = hasBattery ? colorByLoad(batPct) : kFgDim;
+
+    drawText(tx, cy + 2u, line1, cpuColor);
+    drawBar(tx + 72u, cy + 3u, 96u, 6u, s_last_cpu_pct, cpuColor);
+
+    drawText(tx, cy + 14u, line2, memColor);
+    drawBar(tx + 72u, cy + 15u, 96u, 6u, memPct, memColor);
+
+    drawText(tx, cy + 26u, line3, batColor);
+    drawBar(tx + 72u, cy + 27u, 96u, 6u, hasBattery ? static_cast<uint32_t>(batPct) : 0u, batColor);
+}
+
 static void RenderWindowContentsByZOrder() {
     uint32_t count = kos::ui::GetWindowCount();
     for (uint32_t i = 0; i < count; ++i) {
@@ -420,6 +581,12 @@ static void RenderWindowContentsByZOrder() {
             continue;
         }
 
+        if (wid == s_system_hud_win_id) {
+            RenderSystemHudContent();
+            kos::gfx::Compositor::ClearClipRect();
+            continue;
+        }
+
         if (!s_login_active && kos::gfx::Terminal::IsActive() && wid == kos::gfx::Terminal::GetWindowId()) {
             kos::gfx::Terminal::Render();
             kos::gfx::Compositor::ClearClipRect();
@@ -441,6 +608,19 @@ static void CreatePostLoginWindows() {
         s_clock_win_id = kos::ui::CreateWindowEx(cx, cy, cw, ch, 0xFF020A02u, "Clock",
                              kos::ui::WindowRole::Utility,
                              kos::ui::WF_Frameless);
+    }
+
+    if (s_system_hud_win_id == 0) {
+        const auto& fb = kos::gfx::GetInfo();
+        const uint32_t hudW = 176u, hudH = 44u;
+        const uint32_t clockW = 142u;
+        uint32_t hx = 8u;
+        if (fb.width > (clockW + hudW + 24u)) {
+            hx = fb.width - clockW - hudW - 16u;
+        }
+        s_system_hud_win_id = kos::ui::CreateWindowEx(hx, 8u, hudW, hudH, 0xFF020A02u, "SystemHUD",
+                                  kos::ui::WindowRole::Utility,
+                                  kos::ui::WF_Frameless);
     }
 
     // Reserve a top strip so auto-positioned windows won't overlap the clock widget.
@@ -588,6 +768,8 @@ bool WindowManager::Start() {
     // Desktop windows are created only after successful login.
     s_mouse_win_id = 0;
     s_process_monitor_win_id = 0;
+    s_clock_win_id = 0;
+    s_system_hud_win_id = 0;
 
     // Draw an initial frame immediately so the window is visible even before the service ticker runs
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background

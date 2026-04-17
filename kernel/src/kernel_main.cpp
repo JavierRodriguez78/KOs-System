@@ -166,6 +166,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     GlobalDescriptorTable gdt;
     // Initialize system API table for apps
     InitSysApi();
+    // Initialise power/battery backend — captures APM table from Multiboot1
+    // before it may be overwritten; must run after GDT so APM callers have a
+    // valid flat code segment.
+    sys_init_power(multiboot_structure, multiboot_magic);
     InterruptManager interrupts(kInterruptVectorBase, &gdt);
     // Register a noop handler for IRQ14 (IDE primary) to avoid log spam if device still raises IRQs
     IDEIRQHandler ideIrq14(&interrupts, interrupts.HardwareInterruptOffset() + kIdePrimaryIrq);

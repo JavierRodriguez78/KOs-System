@@ -90,6 +90,218 @@ extern "C" void sys_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day,
     if (minute) *minute = dt.minute;
     if (second) *second = dt.second;
 }
+
+// ===========================================================================
+//  Battery / Power backend
+//  Path 1 — ACPI Embedded Controller (EC)
+//    Primary path on any ACPI-capable platform (QEMU default machine, most
+//    laptops).  Uses the standard PC/AT EC port pair (0x62 data, 0x66 cmd).
+//    EC command 0x80 (RD_EC) reads a single byte register by index.
+//
+//    ACPI EC Battery register map (QEMU PNP0C0A / real ACPI DSDT):
+//      0x00  Battery Status  bit0=present  bit1=charging  bit2=discharging
+//      0x01  Battery Rate    signed 16-bit LSB (mW, 2 bytes)
+//      0x02  Remaining Cap.  unsigned 16-bit LE (mWh)
+//      0x04  Full Cap.       unsigned 16-bit LE (mWh)
+//
+//  Path 2 — APM 32-bit Protected-Mode Interface (fallback)
+//    Available when Multiboot1 flag bit 10 is set and the BIOS supports the
+//    32-bit PM connection (ApmTable.flags bit 1).  GRUB connects the APM PM
+//    interface and stores segment info in the Multiboot APM table.  Under a
+//    flat-model GDT (base=0), the APM entry is callable as a near procedure
+//    at the linear address (cseg_base + offset).  GRUB uses a flat-base 0,
+//    so linear_entry = apm_offset.
+//
+//    APM function 0x530A (Get Power Status), BX=0x8001 (all batteries)
+//    returns: BH=AC status, BL=battery status, CL=remaining% (0xFF=unknown)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// APM state — saved during early boot before our GDT reinit
+// ---------------------------------------------------------------------------
+
+// APM BIOS table as laid out by Multiboot1
+struct ApmTable {
+    uint16_t version;       // BCD: 0x0102 → v1.2
+    uint16_t cseg;          // 32-bit PM code segment (GRUB GDT selector)
+    uint32_t offset;        // Entry-point offset within cseg
+    uint16_t cseg_16;       // 16-bit PM code segment
+    uint16_t dseg;          // Data segment (GRUB GDT selector)
+    uint16_t flags;         // bit0=16-bit PM, bit1=32-bit PM, bit2=idle slows CPU
+    uint16_t cseg_len;
+    uint16_t cseg_16_len;
+    uint16_t dseg_len;
+} __attribute__((packed));
+
+static bool     g_apm_present  = false;
+static uint32_t g_apm_entry    = 0;    // linear address; callable after flat-model GDT
+static uint16_t g_apm_dseg_sel = 0;    // original GRUB data-segment selector
+
+// sys_init_power — called from kernelMain() with raw Multiboot info.
+// Must be called early (after mb.Init() and GDT, but before first battery
+// read) so APM state is captured.
+extern "C" void sys_init_power(const void* mb_info, uint32_t magic) {
+    if (magic != 0x2BADB002u || !mb_info) return;
+
+    // Multiboot1 flags word (first dword of the info struct)
+    const uint32_t mb_flags = *(const uint32_t*)mb_info;
+    if (!(mb_flags & (1u << 10u))) return;  // APM table absent
+
+    // apm_table field sits at byte offset 0x44 in the Multiboot1 info struct:
+    //  flags(4)+mem_lower(4)+mem_upper(4)+boot_device(4)+cmdline(4)
+    //  +mods_count(4)+mods_addr(4)+syms[4](16)+mmap_length(4)+mmap_addr(4)
+    //  +drives_length(4)+drives_addr(4)+config_table(4)+boot_loader_name(4) = 0x44
+    const uint32_t apm_phys = *(const uint32_t*)((uintptr_t)mb_info + 0x44u);
+    if (!apm_phys) return;
+
+    const ApmTable* apt = (const ApmTable*)(uintptr_t)apm_phys;
+
+    // Require 32-bit PM interface (flags bit 1)
+    if (!(apt->flags & 0x02u)) return;
+    // Sanity: version must be ≥ 1.1
+    if (apt->version < 0x0101u) return;
+
+    // GRUB sets up APM with a flat (base=0) code segment, so the entry's
+    // linear address equals the raw offset field.
+    g_apm_entry    = apt->offset;
+    g_apm_dseg_sel = apt->dseg;
+    g_apm_present  = true;
+}
+
+// ---------------------------------------------------------------------------
+// APM Get-Power-Status call (32-bit PM, function 0x530A)
+// Returns remaining percentage (0–100) or -1 on failure/unsupported.
+// ---------------------------------------------------------------------------
+static int32_t _apm_get_battery_percent() {
+    if (!g_apm_present || !g_apm_entry) return -1;
+
+    // APM 32-bit PM function 0x530A — Get Power Status
+    // Input:  AH=0x53, AL=0x0A, BX=0x8001 (all batteries)
+    // Output: BH=AC line status, BL=battery status,
+    //         CH=battery flags, CL=remaining life % (0xFF=unknown),
+    //         DX=remaining life in seconds or minutes
+    //         CF set on error (AH=error code)
+    //
+    // We make a near call to the flat-model entry (base=0 assumed by GRUB).
+    // All GPRs may be clobbered by the APM BIOS; we declare them as clobbers.
+
+    uint32_t entry = g_apm_entry;
+    uint8_t  cl_out = 0xFFu;
+    uint8_t  cf_out = 1u;
+
+        // ESI and EDI are saved/restored by the asm block itself so we can use
+        // them as pointer output registers without including them in clobbers.
+        // EAX, EBX, ECX, EDX are freely clobbered by the APM BIOS callee.
+        uint8_t* p_cf = &cf_out;
+        uint8_t* p_cl = &cl_out;
+    __asm__ __volatile__(
+            "pushl %%esi         \n\t"   // save ESI (will hold p_cf)
+            "pushl %%edi         \n\t"   // save EDI (will hold p_cl)
+            "movl  %1, %%esi     \n\t"   // ESI = p_cf
+            "movl  %2, %%edi     \n\t"   // EDI = p_cl
+            "movw  $0x530A, %%ax \n\t"   // AH=0x53 (APM), AL=0x0A (Get Power Status)
+            "movw  $0x8001, %%bx \n\t"   // BX=0x8001 (all batteries)
+            "call  *%0           \n\t"   // near call to APM PM entry
+            "setc  %%al          \n\t"   // CF → AL
+            "movb  %%al, (%%esi) \n\t"   // *p_cf = carry
+            "movb  %%cl, (%%edi) \n\t"   // *p_cl = remaining %
+            "popl  %%edi         \n\t"   // restore EDI
+            "popl  %%esi         \n\t"   // restore ESI
+            :
+            : "m"(entry), "m"(p_cf), "m"(p_cl)
+            : "eax", "ebx", "ecx", "edx", "memory"
+    );
+
+    if (cf_out) return -1;           // APM returned an error
+    if (cl_out == 0xFFu) return -1;  // percentage unknown
+    if (cl_out > 100u) return -1;    // bogus value
+    return (int32_t)cl_out;
+}
+
+// ---------------------------------------------------------------------------
+// ACPI EC port helpers
+// ---------------------------------------------------------------------------
+
+// Probe EC presence: if status port reads 0xFF the EC hardware is absent.
+static bool _ec_present() {
+    uint8_t st;
+    __asm__ __volatile__("inb %1, %0" : "=a"(st) : "Nd"((uint16_t)0x66));
+    return (st != 0xFFu);
+}
+
+static inline void _ec_wait_ibf() {
+    uint32_t to = 0x10000u;
+    while (to--) {
+        uint8_t st;
+        __asm__ __volatile__("inb %1, %0" : "=a"(st) : "Nd"((uint16_t)0x66));
+        if (!(st & 0x02u)) return;
+    }
+}
+
+static inline bool _ec_wait_obf() {
+    uint32_t to = 0x10000u;
+    while (to--) {
+        uint8_t st;
+        __asm__ __volatile__("inb %1, %0" : "=a"(st) : "Nd"((uint16_t)0x66));
+        if (st & 0x01u) return true;
+    }
+    return false; // timed out — EC not responding
+}
+
+// Returns 0xFF on timeout (invalid/not-present indicator).
+static uint8_t _ec_read(uint8_t reg) {
+    _ec_wait_ibf();
+    __asm__ __volatile__("outb %0, %1" : : "a"((uint8_t)0x80), "Nd"((uint16_t)0x66)); // RD_EC
+    _ec_wait_ibf();
+    __asm__ __volatile__("outb %0, %1" : : "a"(reg),           "Nd"((uint16_t)0x62));
+    if (!_ec_wait_obf()) return 0xFFu;
+    uint8_t val;
+    __asm__ __volatile__("inb %1, %0" : "=a"(val) : "Nd"((uint16_t)0x62));
+    return val;
+}
+
+// ACPI EC battery read. Returns 0–100 or -1.
+static int32_t _acpi_ec_battery_percent() {
+    if (!_ec_present()) return -1;
+
+    // Battery Status byte: bit 0 = present
+    uint8_t bst = _ec_read(0x00u);
+    if (bst == 0xFFu) return -1;        // EC timed out
+    if (!(bst & 0x01u)) return -1;      // no battery
+
+    // Remaining capacity — 16-bit LE at registers 0x02/0x03
+    uint8_t rem_lo = _ec_read(0x02u);
+    uint8_t rem_hi = _ec_read(0x03u);
+    if (rem_lo == 0xFFu || rem_hi == 0xFFu) return -1;
+
+    // Full charge capacity — 16-bit LE at registers 0x04/0x05
+    uint8_t ful_lo = _ec_read(0x04u);
+    uint8_t ful_hi = _ec_read(0x05u);
+    if (ful_lo == 0xFFu || ful_hi == 0xFFu) return -1;
+
+    uint16_t remaining = (uint16_t)rem_lo | ((uint16_t)rem_hi << 8u);
+    uint16_t full      = (uint16_t)ful_lo | ((uint16_t)ful_hi << 8u);
+    if (full == 0u) return -1;
+
+    // Sanity: remaining must not exceed full
+    if (remaining > full) remaining = full;
+
+    int32_t pct = (int32_t)(((uint32_t)remaining * 100u) / (uint32_t)full);
+    if (pct > 100) pct = 100;
+    return pct;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+extern "C" int32_t sys_get_battery_percent() {
+    // Try ACPI EC first (reliable on QEMU and most ACPI laptops)
+    int32_t pct = _acpi_ec_battery_percent();
+    if (pct >= 0) return pct;
+
+    // Fallback: APM 32-bit PM interface (older systems / no ACPI battery)
+    return _apm_get_battery_percent();
+}
 extern "C" void sys_listdir(const int8_t* path) {
     if (!kos::fs::g_fs_ptr) return;
     // Resolve relative path against current working directory and normalize
@@ -433,6 +645,8 @@ extern "C" void InitSysApi() {
     t->key_poll = &sys_key_poll;
     // Date/time API
     t->get_datetime = &sys_get_datetime;
+    // Battery API
+    t->get_battery_percent = &sys_get_battery_percent;
     // File rename/move
     t->rename = &sys_rename;
     // Networking: socket enumeration (stub)

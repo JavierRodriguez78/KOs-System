@@ -69,6 +69,8 @@ namespace kos {
             // Get current date/time from RTC (local time). All pointers optional.
             void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
                                  uint8_t* hour, uint8_t* minute, uint8_t* second);
+            // Battery percentage (0..100), or -1 when unavailable.
+            int32_t (*get_battery_percent)();
             // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
             int32_t (*rename)(const int8_t* src, const int8_t* dst);
             // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
@@ -199,6 +201,10 @@ namespace kos {
                                         uint8_t* hour, uint8_t* minute, uint8_t* second) {
             if (table()->get_datetime) table()->get_datetime(year, month, day, hour, minute, second);
         }
+
+        static inline int32_t get_battery_percent() {
+            return table()->get_battery_percent ? table()->get_battery_percent() : -1;
+        }
     
     /*
     * @brief Format a string and store it in a buffer.
@@ -214,6 +220,10 @@ namespace kos {
 
 // Keep C ABI function in global namespace for compatibility
 extern "C" void InitSysApi();
+
+// Early-boot power/APM initialisation. Call once with raw Multiboot info
+// AFTER GDT setup, before first battery query.
+extern "C" void sys_init_power(const void* mb_info, uint32_t magic);
 
 
 

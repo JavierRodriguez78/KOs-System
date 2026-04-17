@@ -48,6 +48,8 @@ typedef struct ApiTableC {
     // Get current date/time from RTC (local), fills out fields
     void (*get_datetime)(uint16_t* year, uint8_t* month, uint8_t* day,
                          uint8_t* hour, uint8_t* minute, uint8_t* second);
+    // Battery percentage (0..100), or -1 when unavailable.
+    int32_t (*get_battery_percent)();
     // Rename/move a file or directory: src -> dst. Returns 0 on success, negative on failure.
     int32_t (*rename)(const int8_t* src, const int8_t* dst);
     // Enumerate sockets (future TCP/UDP stack). Returns count or <0 on error.
@@ -127,6 +129,10 @@ static inline void kos_get_datetime(uint16_t* year, uint8_t* month, uint8_t* day
         if (year) *year = 1970; if (month) *month = 1; if (day) *day = 1;
         if (hour) *hour = 0; if (minute) *minute = 0; if (second) *second = 0;
     }
+}
+
+static inline int32_t kos_get_battery_percent(void) {
+    return kos_sys_table()->get_battery_percent ? kos_sys_table()->get_battery_percent() : -1;
 }
 
 // Rename/move wrapper
