@@ -260,6 +260,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/console/shellKeyboardHandler.cpp.
   /mnt/e/proyectos/kos-system/kernel/include/fs/filesystem.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/terminal.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/boot_options.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/globals.hpp \
@@ -317,6 +318,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/console/tty.cpp.o: /mnt/e/proyect
   /mnt/e/proyectos/kos-system/kernel/include/drivers/vga/vga_constants.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/terminal.hpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/drivers/ata/ata.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/drivers/ata/ata.cpp \
@@ -636,6 +638,8 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/compositor.cpp.o: /mnt/e
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/gpu_accel.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/string.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stddef.hpp \
@@ -657,12 +661,32 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.o: /mnt/
   /mnt/e/proyectos/kos-system/kernel/include/common/types.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp
 
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_inter_constants.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_intercontroller.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port32bit.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port_constants.hpp \
+  /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/rtc/rtc.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/common/types.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/console/logger.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/console/tty.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/drivers/driver.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/drivers/driver_manager.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/drivers/gpu/vmsvga.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/drivers/vga/vga.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/drivers/vga/vga_constants.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/gpu_accel.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/lib/libc/string.h
+
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/graphics/terminal.cpp \
   /mnt/e/proyectos/kos-system/kernel/include/common/types.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x16_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/terminal.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stddef.hpp \
@@ -976,6 +1000,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o: /mnt/e/proyect
   /mnt/e/proyectos/kos-system/kernel/include/fs/fat32.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/fs/filesystem.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/gpu_accel.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/boot_options.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/boot_stage.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/drivers.hpp \
@@ -1622,6 +1647,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o: /m
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/terminal.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/boot_options.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/kernel/globals.hpp \
@@ -1650,6 +1676,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o: /mnt/e/proyectos
   /mnt/e/proyectos/kos-system/kernel/include/common/types.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/ui/cursor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/ui/input.hpp
 
@@ -1657,6 +1684,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o: /mnt/e/proyec
   /mnt/e/proyectos/kos-system/kernel/include/common/types.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stddef.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/string.hpp \
@@ -1676,6 +1704,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o: /mnt/e/pro
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stddef.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stdio.hpp \
@@ -1698,6 +1727,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o: /m
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/string.h \
   /mnt/e/proyectos/kos-system/kernel/include/memory/memory.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/process/scheduler.hpp \
@@ -1713,6 +1743,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
   /mnt/e/proyectos/kos-system/kernel/include/graphics/compositor.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x8_basic.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/graphics/framebuffer.hpp \
+  /mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h \
   /mnt/e/proyectos/kos-system/kernel/include/lib/stddef.hpp \
   /mnt/e/proyectos/kos-system/kernel/include/lib/string.hpp \
@@ -1732,8 +1763,6 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 /mnt/e/proyectos/kos-system/kernel/src/ui/input.cpp:
 
 /mnt/e/proyectos/kos-system/kernel/src/services/window_manager.cpp:
-
-/mnt/e/proyectos/kos-system/kernel/src/services/user_service.cpp:
 
 /mnt/e/proyectos/kos-system/kernel/src/ui/cursor.cpp:
 
@@ -1849,7 +1878,13 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 
 /mnt/e/proyectos/kos-system/kernel/src/graphics/terminal.cpp:
 
+/mnt/e/proyectos/kos-system/kernel/include/drivers/gpu/vmsvga.hpp:
+
 /mnt/e/proyectos/kos-system/kernel/include/graphics/font8x16_basic.hpp:
+
+/mnt/e/proyectos/kos-system/kernel/src/services/user_service.cpp:
+
+/mnt/e/proyectos/kos-system/kernel/include/graphics/gpu_accel.hpp:
 
 /mnt/e/proyectos/kos-system/kernel/src/lib/sysapi.cpp:
 
@@ -1869,6 +1904,8 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 
 /mnt/e/proyectos/kos-system/kernel/src/drivers/usb/usb_core.cpp:
 
+/mnt/e/proyectos/kos-system/kernel/include/drivers/usb/uhci.hpp:
+
 /mnt/e/proyectos/kos-system/kernel/include/process/sync.hpp:
 
 /mnt/e/proyectos/kos-system/kernel/include/kernel/boot_options.hpp:
@@ -1882,6 +1919,8 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 /mnt/e/proyectos/kos-system/kernel/include/lib/sysapi.hpp:
 
 /mnt/e/proyectos/kos-system/kernel/include/kernel/shell.hpp:
+
+/mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp:
 
 /mnt/e/proyectos/kos-system/kernel/include/lib/libc/stdint.h:
 
@@ -2105,6 +2144,8 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 
 /mnt/e/proyectos/kos-system/kernel/include/console/threaded_shell.hpp:
 
+/mnt/e/proyectos/kos-system/kernel/include/graphics/render_backend.hpp:
+
 /mnt/e/proyectos/kos-system/kernel/include/ui/framework.hpp:
 
 /mnt/e/proyectos/kos-system/kernel/src/graphics/font8x8_basic.cpp:
@@ -2186,5 +2227,3 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/p
 /mnt/e/proyectos/kos-system/kernel/src/drivers/usb/hid_keyboard.cpp:
 
 /mnt/e/proyectos/kos-system/kernel/include/drivers/usb/hid_keyboard.hpp:
-
-/mnt/e/proyectos/kos-system/kernel/include/drivers/usb/uhci.hpp:

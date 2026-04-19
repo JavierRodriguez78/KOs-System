@@ -44,6 +44,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o: \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stdio.hpp \
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/framebuffer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/gpu_accel.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/kernel/init.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/kernel/drivers.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/kernel/fs.hpp \

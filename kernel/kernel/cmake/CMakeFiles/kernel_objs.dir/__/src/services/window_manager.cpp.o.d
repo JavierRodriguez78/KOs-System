@@ -7,6 +7,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o: \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/memory/memory.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/compositor.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/framebuffer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/render_backend.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/logger.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/console/tty.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/drivers/vga/vga.hpp \

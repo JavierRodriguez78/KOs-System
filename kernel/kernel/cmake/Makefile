@@ -2826,6 +2826,30 @@ __/src/graphics/framebuffer.cpp.s:
 	cd /mnt/e/proyectos/KOs-System/kernel && $(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kernel_objs.dir/build.make kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.s
 .PHONY : __/src/graphics/framebuffer.cpp.s
 
+__/src/graphics/gpu_accel.o: __/src/graphics/gpu_accel.cpp.o
+.PHONY : __/src/graphics/gpu_accel.o
+
+# target to build an object file
+__/src/graphics/gpu_accel.cpp.o:
+	cd /mnt/e/proyectos/KOs-System/kernel && $(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kernel_objs.dir/build.make kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o
+.PHONY : __/src/graphics/gpu_accel.cpp.o
+
+__/src/graphics/gpu_accel.i: __/src/graphics/gpu_accel.cpp.i
+.PHONY : __/src/graphics/gpu_accel.i
+
+# target to preprocess a source file
+__/src/graphics/gpu_accel.cpp.i:
+	cd /mnt/e/proyectos/KOs-System/kernel && $(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kernel_objs.dir/build.make kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.i
+.PHONY : __/src/graphics/gpu_accel.cpp.i
+
+__/src/graphics/gpu_accel.s: __/src/graphics/gpu_accel.cpp.s
+.PHONY : __/src/graphics/gpu_accel.s
+
+# target to generate assembly for a file
+__/src/graphics/gpu_accel.cpp.s:
+	cd /mnt/e/proyectos/KOs-System/kernel && $(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/kernel_objs.dir/build.make kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.s
+.PHONY : __/src/graphics/gpu_accel.cpp.s
+
 __/src/graphics/terminal.o: __/src/graphics/terminal.cpp.o
 .PHONY : __/src/graphics/terminal.o
 
@@ -4659,6 +4683,9 @@ help:
 	@echo "... __/src/graphics/framebuffer.o"
 	@echo "... __/src/graphics/framebuffer.i"
 	@echo "... __/src/graphics/framebuffer.s"
+	@echo "... __/src/graphics/gpu_accel.o"
+	@echo "... __/src/graphics/gpu_accel.i"
+	@echo "... __/src/graphics/gpu_accel.s"
 	@echo "... __/src/graphics/terminal.o"
 	@echo "... __/src/graphics/terminal.i"
 	@echo "... __/src/graphics/terminal.s"

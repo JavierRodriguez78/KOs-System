@@ -7,6 +7,8 @@
 #include <memory/heap.hpp>
 #include <ui/input.hpp>
 #include <graphics/font8x8_basic.hpp>
+#include <graphics/gpu_accel.hpp>
+#include <graphics/render_backend.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
 
 using namespace kos::gfx;
@@ -15,7 +17,7 @@ using namespace kos::lib;
 namespace kos { namespace gfx {
 
 bool Compositor::s_ready = false;
-uint32_t* Compositor::s_backbuf = nullptr;
+bool Compositor::s_gpu_backend = false;
 uint32_t Compositor::s_pitchBytes = 0;
 uint32_t Compositor::s_width = 0;
 uint32_t Compositor::s_height = 0;
@@ -25,11 +27,17 @@ static Rect s_clip_rect = {0, 0, 0, 0};
 
 static inline uint32_t clampU32(uint32_t v, uint32_t lo, uint32_t hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+static inline uint32_t* BackbufferPixels() {
+    return kos::gfx::render::GetBackbuffer().pixels;
+}
+
 bool Compositor::Initialize() {
     if (!gfx::IsAvailable()) return false;
+    gpu::ProbePCI();
     const auto& fb = gfx::GetInfo();
     if (fb.type != 1 || (fb.bpp != 32 && fb.bpp != 24)) return false;
     s_width = fb.width; s_height = fb.height; s_pitchBytes = fb.pitch;
+    s_gpu_backend = gpu::InitializeBackend(s_width, s_height);
     // Map framebuffer if it's not identity-mapped (< 64 MiB)
     const uint32_t ID_MAP_END = 64 * 1024 * 1024;
     uint32_t fbBytes = s_height * s_pitchBytes;
@@ -46,32 +54,32 @@ bool Compositor::Initialize() {
                                       kos::memory::Paging::Present | kos::memory::Paging::RW | kos::memory::Paging::WriteThrough);
         s_fbBase = (uint8_t*)VIRT_FB_BASE;
     }
-    // Allocate a simple backbuffer: width*height*4 bytes via kernel heap
-    uint32_t bbBytes = s_width * s_height * 4;
-    s_backbuf = (uint32_t*)kos::memory::Heap::Alloc(bbBytes, 4096);
-    if (!s_backbuf) {
-        kos::console::Logger::Log("[COMPOSITOR] Backbuffer alloc failed");
+    if (!kos::gfx::render::Initialize(s_width, s_height, s_pitchBytes, fb.bpp, s_fbBase, s_gpu_backend)) {
+        kos::console::Logger::Log("[COMPOSITOR] render backend init failed");
         s_ready = false;
         return false;
     }
-    // Initialize to transparent black
-    for (uint32_t i = 0; i < s_width * s_height; ++i) s_backbuf[i] = 0xFF000000u;
     s_ready = true;
     // Basic diagnostics
     kos::console::Logger::Log("[COMPOSITOR] initialized");
+    kos::console::Logger::LogKV("[COMPOSITOR] backend", BackendName());
     return true;
 }
 
 void Compositor::Shutdown() {
     s_ready = false;
-    s_backbuf = nullptr;
+    s_gpu_backend = false;
+    kos::gfx::render::Shutdown();
 }
+
+bool Compositor::IsUsingGpuBackend() { return s_gpu_backend; }
+
+const char* Compositor::BackendName() { return s_gpu_backend ? gpu::ActiveBackendName() : "cpu"; }
 
 void Compositor::BeginFrame(uint32_t wallpaper) {
     if (!s_ready) return;
     s_clip_enabled = false;
-    // Clear backbuffer to wallpaper color
-    for (uint32_t i = 0; i < s_width * s_height; ++i) s_backbuf[i] = wallpaper;
+    kos::gfx::render::Fill(0, 0, s_width, s_height, wallpaper);
 }
 
 static inline void blitRect(uint32_t* dst, uint32_t pitchPixels, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
@@ -79,6 +87,10 @@ static inline void blitRect(uint32_t* dst, uint32_t pitchPixels, uint32_t x, uin
         uint32_t* row = dst + (y + j) * pitchPixels + x;
         for (uint32_t i = 0; i < w; ++i) row[i] = color;
     }
+}
+
+static inline void blitRectBackend(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+    kos::gfx::render::Fill(x, y, w, h, color);
 }
 
 static inline uint8_t addSat8(uint8_t v, int delta) {
@@ -122,6 +134,18 @@ static inline void blitChecker(uint32_t* dst, uint32_t pitchPixels,
     }
 }
 
+static inline void blitCheckerBackend(uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+                                      uint32_t cA, uint32_t cB, uint32_t cell = 2) {
+    if (cell == 0) cell = 1;
+    for (uint32_t j = 0; j < h; ++j) {
+        for (uint32_t i = 0; i < w; ++i) {
+            const uint32_t tx = (x + i) / cell;
+            const uint32_t ty = (y + j) / cell;
+            kos::gfx::render::Fill(x + i, y + j, 1, 1, ((tx + ty) & 1u) ? cA : cB);
+        }
+    }
+}
+
 void Compositor::DrawWindow(const WindowDesc& win) {
     if (!s_ready) return;
     // Clamp to screen
@@ -144,20 +168,20 @@ void Compositor::DrawWindow(const WindowDesc& win) {
     if (bodyH) {
         uint32_t bodyA = tintColor(win.bg, -8);
         uint32_t bodyB = tintColor(win.bg, 6);
-        blitChecker(s_backbuf, stride, x, y + th, w, bodyH, bodyA, bodyB, 2);
+        blitCheckerBackend(x, y + th, w, bodyH, bodyA, bodyB, 2);
     }
     // Draw title bar
-    blitRect(s_backbuf, stride, x, y, w, (h < th ? h : th), kTitleBg);
+    blitRectBackend(x, y, w, (h < th ? h : th), kTitleBg);
     // Pixel stripes for 8-bit feel.
     for (uint32_t sy = y + 1; sy < y + (h < th ? h : th); sy += 2) {
-        blitRect(s_backbuf, stride, x, sy, w, 1, 0xFF17305Fu);
+        blitRectBackend(x, sy, w, 1, 0xFF17305Fu);
     }
     // Simple top border
-    blitRect(s_backbuf, stride, x, y, w, 1, kTopLight);
+    blitRectBackend(x, y, w, 1, kTopLight);
     // Left/Right/Bottom borders
-    blitRect(s_backbuf, stride, x, y, 1, h, kTopLight);
-    if (w > 1) blitRect(s_backbuf, stride, x + w - 1, y, 1, h, kBottomDark);
-    if (h > 1) blitRect(s_backbuf, stride, x, y + h - 1, w, 1, kBottomDark);
+    blitRectBackend(x, y, 1, h, kTopLight);
+    if (w > 1) blitRectBackend(x + w - 1, y, 1, h, kBottomDark);
+    if (h > 1) blitRectBackend(x, y + h - 1, w, 1, kBottomDark);
     // Title text: for now, omitted (no font rasterizer available yet)
     if (win.title) {
         // Render title using 8x8 font in the title bar, with small padding
@@ -181,14 +205,15 @@ void Compositor::DrawWindow(const WindowDesc& win) {
     uint32_t minX = (maxX >= btnW+pad ? maxX - (btnW+pad) : maxX); uint32_t minY = y;
     auto drawBtn=[&](uint32_t bx,uint32_t by,uint32_t color){
         // background
-        blitRect(s_backbuf, stride, bx, by, btnW, btnH, 0xFF244684u);
+        blitRectBackend(bx, by, btnW, btnH, 0xFF244684u);
         // border
-        blitRect(s_backbuf, stride, bx, by, btnW, 1, kTopLight);
-        blitRect(s_backbuf, stride, bx, by+btnH-1, btnW, 1, kBottomDark);
-        blitRect(s_backbuf, stride, bx, by, 1, btnH, kTopLight);
-        blitRect(s_backbuf, stride, bx+btnW-1, by, 1, btnH, kBottomDark);
+        blitRectBackend(bx, by, btnW, 1, kTopLight);
+        blitRectBackend(bx, by+btnH-1, btnW, 1, kBottomDark);
+        blitRectBackend(bx, by, 1, btnH, kTopLight);
+        blitRectBackend(bx+btnW-1, by, 1, btnH, kBottomDark);
         // simple glyph (center lines)
         uint32_t gx = bx + (btnW/2) - 4; uint32_t gy = by + (btnH/2) - 4;
+        uint32_t glyphBuf[64];
         for (uint32_t r=0;r<8;++r){
             for(uint32_t c=0;c<8;++c){
                 bool on=false;
@@ -200,9 +225,10 @@ void Compositor::DrawWindow(const WindowDesc& win) {
                 } else { // close: X
                     on = (c==r||c==7-r);
                 }
-                s_backbuf[(gy+r)*stride + (gx+c)] = on ? 0xFFFFE26Fu : 0xFF244684u;
+                glyphBuf[r * 8 + c] = on ? 0xFFFFE26Fu : 0xFF244684u;
             }
         }
+        kos::gfx::render::Upload(glyphBuf, 8, 8, 8, gx, gy);
     };
     drawBtn(minX, minY, 0); // minimize
     drawBtn(maxX, maxY, 1); // maximize
@@ -211,68 +237,44 @@ void Compositor::DrawWindow(const WindowDesc& win) {
 
 void Compositor::EndFrame() {
     if (!s_ready) return;
-    // Subtle CRT scanlines: darken every other row before presenting.
-    for (uint32_t y = 1; y < s_height; y += 2) {
-        uint32_t* row = s_backbuf + y * s_width;
-        for (uint32_t x = 0; x < s_width; ++x) {
-            row[x] = darkenColor(row[x], 18);
-        }
-    }
-
-    // Copy backbuffer to framebuffer. Use the mapped base (identity-mapped when below 64MiB,
-    // otherwise explicitly mapped in Initialize). Writing directly to the physical address can
-    // fault on platforms where the framebuffer sits above the identity map.
-    const auto& fb = gfx::GetInfo();
-    uint8_t* dstBase = s_fbBase;
-    if (!dstBase) return;
-    // Optionally warp slightly from screen edges for a smoother experience
-    // (no-op right now; we just render the cursor)
-    if (fb.bpp == 32) {
-        for (uint32_t y = 0; y < s_height; ++y) {
-            uint32_t* dst = (uint32_t*)(dstBase + y * s_pitchBytes);
-            uint32_t* src = s_backbuf + y * s_width;
-            for (uint32_t x = 0; x < s_width; ++x) dst[x] = src[x];
-        }
-    } else { // 24 bpp BGR
-        for (uint32_t y = 0; y < s_height; ++y) {
-            uint8_t* dst = (uint8_t*)(dstBase + y * s_pitchBytes);
-            uint32_t* src = s_backbuf + y * s_width;
+    // Keep scanline post-process for CPU backend only.
+    if (!s_gpu_backend) {
+        uint32_t* backbuf = BackbufferPixels();
+        for (uint32_t y = 1; y < s_height; y += 2) {
+            uint32_t* row = backbuf + y * s_width;
             for (uint32_t x = 0; x < s_width; ++x) {
-                uint32_t argb = src[x];
-                uint8_t r = (argb >> 16) & 0xFF;
-                uint8_t g = (argb >> 8) & 0xFF;
-                uint8_t b = (argb) & 0xFF;
-                uint8_t* p = dst + x * 3;
-                p[0] = b; p[1] = g; p[2] = r;
+                row[x] = darkenColor(row[x], 18);
             }
         }
     }
+    kos::gfx::render::Present();
 }
 
 void Compositor::DrawGlyph8x8(uint32_t x, uint32_t y, const uint8_t glyph[8], uint32_t fgARGB, uint32_t bgARGB) {
     if (!s_ready) return;
     if (x >= s_width || y >= s_height) return;
-    const uint32_t stride = s_width;
+    uint32_t glyphBuf[64];
     for (uint32_t row=0; row<8; ++row) {
         uint32_t py = y + row;
         if (py >= s_height) break;
         uint8_t bits = glyph[row];
-        uint32_t* dst = s_backbuf + py * stride;
         for (uint32_t col=0; col<8; ++col) {
             uint32_t px = x + col;
             if (px >= s_width) break;
             if (s_clip_enabled) {
                 if (px < s_clip_rect.x || py < s_clip_rect.y ||
                     px >= s_clip_rect.x + s_clip_rect.w || py >= s_clip_rect.y + s_clip_rect.h) {
+                    glyphBuf[row * 8 + col] = 0;
                     continue;
                 }
             }
             // Many 8x8 public-domain fonts encode leftmost pixel in bit0 (LSB-left).
             // Use LSB-left mapping to avoid horizontally mirrored glyphs.
             bool on = (bits & (0x01u << col)) != 0;
-            dst[px] = on ? fgARGB : bgARGB;
+            glyphBuf[row * 8 + col] = on ? fgARGB : bgARGB;
         }
     }
+    kos::gfx::render::Upload(glyphBuf, 8, 8, 8, x, y);
 }
 
 void Compositor::FillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
@@ -301,11 +303,7 @@ void Compositor::FillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32
         h = ry2 - ry1;
     }
 
-    const uint32_t stride = s_width;
-    for (uint32_t j=0;j<h;++j) {
-        uint32_t* row = s_backbuf + (y + j) * stride + x;
-        for (uint32_t i=0;i<w;++i) row[i] = color;
-    }
+    kos::gfx::render::Fill(x, y, w, h, color);
 }
 
 void Compositor::SetClipRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {

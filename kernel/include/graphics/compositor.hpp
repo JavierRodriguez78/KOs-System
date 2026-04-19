@@ -3,6 +3,7 @@
 
 #include <common/types.hpp>
 #include <graphics/framebuffer.hpp>
+#include <graphics/render_backend.hpp>
 
 namespace kos { 
     namespace gfx {
@@ -20,6 +21,8 @@ namespace kos {
         public:
             static bool Initialize();
             static void Shutdown();
+            static bool IsUsingGpuBackend();
+            static const char* BackendName();
 
             // Begin a new frame (clears backbuffer with wallpaper color)
             static void BeginFrame(uint32_t wallpaper);
@@ -40,6 +43,7 @@ namespace kos {
 
         private:
             static bool s_ready;
+            static bool s_gpu_backend;
             static uint32_t* s_backbuf; // backbuffer mapped to system RAM
             static uint32_t s_pitchBytes; // bytes per row in framebuffer
             static uint32_t s_width, s_height;

@@ -21,6 +21,7 @@
 #include <fs/filesystem.hpp>
 #include <lib/stdio.hpp>
 #include <graphics/framebuffer.hpp>
+#include <graphics/gpu_accel.hpp>
 #include <kernel/init.hpp>
 #include <kernel/drivers.hpp>
 #include <kernel/fs.hpp>
@@ -195,6 +196,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     // Prepare input subsystem early (before services) so cursor is ready when GUI windows appear.
     if (kos::g_display_mode == kos::kernel::DisplayMode::Graphics && kos::gfx::IsAvailable()) {
+        kos::gfx::gpu::ProbePCI();
         kos::ui::InitInput();
         const auto& fbInfo = kos::gfx::GetInfo();
         kos::ui::SetCursorPos((int)(fbInfo.width/2), (int)(fbInfo.height/2));

@@ -21,6 +21,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/console/shellKeyboardHandler.cpp.
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/terminal.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/compositor.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/framebuffer.hpp \
+ /mnt/e/proyectos/kos-system/kernel/cmake/../include/graphics/render_backend.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/ui/framework.hpp \
  /mnt/e/proyectos/kos-system/kernel/cmake/../include/lib/stdio.hpp \
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \

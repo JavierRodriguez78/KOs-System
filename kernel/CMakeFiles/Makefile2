@@ -244,7 +244,7 @@ kernel/cmake/CMakeFiles/kernel_bin.dir/all: kernel/cmake/CMakeFiles/apps.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/kernel_bin.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 97
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 96
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/kernel_bin.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/kernel_bin.dir/rule
@@ -397,12 +397,12 @@ kernel/cmake/CMakeFiles/echo.elf.dir/clean:
 kernel/cmake/CMakeFiles/ls_obj.dir/all:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ls_obj.dir/build.make kernel/cmake/CMakeFiles/ls_obj.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ls_obj.dir/build.make kernel/cmake/CMakeFiles/ls_obj.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target ls_obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=85 "Built target ls_obj"
 .PHONY : kernel/cmake/CMakeFiles/ls_obj.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/ls_obj.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 1
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/ls_obj.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/ls_obj.dir/rule
@@ -429,7 +429,7 @@ kernel/cmake/CMakeFiles/ls.elf.dir/all: kernel/cmake/CMakeFiles/ls_obj.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/ls.elf.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/ls.elf.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/ls.elf.dir/rule
@@ -768,12 +768,12 @@ kernel/cmake/CMakeFiles/lshw.elf.dir/clean:
 kernel/cmake/CMakeFiles/clear_obj.dir/all:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear_obj.dir/build.make kernel/cmake/CMakeFiles/clear_obj.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/clear_obj.dir/build.make kernel/cmake/CMakeFiles/clear_obj.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=15 "Built target clear_obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target clear_obj"
 .PHONY : kernel/cmake/CMakeFiles/clear_obj.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/clear_obj.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/clear_obj.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/clear_obj.dir/rule
@@ -800,7 +800,7 @@ kernel/cmake/CMakeFiles/clear.elf.dir/all: kernel/cmake/CMakeFiles/clear_obj.dir
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/clear.elf.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/clear.elf.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/clear.elf.dir/rule
@@ -821,12 +821,12 @@ kernel/cmake/CMakeFiles/clear.elf.dir/clean:
 kernel/cmake/CMakeFiles/init_obj.dir/all:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init_obj.dir/build.make kernel/cmake/CMakeFiles/init_obj.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init_obj.dir/build.make kernel/cmake/CMakeFiles/init_obj.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=23 "Built target init_obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target init_obj"
 .PHONY : kernel/cmake/CMakeFiles/init_obj.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/init_obj.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/init_obj.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/init_obj.dir/rule
@@ -848,7 +848,7 @@ kernel/cmake/CMakeFiles/init.elf.dir/all: kernel/cmake/CMakeFiles/app_support_ob
 kernel/cmake/CMakeFiles/init.elf.dir/all: kernel/cmake/CMakeFiles/init_obj.dir/all
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init.elf.dir/build.make kernel/cmake/CMakeFiles/init.elf.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/init.elf.dir/build.make kernel/cmake/CMakeFiles/init.elf.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target init.elf"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=22 "Built target init.elf"
 .PHONY : kernel/cmake/CMakeFiles/init.elf.dir/all
 
 # Build rule for subdir invocation for target.
@@ -1113,12 +1113,12 @@ kernel/cmake/CMakeFiles/date.elf.dir/all: kernel/cmake/CMakeFiles/app_support_ob
 kernel/cmake/CMakeFiles/date.elf.dir/all: kernel/cmake/CMakeFiles/date_obj.dir/all
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/date.elf.dir/build.make kernel/cmake/CMakeFiles/date.elf.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/date.elf.dir/build.make kernel/cmake/CMakeFiles/date.elf.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target date.elf"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=15 "Built target date.elf"
 .PHONY : kernel/cmake/CMakeFiles/date.elf.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/date.elf.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 12
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 13
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/date.elf.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/date.elf.dir/rule
@@ -1325,12 +1325,12 @@ kernel/cmake/CMakeFiles/lscpu.elf.dir/all: kernel/cmake/CMakeFiles/app_support_o
 kernel/cmake/CMakeFiles/lscpu.elf.dir/all: kernel/cmake/CMakeFiles/lscpu_obj.dir/all
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lscpu.elf.dir/build.make kernel/cmake/CMakeFiles/lscpu.elf.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/lscpu.elf.dir/build.make kernel/cmake/CMakeFiles/lscpu.elf.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=85 "Built target lscpu.elf"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target lscpu.elf"
 .PHONY : kernel/cmake/CMakeFiles/lscpu.elf.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/lscpu.elf.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/lscpu.elf.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/lscpu.elf.dir/rule
@@ -1404,12 +1404,12 @@ kernel/cmake/CMakeFiles/kcursers_demo.elf.dir/clean:
 kernel/cmake/CMakeFiles/ifconfig_obj.dir/all:
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ifconfig_obj.dir/build.make kernel/cmake/CMakeFiles/ifconfig_obj.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/ifconfig_obj.dir/build.make kernel/cmake/CMakeFiles/ifconfig_obj.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=22 "Built target ifconfig_obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target ifconfig_obj"
 .PHONY : kernel/cmake/CMakeFiles/ifconfig_obj.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/ifconfig_obj.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/ifconfig_obj.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/ifconfig_obj.dir/rule
@@ -1436,7 +1436,7 @@ kernel/cmake/CMakeFiles/ifconfig.elf.dir/all: kernel/cmake/CMakeFiles/ifconfig_o
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/ifconfig.elf.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/ifconfig.elf.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/ifconfig.elf.dir/rule
@@ -1591,7 +1591,7 @@ kernel/cmake/CMakeFiles/apps.dir/all: kernel/cmake/CMakeFiles/sshd.elf.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/apps.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 38
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 37
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/apps.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/apps.dir/rule
@@ -1612,7 +1612,7 @@ kernel/cmake/CMakeFiles/apps.dir/clean:
 kernel/cmake/CMakeFiles/iso.dir/all: kernel/cmake/CMakeFiles/kernel_bin.dir/all
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/iso.dir/build.make kernel/cmake/CMakeFiles/iso.dir/depend
 	$(MAKE) $(MAKESILENT) -f kernel/cmake/CMakeFiles/iso.dir/build.make kernel/cmake/CMakeFiles/iso.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num= "Built target iso"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=23 "Built target iso"
 .PHONY : kernel/cmake/CMakeFiles/iso.dir/all
 
 # Build rule for subdir invocation for target.
@@ -1909,7 +1909,7 @@ kernel/cmake/CMakeFiles/diskimg.dir/all: kernel/cmake/CMakeFiles/apps.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/diskimg.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 38
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 37
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/diskimg.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/diskimg.dir/rule
@@ -1935,7 +1935,7 @@ kernel/cmake/CMakeFiles/vdi.dir/all: kernel/cmake/CMakeFiles/apps.dir/all
 
 # Build rule for subdir invocation for target.
 kernel/cmake/CMakeFiles/vdi.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 40
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 39
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kernel/cmake/CMakeFiles/vdi.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/e/proyectos/KOs-System/kernel/CMakeFiles 0
 .PHONY : kernel/cmake/CMakeFiles/vdi.dir/rule

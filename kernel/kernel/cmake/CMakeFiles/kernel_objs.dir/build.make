@@ -573,10 +573,24 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.s: cmake
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.s"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/e/proyectos/kos-system/kernel/src/graphics/framebuffer.cpp -o CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.s
 
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o"
+	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp
+
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.i"
+	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp > CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.i
+
+kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.s"
+	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/e/proyectos/kos-system/kernel/src/graphics/gpu_accel.cpp -o CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.s
+
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/graphics/terminal.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/graphics/terminal.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.i: cmake_force
@@ -590,7 +604,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.s: cmake_fo
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_boot_options.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_boot_options.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.i: cmake_force
@@ -604,7 +618,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.s:
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_drivers.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_drivers.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.i: cmake_force
@@ -618,7 +632,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.s: cmak
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_fs.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_fs.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.i: cmake_force
@@ -632,7 +646,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_fs.cpp.s: cmake_for
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_globals.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_globals.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.i: cmake_force
@@ -646,7 +660,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_globals.cpp.s: cmak
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_init.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_init.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.i: cmake_force
@@ -660,7 +674,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_init.cpp.s: cmake_f
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_mouse_handlers.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_mouse_handlers.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.i: cmake_force
@@ -674,7 +688,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_mouse_handlers.cpp.
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_multiboot.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_multiboot.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.i: cmake_force
@@ -688,7 +702,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_multiboot.cpp.s: cm
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_services.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_services.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.i: cmake_force
@@ -702,7 +716,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_services.cpp.s: cma
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_shell.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel/kernel_shell.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.i: cmake_force
@@ -716,7 +730,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_shell.cpp.s: cmake_
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/kernel_main.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/kernel_main.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.i: cmake_force
@@ -730,7 +744,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel_main.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/elfloader.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/elfloader.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.i: cmake_force
@@ -744,7 +758,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/elfloader.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/newdelete_kernel.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/newdelete_kernel.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.i: cmake_force
@@ -758,7 +772,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/newdelete_kernel.cpp.s: cmake
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/panic.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/panic.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.i: cmake_force
@@ -772,7 +786,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/panic.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/serial.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/serial.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.i: cmake_force
@@ -786,7 +800,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/serial.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/socket.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_52) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/socket.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.i: cmake_force
@@ -800,7 +814,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/socket.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/stdio.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_53) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/stdio.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.i: cmake_force
@@ -814,7 +828,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/stdio.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/string.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_54) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/string.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.i: cmake_force
@@ -828,7 +842,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/string.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/sysapi.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_55) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/sysapi.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.i: cmake_force
@@ -842,7 +856,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/sysapi.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/syscall_table_init.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_56) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/syscall_table_init.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.i: cmake_force
@@ -856,7 +870,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscall_table_init.cpp.s: cma
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/syscalls.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_57) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/syscalls.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.i: cmake_force
@@ -870,7 +884,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/syscalls.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/lib/tokenize.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_58) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/tokenize.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.i: cmake_force
@@ -884,7 +898,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/tokenize.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/memory/heap.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_59) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/memory/heap.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.i: cmake_force
@@ -898,7 +912,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/heap.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/memory/paging.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_60) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/memory/paging.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.i: cmake_force
@@ -912,7 +926,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/paging.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/memory/pmm.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_61) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/memory/pmm.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.i: cmake_force
@@ -926,7 +940,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/memory/pmm.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/arp.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_62) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/arp.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.i: cmake_force
@@ -940,7 +954,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/arp_cache.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_63) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/arp_cache.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.i: cmake_force
@@ -954,7 +968,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/arp_cache.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/dns.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_64) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/dns.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.i: cmake_force
@@ -968,7 +982,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/dns.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/icmp.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_65) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/icmp.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.i: cmake_force
@@ -982,7 +996,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/icmp.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/ipv4.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_66) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/ipv4.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.i: cmake_force
@@ -996,7 +1010,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/ipv4_packet.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_67) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/ipv4_packet.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.i: cmake_force
@@ -1010,7 +1024,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/ipv4_packet.cpp.s: cmake_forc
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/nic.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_68) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/nic.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.i: cmake_force
@@ -1024,7 +1038,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/nic.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/raw_icmp.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_69) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/raw_icmp.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.i: cmake_force
@@ -1038,7 +1052,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/raw_icmp_shim.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_70) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/raw_icmp_shim.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.i: cmake_force
@@ -1052,7 +1066,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/raw_icmp_shim.cpp.s: cmake_fo
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/rx_dispatch.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_71) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/rx_dispatch.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.i: cmake_force
@@ -1066,7 +1080,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/rx_dispatch.cpp.s: cmake_forc
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/net/udp.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_72) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/net/udp.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.i: cmake_force
@@ -1080,7 +1094,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/net/udp.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/pipe.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_73) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/pipe.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.i: cmake_force
@@ -1094,7 +1108,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/pipe.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/scheduler.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_74) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/scheduler.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.i: cmake_force
@@ -1108,7 +1122,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/scheduler.cpp.s: cmake_fo
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/sync.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_75) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/sync.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.i: cmake_force
@@ -1122,7 +1136,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/sync.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/thread.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_76) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/thread.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.i: cmake_force
@@ -1136,7 +1150,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/thread_manager.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_77) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/thread_manager.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.i: cmake_force
@@ -1150,7 +1164,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/thread_manager.cpp.s: cma
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/process/timer.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_78) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/process/timer.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.i: cmake_force
@@ -1164,7 +1178,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/process/timer.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/banner_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_79) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/banner_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.i: cmake_force
@@ -1178,7 +1192,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/banner_service.cpp.s: cm
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/filesystem_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_80) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/filesystem_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.i: cmake_force
@@ -1192,7 +1206,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/filesystem_service.cpp.s
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/fs_stubs.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_81) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/fs_stubs.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.i: cmake_force
@@ -1206,7 +1220,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/fs_stubs.cpp.s: cmake_fo
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/journal_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_82) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/journal_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.i: cmake_force
@@ -1220,7 +1234,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/journal_service.cpp.s: c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/network_manager.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_83) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/network_manager.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.i: cmake_force
@@ -1234,7 +1248,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/network_manager.cpp.s: c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/ps_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_84) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/ps_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.i: cmake_force
@@ -1248,7 +1262,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/ps_service.cpp.s: cmake_
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/service_manager.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_85) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/service_manager.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.i: cmake_force
@@ -1262,7 +1276,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/service_manager.cpp.s: c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/time_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_86) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/time_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.i: cmake_force
@@ -1276,7 +1290,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/time_service.cpp.s: cmak
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/user_service.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_87) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/user_service.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.i: cmake_force
@@ -1290,7 +1304,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/user_service.cpp.s: cmak
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/services/window_manager.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_88) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/services/window_manager.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.i: cmake_force
@@ -1304,7 +1318,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/services/window_manager.cpp.s: cm
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/cursor.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_89) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/cursor.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.i: cmake_force
@@ -1318,7 +1332,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/cursor.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/framework.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_90) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/framework.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.i: cmake_force
@@ -1332,7 +1346,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/framework.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/input.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_91) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/input.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.i: cmake_force
@@ -1346,7 +1360,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/input.cpp.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/login_screen.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_92) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/login_screen.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.i: cmake_force
@@ -1360,7 +1374,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/login_screen.cpp.s: cmake_forc
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/process_monitor_demo.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_93) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/process_monitor_demo.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.i: cmake_force
@@ -1374,7 +1388,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_monitor_demo.cpp.s: cm
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: /mnt/e/proyectos/kos-system/kernel/src/ui/process_viewer.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_94) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o -MF CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.o -c /mnt/e/proyectos/kos-system/kernel/src/ui/process_viewer.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.i: cmake_force
@@ -1387,7 +1401,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/ui/process_viewer.cpp.s: cmake_fo
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.o: /mnt/e/proyectos/kos-system/kernel/src/loader.s
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_95) "Building ASM object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building ASM object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/cc $(ASM_DEFINES) $(ASM_INCLUDES) $(ASM_FLAGS) -o CMakeFiles/kernel_objs.dir/__/src/loader.s.o -c /mnt/e/proyectos/kos-system/kernel/src/loader.s
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.i: cmake_force
@@ -1400,7 +1414,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/loader.s.s: cmake_force
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interruptstubs.s
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_96) "Building ASM object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building ASM object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/cc $(ASM_DEFINES) $(ASM_INCLUDES) $(ASM_FLAGS) -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interruptstubs.s
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interruptstubs.s.i: cmake_force
@@ -1414,7 +1428,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrup
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interrupt_manager.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_97) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interrupt_manager.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_manager.cpp.i: cmake_force
@@ -1428,7 +1442,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrup
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interrupt_handler.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_98) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/interrupts/interrupt_handler.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrupt_handler.cpp.i: cmake_force
@@ -1442,7 +1456,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/interrupts/interrup
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_99) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_intercontroller.cpp.i: cmake_force
@@ -1456,7 +1470,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_comp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_100) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_component_inter_connect_device_descriptor.cpp.i: cmake_force
@@ -1470,7 +1484,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/pci/peripheral_comp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_101) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_102) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.i: cmake_force
@@ -1484,7 +1498,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port.cpp.s: cm
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port8bit.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_102) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_103) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port8bit.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.i: cmake_force
@@ -1498,7 +1512,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bit.cpp.s
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port8bitslow.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_103) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_104) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port8bitslow.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.cpp.i: cmake_force
@@ -1512,7 +1526,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port8bitslow.c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port16bit.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_104) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_105) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port16bit.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.i: cmake_force
@@ -1526,7 +1540,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port16bit.cpp.
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port32bit.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_105) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_106) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/port/port32bit.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.i: cmake_force
@@ -1540,7 +1554,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/port/port32bit.cpp.
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/rtc/rtc.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_106) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_107) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/hardware/rtc/rtc.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.i: cmake_force
@@ -1554,7 +1568,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/hardware/rtc/rtc.cpp.s: cmak
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o: /mnt/e/proyectos/kos-system/kernel/arch/x86/memory/gdt.cpp
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_107) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_108) "Building CXX object kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o -MF CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o.d -o CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.o -c /mnt/e/proyectos/kos-system/kernel/arch/x86/memory/gdt.cpp
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.i: cmake_force
@@ -1568,7 +1582,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/arch/x86/memory/gdt.cpp.s: cmake_forc
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o: /mnt/e/proyectos/kos-system/kernel/src/lib/libc/string.c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_108) "Building C object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_109) "Building C object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o -MF CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o.d -o CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.o -c /mnt/e/proyectos/kos-system/kernel/src/lib/libc/string.c
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.i: cmake_force
@@ -1582,7 +1596,7 @@ kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/lib/libc/string.c.s: cmake_force
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o: kernel/cmake/CMakeFiles/kernel_objs.dir/flags.make
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o: /mnt/e/proyectos/kos-system/kernel/src/libc/stdio.c
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o: kernel/cmake/CMakeFiles/kernel_objs.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_109) "Building C object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/e/proyectos/KOs-System/kernel/CMakeFiles --progress-num=$(CMAKE_PROGRESS_110) "Building C object kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o"
 	cd /mnt/e/proyectos/KOs-System/kernel/kernel/cmake && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o -MF CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o.d -o CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.o -c /mnt/e/proyectos/kos-system/kernel/src/libc/stdio.c
 
 kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/libc/stdio.c.i: cmake_force
@@ -1629,6 +1643,7 @@ kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/compositor.
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/font8x16_basic.cpp.o
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/font8x8_basic.cpp.o
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.o
+kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o
 kernel_objs: kernel/cmake/CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_drivers.cpp.o

@@ -94,6 +94,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/kernel_objs.dir/__/src/graphics/font8x8_basic.cpp.o.d"
   "CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.o"
   "CMakeFiles/kernel_objs.dir/__/src/graphics/framebuffer.cpp.o.d"
+  "CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o"
+  "CMakeFiles/kernel_objs.dir/__/src/graphics/gpu_accel.cpp.o.d"
   "CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o"
   "CMakeFiles/kernel_objs.dir/__/src/graphics/terminal.cpp.o.d"
   "CMakeFiles/kernel_objs.dir/__/src/kernel/kernel_boot_options.cpp.o"

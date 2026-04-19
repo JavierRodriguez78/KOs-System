@@ -733,6 +733,7 @@ bool WindowManager::Start() {
         return false;
     }
     kos::console::Logger::Log("WindowManager: compositor ready");
+    kos::console::Logger::LogKV("WindowManager: render backend", kos::gfx::Compositor::BackendName());
     // Suppress further log writes to TTY now; we'll unmute later in Tick() so
     // ServiceManager's status lines don't clobber the initial prompt.
     kos::console::Logger::MuteTTY(true);
