@@ -453,6 +453,7 @@ static void FrontUploadFallback(const uint32_t* src,
 } // namespace
 
 bool Initialize(const kos::gfx::gpu::GpuDeviceInfo& dev, uint32_t width, uint32_t height) {
+    kos::console::Logger::Log("VMSVGA:init:enter");
     g_state.ready = false;
     g_state.fifo = nullptr;
     g_state.fifo_bytes = 0;
@@ -477,18 +478,30 @@ bool Initialize(const kos::gfx::gpu::GpuDeviceInfo& dev, uint32_t width, uint32_
     if (!dev.present) return false;
     if (dev.vendor_id != kVendorVmware) return false;
     if (dev.device_id != kDeviceSvga2) return false;
+    kos::console::Logger::Log("VMSVGA:init:device-ok");
 
     using namespace kos::arch::x86::hardware::pci;
     PeripheralComponentIntercontroller pci;
 
     const uint32_t rawBar0 = pci.Read(dev.bus, dev.device, dev.function, 0x10u);
-    if (rawBar0 == 0xFFFFFFFFu) return false;
-    if ((rawBar0 & 0x1u) == 0) {
-        kos::console::Logger::Log("VMSVGA: BAR0 is not I/O mapped");
+    const uint32_t rawBar1 = pci.Read(dev.bus, dev.device, dev.function, 0x14u);
+    if (rawBar0 == 0xFFFFFFFFu && rawBar1 == 0xFFFFFFFFu) return false;
+    kos::console::Logger::Log("VMSVGA:init:bars-read");
+
+    uint32_t ioBar = 0;
+    if ((rawBar0 & 0x1u) != 0u) {
+        ioBar = rawBar0;
+    } else if ((rawBar1 & 0x1u) != 0u) {
+        ioBar = rawBar1;
+        kos::console::Logger::Log("VMSVGA: using BAR1 for I/O ports");
+    } else {
+        kos::console::Logger::Log("VMSVGA: no I/O BAR found");
         return false;
     }
-    g_state.io_base = (uint16_t)(rawBar0 & 0xFFFCu);
+
+    g_state.io_base = (uint16_t)(ioBar & 0xFFFCu);
     if (g_state.io_base == 0) return false;
+    kos::console::Logger::Log("VMSVGA:init:io-base-ok");
 
     // Negotiate SVGA ID.
     RegWrite(g_state.io_base, SVGA_REG_ID, kSvgaId2);
@@ -505,18 +518,26 @@ bool Initialize(const kos::gfx::gpu::GpuDeviceInfo& dev, uint32_t width, uint32_
             }
         }
     }
+    kos::console::Logger::Log("VMSVGA:init:id-negotiated");
 
     g_state.caps = RegRead(g_state.io_base, SVGA_REG_CAPABILITIES);
     RegWrite(g_state.io_base, SVGA_REG_ENABLE, 0);
     RegWrite(g_state.io_base, SVGA_REG_WIDTH, width);
     RegWrite(g_state.io_base, SVGA_REG_HEIGHT, height);
+    RegWrite(g_state.io_base, SVGA_REG_ENABLE, 1u);
+    kos::console::Logger::Log("VMSVGA:init:svga-enabled");
 
     const uint32_t fifoPhys = RegRead(g_state.io_base, SVGA_REG_MEM_START);
     const uint32_t fifoSize = RegRead(g_state.io_base, SVGA_REG_MEM_SIZE);
-    if (fifoPhys == 0 || fifoSize < 4096u) {
+    if (fifoPhys == 0 || fifoSize < 4096u || fifoSize > (16u * 1024u * 1024u)) {
         kos::console::Logger::Log("VMSVGA: invalid FIFO memory");
         return false;
     }
+    if ((fifoPhys & 0x0FFFu) != 0u) {
+        kos::console::Logger::Log("VMSVGA: FIFO base not page-aligned");
+        return false;
+    }
+    kos::console::Logger::Log("VMSVGA:init:fifo-regs-ok");
 
     // Map FIFO memory.
     constexpr uint32_t ID_MAP_END = 64u * 1024u * 1024u;
@@ -525,6 +546,7 @@ bool Initialize(const kos::gfx::gpu::GpuDeviceInfo& dev, uint32_t width, uint32_
         g_state.fifo = (volatile uint32_t*)(uint32_t)fifoPhys;
     } else {
         const uint32_t mapSize = (fifoSize + 4095u) & ~4095u;
+        kos::console::Logger::Log("VMSVGA:init:fifo-map-start");
         kos::memory::Paging::MapRange((virt_addr_t)VIRT_FIFO_BASE,
                           (phys_addr_t)fifoPhys,
                                       mapSize,
@@ -532,32 +554,28 @@ bool Initialize(const kos::gfx::gpu::GpuDeviceInfo& dev, uint32_t width, uint32_
                                       kos::memory::Paging::RW |
                                       kos::memory::Paging::CacheDisable);
         g_state.fifo = (volatile uint32_t*)VIRT_FIFO_BASE;
+        kos::console::Logger::Log("VMSVGA:init:fifo-map-done");
     }
     g_state.fifo_bytes = fifoSize;
+    kos::console::Logger::Log("VMSVGA:init:fifo-ptr-ok");
 
-    // Initialize FIFO ring.
-    FifoSet(FIFO_MIN, 16u);
+    // Avoid early MMIO FIFO capability reads here; some VBox builds can stall.
+    // UPDATE-only path does not require FIFO_CAPABILITIES.
+    g_state.fifo_caps = 0u;
+
+    // Initialize FIFO ring. Use 64 dwords (256 bytes) as the command-area start
+    // to safely skip all extended-FIFO header registers (indices 0-63).
+    const uint32_t fifoMinCmd = 64u * 4u; // 256 bytes
+    kos::console::Logger::Log("VMSVGA:init:fifo-ring-start");
+    FifoSet(FIFO_MIN, fifoMinCmd);
     FifoSet(FIFO_MAX, fifoSize);
-    FifoSet(FIFO_NEXT_CMD, 16u);
-    FifoSet(FIFO_STOP, 16u);
-
-    if ((g_state.caps & SVGA_CAP_EXTENDED_FIFO) != 0u) {
-        g_state.fifo_caps = FifoGet(FIFO_CAPABILITIES);
-        if ((g_state.fifo_caps & SVGA_FIFO_CAP_GMR2) != 0u) {
-            kos::console::Logger::Log("VMSVGA: FIFO GMR2 capability detected");
-        } else {
-            kos::console::Logger::Log("VMSVGA: FIFO GMR2 capability not detected");
-        }
-        if ((g_state.fifo_caps & SVGA_FIFO_CAP_ACCELFRONT) != 0u) {
-            kos::console::Logger::Log("VMSVGA: FIFO ACCELFRONT capability detected");
-        } else {
-            kos::console::Logger::Log("VMSVGA: FIFO ACCELFRONT capability not detected");
-        }
-    }
+    FifoSet(FIFO_NEXT_CMD, fifoMinCmd);
+    FifoSet(FIFO_STOP, fifoMinCmd);
+    kos::console::Logger::Log("VMSVGA:init:fifo-ring-done");
 
     RegWrite(g_state.io_base, SVGA_REG_GUEST_ID, 0x4B4F5301u); // "KOS\x01"
-    RegWrite(g_state.io_base, SVGA_REG_ENABLE, 1u);
     RegWrite(g_state.io_base, SVGA_REG_CONFIG_DONE, 1u);
+    kos::console::Logger::Log("VMSVGA:init:regs-finalized");
 
     g_state.ready = true;
     kos::console::Logger::Log("VMSVGA: accelerated backend initialized");
@@ -672,7 +690,8 @@ void UploadRect(const uint32_t* src,
 void PresentRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
     if (!g_state.ready || w == 0 || h == 0) return;
     if (!FifoSubmitUpdate(x, y, w, h)) return;
-    SyncFifo(g_state.io_base);
+    // Trigger FIFO processing without blocking; VBox refreshes asynchronously.
+    RegWrite(g_state.io_base, SVGA_REG_SYNC, 1u);
 }
 
 void Present() {

@@ -9,6 +9,7 @@
 #include <graphics/font8x8_basic.hpp>
 #include <graphics/gpu_accel.hpp>
 #include <graphics/render_backend.hpp>
+#include <drivers/gpu/vmsvga.hpp>
 #include <drivers/mouse/mouse_stats.hpp>
 
 using namespace kos::gfx;
@@ -37,7 +38,10 @@ bool Compositor::Initialize() {
     const auto& fb = gfx::GetInfo();
     if (fb.type != 1 || (fb.bpp != 32 && fb.bpp != 24)) return false;
     s_width = fb.width; s_height = fb.height; s_pitchBytes = fb.pitch;
-    s_gpu_backend = gpu::InitializeBackend(s_width, s_height);
+    // Keep compositing on CPU for stability; VMSVGA backend init is skipped
+    // because some VBox configurations hang on FIFO register writes.
+    s_gpu_backend = false;
+    kos::console::Logger::Log("[COMPOSITOR] forcing CPU backend (VMSVGA init bypass)");
     // Map framebuffer if it's not identity-mapped (< 64 MiB)
     const uint32_t ID_MAP_END = 64 * 1024 * 1024;
     uint32_t fbBytes = s_height * s_pitchBytes;
@@ -48,10 +52,19 @@ bool Compositor::Initialize() {
     } else {
         // Map to a fixed virtual address range
         const uint32_t VIRT_FB_BASE = 0x10000000u; // 256 MiB
-    kos::memory::Paging::MapRange((virt_addr_t)VIRT_FB_BASE,
+        kos::memory::Paging::MapRange((virt_addr_t)VIRT_FB_BASE,
                       (phys_addr_t)fb.addr,
                                       mapSize,
-                                      kos::memory::Paging::Present | kos::memory::Paging::RW | kos::memory::Paging::WriteThrough);
+                                      kos::memory::Paging::Present |
+                                      kos::memory::Paging::RW |
+                                      kos::memory::Paging::WriteThrough |
+                                      kos::memory::Paging::CacheDisable);
+        const uint32_t expect = ((uint32_t)fb.addr) & 0xFFFFF000u;
+        const uint32_t got = ((uint32_t)kos::memory::Paging::GetPhys((virt_addr_t)VIRT_FB_BASE)) & 0xFFFFF000u;
+        if (got != expect) {
+            kos::console::Logger::Log("[COMPOSITOR] framebuffer map verify failed");
+            return false;
+        }
         s_fbBase = (uint8_t*)VIRT_FB_BASE;
     }
     if (!kos::gfx::render::Initialize(s_width, s_height, s_pitchBytes, fb.bpp, s_fbBase, s_gpu_backend)) {
@@ -59,6 +72,7 @@ bool Compositor::Initialize() {
         s_ready = false;
         return false;
     }
+
     s_ready = true;
     // Basic diagnostics
     kos::console::Logger::Log("[COMPOSITOR] initialized");

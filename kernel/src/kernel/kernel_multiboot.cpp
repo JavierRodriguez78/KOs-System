@@ -20,7 +20,15 @@ void MultibootKernel::Init()
     // ARGB 0xFF1E1E20 — matches compositor wallpaper and avoids a green flash on boot.
     if (kos::gfx::IsAvailable()) {
         Logger::Log("Framebuffer (32bpp) detected; initializing graphics background to dark gray");
-        kos::gfx::Clear32(0xFF1E1E20u);
+        const auto& fb = kos::gfx::GetInfo();
+        const uint64_t idMapEnd = 64ull * 1024ull * 1024ull;
+        // Paging is not initialized yet at this point. If the LFB is above the
+        // identity-mapped range, defer clearing until later stages.
+        if (fb.addr < idMapEnd) {
+            kos::gfx::Clear32(0xFF1E1E20u);
+        } else {
+            Logger::Log("Framebuffer clear deferred (high LFB before paging)");
+        }
     }
 
     // Default mouse poll mode: poll only until first packet is observed.

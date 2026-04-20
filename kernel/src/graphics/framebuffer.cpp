@@ -1,4 +1,5 @@
 #include <graphics/framebuffer.hpp>
+#include <memory/paging.hpp>
 
 using namespace kos::common;
 
@@ -6,6 +7,41 @@ namespace kos {
     namespace gfx {
         static FramebufferInfo g_fb = {};
         static bool g_fb_ready = false;
+        static bool g_fb_map_failed = false;
+        static uint8_t* g_fb_mapped_base = nullptr;
+        static uint32_t g_fb_mapped_bytes = 0;
+        static constexpr uint32_t kIdentityMapEnd = 64u * 1024u * 1024u;
+        static constexpr uint32_t kVirtFramebufferBase = 0x11000000u;
+
+        static uint8_t* ResolveFramebufferBase() {
+            if (!g_fb_ready) return nullptr;
+            if (g_fb.addr < kIdentityMapEnd) {
+                return (uint8_t*)(uint32_t)g_fb.addr;
+            }
+            if (g_fb_map_failed) return nullptr;
+            const uint32_t fbBytes = g_fb.height * g_fb.pitch;
+            const uint32_t mapSize = (fbBytes + 4095u) & ~4095u;
+            if (!g_fb_mapped_base || g_fb_mapped_bytes != mapSize) {
+                kos::memory::Paging::MapRange((virt_addr_t)kVirtFramebufferBase,
+                                              (phys_addr_t)g_fb.addr,
+                                              mapSize,
+                                              kos::memory::Paging::Present |
+                                              kos::memory::Paging::RW |
+                                              kos::memory::Paging::WriteThrough |
+                                              kos::memory::Paging::CacheDisable);
+                const uint32_t expect = ((uint32_t)g_fb.addr) & 0xFFFFF000u;
+                const uint32_t got = ((uint32_t)kos::memory::Paging::GetPhys((virt_addr_t)kVirtFramebufferBase)) & 0xFFFFF000u;
+                if (got != expect) {
+                    g_fb_map_failed = true;
+                    g_fb_mapped_base = nullptr;
+                    g_fb_mapped_bytes = 0;
+                    return nullptr;
+                }
+                g_fb_mapped_base = (uint8_t*)kVirtFramebufferBase;
+                g_fb_mapped_bytes = mapSize;
+            }
+            return g_fb_mapped_base;
+        }
 
         // Multiboot2 constants
         static const uint32_t MULTIBOOT2_MAGIC = 0x36d76289;
@@ -75,6 +111,9 @@ namespace kos {
 
         void InitFromMultiboot(const void* mb_info, uint32_t magic) {
             g_fb_ready = false;
+            g_fb_map_failed = false;
+            g_fb_mapped_base = nullptr;
+            g_fb_mapped_bytes = 0;
             if (!mb_info) return;
             if (magic != MULTIBOOT2_MAGIC) {
                 // Attempt Multiboot v1 VBE fallback (magic 0x2BADB002)
@@ -145,7 +184,8 @@ namespace kos {
 
         void Clear32(uint32_t rgba) {
             if (!IsAvailable()) return;
-            uint8_t* base = (uint8_t*)(uint32_t)g_fb.addr;
+            uint8_t* base = ResolveFramebufferBase();
+            if (!base) return;
             if (g_fb.bpp == 32) {
                 for (uint32_t y = 0; y < g_fb.height; ++y) {
                     uint32_t* row = (uint32_t*)(base + y * g_fb.pitch);
@@ -175,7 +215,8 @@ namespace kos {
         void PutPixel32(uint32_t x, uint32_t y, uint32_t rgba) {
             if (!IsAvailable()) return;
             if (x >= g_fb.width || y >= g_fb.height) return;
-            uint8_t* base = (uint8_t*)(uint32_t)g_fb.addr;
+            uint8_t* base = ResolveFramebufferBase();
+            if (!base) return;
             if (g_fb.bpp == 32) {
                 uint32_t* row = (uint32_t*)(base + y * g_fb.pitch);
                 row[x] = rgba;

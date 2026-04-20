@@ -415,7 +415,7 @@ void E1000Driver::Activate() {
             Logger::LogKV("e1000.mmio_base", "identity_mapped");
         } else {
             // Map to virtual address (use address after framebuffer region)
-            const uint32_t VIRT_E1000_BASE = 0x11000000u; // 272 MiB
+            const uint32_t VIRT_E1000_BASE = 0x15000000u; // 336 MiB
             kos::memory::Paging::MapRange(
                 (virt_addr_t)VIRT_E1000_BASE,
                 (phys_addr_t)io_base_,

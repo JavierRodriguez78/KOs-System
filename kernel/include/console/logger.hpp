@@ -5,6 +5,7 @@
 #include <console/tty.hpp>
 #include <arch/x86/hardware/rtc/rtc.hpp>
 #include <lib/libc/string.h>
+#include <lib/serial.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -31,6 +32,10 @@ namespace kos {
                 static inline bool IsDebugEnabled() { return s_debugEnabled; }
                 // Prints: [YYYY-MM-DD HH:MM:SS] message\n
                 static void Log(const char* msg) {
+                    if (msg) {
+                        kos::lib::serial_write(msg);
+                        kos::lib::serial_write("\n");
+                    }
                     if (s_mutedTTY) { // Still forward to journal, but skip TTY
                         extern void LogToJournal(const char* message);
                         LogToJournal(msg);
@@ -63,6 +68,12 @@ namespace kos {
                 }
 
                 static void LogKV(const char* key, const char* value) {
+                    if (key) {
+                        kos::lib::serial_write(key);
+                        kos::lib::serial_write(": ");
+                        kos::lib::serial_write(value ? value : "(null)");
+                        kos::lib::serial_write("\n");
+                    }
                     if (s_mutedTTY) {
                         extern void LogToJournalKV(const char* key, const char* value);
                         LogToJournalKV(key, value);
@@ -89,6 +100,10 @@ namespace kos {
                 // Linux-like status at end of the line: [ OK ] or [FAIL]
                 // Usage: LogStatus("Initializing ...", true/false)
                 static void LogStatus(const char* msg, bool ok) {
+                        if (msg) {
+                            kos::lib::serial_write(msg);
+                            kos::lib::serial_write(ok ? " [ OK ]\n" : " [FAIL]\n");
+                        }
                         if (s_mutedTTY) {
                             extern void LogToJournalStatus(const char* msg, bool ok);
                             LogToJournalStatus(msg, ok);
@@ -154,6 +169,16 @@ namespace kos {
                 TTY::Write((const int8_t*)":");
                 write2(dt.second);
                 TTY::Write((const int8_t*)"]");
+            }
+
+            static bool startsWith(const char* s, const char* prefix) {
+                if (!s || !prefix) return false;
+                while (*prefix) {
+                    if (*s == 0 || *s != *prefix) return false;
+                    ++s;
+                    ++prefix;
+                }
+                return true;
             }
         };
 

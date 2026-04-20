@@ -728,6 +728,23 @@ bool WindowManager::Start() {
         kos::console::Logger::Log("WindowManager: framebuffer not available; disabled");
         return false;
     }
+    // Direct LFB smoke test before compositor init. If this pattern is visible,
+    // framebuffer writes reach the host and the issue is in higher layers.
+    {
+        kos::console::Logger::Log("WindowManager: direct framebuffer smoke test");
+        const auto& fb = kos::gfx::GetInfo();
+        kos::gfx::Clear32(0xFF202020u);
+        const uint32_t diag = (fb.width < fb.height) ? fb.width : fb.height;
+        for (uint32_t i = 0; i < diag; ++i) {
+            kos::gfx::PutPixel32(i, i, 0xFFFF00FFu); // magenta diagonal
+            kos::gfx::PutPixel32(fb.width - 1u - i, i, 0xFF00FFFFu); // cyan diagonal
+        }
+        for (uint32_t x = 0; x < fb.width; ++x) {
+            kos::gfx::PutPixel32(x, 0, 0xFFFFFF00u);
+            if (fb.height > 1) kos::gfx::PutPixel32(x, fb.height - 1u, 0xFFFFFF00u);
+        }
+        kos::console::Logger::Log("WindowManager: direct framebuffer smoke done");
+    }
     if (!kos::gfx::Compositor::Initialize()) {
         kos::console::Logger::Log("WindowManager: compositor init failed");
         return false;

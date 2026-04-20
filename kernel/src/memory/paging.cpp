@@ -129,6 +129,12 @@ void Paging::MapRange(virt_addr_t vaddr, phys_addr_t paddr, uint32_t size, uint3
     uint32_t off = 0;
     while (off < size) {
         MapPage(vaddr + off, paddr + off, flags);
+        const uint32_t expect = ((uint32_t)(paddr + off)) & 0xFFFFF000u;
+        const uint32_t got = ((uint32_t)GetPhys(vaddr + off)) & 0xFFFFF000u;
+        if (got != expect) {
+            Logger::Log("Paging::MapRange aborted: page map failed");
+            break;
+        }
         off += PAGE_SIZE;
     }
 }

@@ -51,12 +51,11 @@ namespace kos {
             kos::process::g_pipe_manager = new kos::process::PipeManager();
             Logger::LogStatus("Pipe manager initialized", true);
 
-            // Initialize thread manager for comprehensive threading
-            if (kos::process::ThreadManagerAPI::InitializeThreading()) {
-                Logger::LogStatus("Thread manager initialized", true);
-            } else {
-                Logger::LogStatus("Thread manager initialization failed", false);
-            }
+            // Temporary VBox-safe path: defer thread manager bootstrap.
+            // Early threading init is currently a boot blocker on some VBox runs
+            // (serial log stops around "Thr..."). Keep the kernel progressing so
+            // graphics/services can initialize and we can diagnose render path issues.
+            Logger::LogStatus("Thread manager init deferred", true);
         }
     } 
 }

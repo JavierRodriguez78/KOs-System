@@ -183,6 +183,12 @@ void Present() {
         }
     }
 
+    // On VMSVGA guests, CPU writes to the linear framebuffer may require an
+    // explicit UPDATE command for the host to refresh the visible surface.
+    if (!g_state.gpu_backend && kos::drivers::gpu::vmsvga::IsReady()) {
+        kos::drivers::gpu::vmsvga::PresentRect(0, 0, g_state.width, g_state.height);
+    }
+
 }
 
 } // namespace render
