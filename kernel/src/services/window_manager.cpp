@@ -28,6 +28,11 @@
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
 
+// New modular system components
+#include <input/event_queue.hpp>
+#include <ui/window_registry.hpp>
+#include <ui/component.hpp>
+#include <ui/system_components.hpp>
 using namespace kos::services;
 
 namespace kos { namespace services {
@@ -41,8 +46,6 @@ static bool s_login_active = false;
 static uint8_t s_mouse_poll_mode = 1;
 static bool s_taskbar_enabled = true;
 static uint32_t s_terminal_counter = 1; // for titling Shell N
-static uint32_t s_prev_mouse_pk = 0;    // track mouse packet counter between frames
-static int s_mouse_evt_flash = 0;       // frames to flash event indicator when new packets arrive
 static uint32_t s_prev_kbd_ev = 0;      // track keyboard event counter
 static int s_kbd_evt_flash = 0;         // frames to flash indicator when keys arrive
 static bool s_shell_started = false;
@@ -82,6 +85,120 @@ static kos::gfx::Rect s_fb_prev_btn_r       = {0,0,0,0};
 static kos::gfx::Rect s_fb_next_btn_r       = {0,0,0,0};
 static uint32_t       s_fb_visible_count    = 0;
 static bool           s_fb_pager_visible    = false;
+
+static void RenderFileBrowserContent();
+static void RenderHardwareInfoWindowContent();
+static void RenderClockWindowContent();
+static void RenderSystemHudContent();
+static void RenderProcessMonitorWindowContent();
+
+class LegacyRenderComponent : public kos::ui::IUIComponent {
+public:
+    using RenderFn = void (*)();
+
+    LegacyRenderComponent() : m_window_id(0), m_name("Legacy"), m_render_fn(nullptr) {}
+
+    void Bind(uint32_t windowId, const char* name, RenderFn renderFn) {
+        m_window_id = windowId;
+        m_name = name;
+        m_render_fn = renderFn;
+    }
+
+    virtual uint32_t GetWindowId() const override { return m_window_id; }
+    virtual void Render() override { if (m_render_fn) m_render_fn(); }
+    virtual bool OnInputEvent(const kos::input::InputEvent&) override { return false; }
+    virtual const char* GetName() const override { return m_name; }
+
+private:
+    uint32_t m_window_id;
+    const char* m_name;
+    RenderFn m_render_fn;
+};
+
+static LegacyRenderComponent s_legacy_components[8];
+static uint32_t s_legacy_component_count = 0;
+static kos::ui::ClockComponent s_clock_component;
+static kos::ui::SystemHudComponent s_system_hud_component;
+static kos::ui::MouseDiagnosticComponent s_mouse_component;
+
+static void RegisterLegacyComponent(uint32_t windowId, const char* name, LegacyRenderComponent::RenderFn renderFn) {
+    if (windowId == 0 || renderFn == nullptr) return;
+    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
+    if (reg.GetComponent(windowId) != nullptr) return;
+    if (s_legacy_component_count >= 8u) return;
+
+    LegacyRenderComponent& c = s_legacy_components[s_legacy_component_count++];
+    c.Bind(windowId, name, renderFn);
+    (void)reg.RegisterComponent(&c, windowId);
+    (void)kos::ui::SetWindowComponent(windowId, &c);
+}
+
+static void RegisterClockComponent(uint32_t windowId) {
+    if (windowId == 0) return;
+    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
+    if (reg.GetComponent(windowId) != nullptr) return;
+    s_clock_component.BindWindow(windowId);
+    (void)reg.RegisterComponent(&s_clock_component, windowId);
+    (void)kos::ui::SetWindowComponent(windowId, &s_clock_component);
+}
+
+static void RegisterSystemHudComponent(uint32_t windowId) {
+    if (windowId == 0) return;
+    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
+    if (reg.GetComponent(windowId) != nullptr) return;
+    s_system_hud_component.BindWindow(windowId);
+    (void)reg.RegisterComponent(&s_system_hud_component, windowId);
+    (void)kos::ui::SetWindowComponent(windowId, &s_system_hud_component);
+}
+
+static void RegisterMouseComponent(uint32_t windowId) {
+    if (windowId == 0) return;
+    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
+    if (reg.GetComponent(windowId) != nullptr) return;
+    s_mouse_component.BindWindow(windowId);
+    (void)reg.RegisterComponent(&s_mouse_component, windowId);
+    (void)kos::ui::SetWindowComponent(windowId, &s_mouse_component);
+}
+
+static void DispatchQueuedInputEvents() {
+    kos::input::InputEvent ev{};
+    uint32_t processed = 0;
+    const uint32_t kMaxPerTick = 128u;
+
+    while (processed < kMaxPerTick && kos::input::InputEventQueue::Instance().Dequeue(ev)) {
+        ++processed;
+
+        uint32_t targetWindow = ev.target_window;
+        if (ev.type == kos::input::EventType::MouseMove ||
+            ev.type == kos::input::EventType::MousePress ||
+            ev.type == kos::input::EventType::MouseRelease) {
+            bool onTitle = false;
+            uint32_t hitWindow = 0;
+            if (kos::ui::HitTest(ev.mouse_data.x, ev.mouse_data.y, hitWindow, onTitle)) {
+                targetWindow = hitWindow;
+            }
+        }
+
+        if (targetWindow == 0) {
+            targetWindow = kos::ui::GetFocusedWindow();
+        }
+
+        if (targetWindow == 0) {
+            continue;
+        }
+
+        kos::ui::IUIComponent* component = kos::ui::WindowRegistry::Instance().GetComponent(targetWindow);
+        if (!component) {
+            continue;
+        }
+
+        bool handled = component->OnInputEvent(ev);
+        if (handled || ev.type == kos::input::EventType::MouseMove ||
+            ev.type == kos::input::EventType::MousePress || ev.type == kos::input::EventType::MouseRelease) {
+            (void)kos::ui::InvalidateWindow(targetWindow);
+        }
+    }
+}
 
 struct PciDeviceSummary {
     bool valid;
@@ -829,12 +946,8 @@ static void RenderFileBrowserContent() {
         : ((d.h > kos::ui::TitleBarHeight() + 2u) ? (d.h - kos::ui::TitleBarHeight() - 2u) : 0u);
     if (cw < 120u || ch < 80u) return;
 
-    // Background checker
-    for (uint32_t j = 0; j < ch; ++j)
-        for (uint32_t i = 0; i < cw; ++i) {
-            uint32_t tx = (cx+i)/2u, ty = (cy+j)/2u;
-            kos::gfx::Compositor::FillRect(cx+i, cy+j, 1, 1, ((tx+ty)&1u) ? kBgA : kBgB);
-        }
+    // Background checker - use optimized FillCheckerRect instead of pixel-by-pixel loop
+    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
 
     // Outer border
     kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderHi);
@@ -1140,13 +1253,8 @@ static void RenderHardwareInfoWindowContent() {
     uint32_t cx, cy, cw, ch, tabX, tabY, tabW;
     if (!GetHardwareTabLayout(d, cx, cy, cw, ch, tabX, tabY, tabW)) return;
 
-    for (uint32_t j = 0; j < ch; ++j) {
-        for (uint32_t i = 0; i < cw; ++i) {
-            uint32_t tx = (cx + i) / 2u;
-            uint32_t ty = (cy + j) / 2u;
-            kos::gfx::Compositor::FillRect(cx + i, cy + j, 1, 1, (((tx + ty) & 1u) ? kBgA : kBgB));
-        }
-    }
+    // Use optimized FillCheckerRect for background instead of pixel-by-pixel loop
+    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
 
     kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderHi);
     kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderLo);
@@ -1315,12 +1423,26 @@ static uint8_t blend8(uint8_t a, uint8_t b, uint32_t t, uint32_t max) {
 static void FillCheckerRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h,
                             uint32_t cA, uint32_t cB, uint32_t cell) {
     if (cell == 0) cell = 1;
+    // Optimized: group horizontal segments of the same color
     for (uint32_t j = 0; j < h; ++j) {
-        for (uint32_t i = 0; i < w; ++i) {
+        uint32_t i = 0;
+        while (i < w) {
             uint32_t tx = (x + i) / cell;
             uint32_t ty = (y + j) / cell;
             uint32_t color = ((tx + ty) & 1u) ? cA : cB;
-            kos::gfx::Compositor::FillRect(x + i, y + j, 1, 1, color);
+            
+            // Find how many consecutive pixels have the same color
+            uint32_t segLen = 1;
+            while (i + segLen < w) {
+                uint32_t nextTx = (x + i + segLen) / cell;
+                uint32_t nextColor = ((nextTx + ty) & 1u) ? cA : cB;
+                if (nextColor != color) break;
+                ++segLen;
+            }
+            
+            // Draw the segment
+            kos::gfx::Compositor::FillRect(x + i, y + j, segLen, 1, color);
+            i += segLen;
         }
     }
 }
@@ -1479,64 +1601,6 @@ static uint32_t TaskbarHitTest(int mx, int my) {
     return 0;
 }
 
-static void RenderMouseWindowContent() {
-    if (!s_mouse_win_id) return;
-    kos::gfx::WindowDesc d;
-    if (!kos::ui::GetWindowDesc(s_mouse_win_id, d)) return;
-
-    int mx, my; uint8_t mb; kos::ui::GetMouseState(mx, my, mb);
-    // Update event flash based on packet counter
-    uint32_t pk_now = drivers::mouse::g_mouse_packets;
-    if (pk_now != s_prev_mouse_pk) { s_mouse_evt_flash = 15; s_prev_mouse_pk = pk_now; }
-    else if (s_mouse_evt_flash > 0) { --s_mouse_evt_flash; }
-
-    // Build line 1: "x: ####  y: ####"
-    char buf[64];
-    int bi = 0; auto putc=[&](char c){ if (bi < (int)sizeof(buf)-1) buf[bi++]=c; };
-    auto writeDec=[&](uint32_t v){ char tmp[16]; int n=0; if (v==0){ tmp[n++]='0'; } else { char r[16]; int ri=0; while(v && ri<16){ r[ri++]=char('0'+(v%10)); v/=10; } while(ri) tmp[n++]=r[--ri]; } for(int i=0;i<n;++i) putc(tmp[i]); };
-    putc('x'); putc(':'); putc(' '); writeDec((uint32_t)mx); putc(' '); putc(' '); putc('y'); putc(':'); putc(' '); writeDec((uint32_t)my); buf[bi]=0;
-    // Clear client area strip and draw text
-    const uint32_t th = 18; const uint32_t padX = 6; const uint32_t padY = 6;
-    uint32_t tx = d.x + padX; uint32_t ty = d.y + th + padY;
-    // Draw background strip to avoid text ghosting
-    uint32_t availW = (d.w > padX*2 ? d.w - padX*2 : d.w);
-    uint32_t availH = (d.h > th + padY*2 ? d.h - th - padY*2 : 0);
-    if (availH > 0) kos::gfx::Compositor::FillRect(tx, ty, availW, (availH < 24 ? availH : 24), d.bg);
-    uint32_t maxChars = (availW / 8u);
-    for (uint32_t i=0; buf[i] && i < maxChars; ++i) {
-        char ch = buf[i];
-        if (ch < 32 || ch > 127) ch = '?';
-        const uint8_t* glyph = kos::gfx::kFont8x8Basic[ch - 32];
-        kos::gfx::Compositor::DrawGlyph8x8(tx + i*8, ty, glyph, 0xFFFFFFFFu, d.bg);
-    }
-
-    // Build line 2: "btn: lmr  pk: #### src: IRQ|POLL cfg:0xHH [EVT]"
-    bi = 0;
-    putc('b'); putc('t'); putc('n'); putc(':'); putc(' ');
-    bool left = (mb & 1u) != 0; bool right = (mb & 2u) != 0; bool middle = (mb & 4u) != 0;
-    putc(left ? 'L' : 'l'); putc(middle ? 'M' : 'm'); putc(right ? 'R' : 'r');
-    putc(' '); putc(' '); putc('p'); putc('k'); putc(':'); putc(' ');
-    writeDec(pk_now);
-    putc(' '); putc(' '); putc('s'); putc('r'); putc('c'); putc(':'); putc(' ');
-    const char* src = (::kos::g_mouse_input_source == 2 ? "POLL" : (::kos::g_mouse_input_source == 1 ? "IRQ" : "-"));
-    for (const char* s = src; *s; ++s) putc(*s);
-    // Show PS/2 controller config byte
-    putc(' '); putc(' '); putc('c'); putc('f'); putc('g'); putc(':');
-    putc('0'); putc('x');
-    auto& ps2 = ::kos::drivers::ps2::PS2Controller::Instance();
-    uint8_t cfg = ps2.ReadConfig();
-    const char* hex = "0123456789ABCDEF";
-    putc(hex[(cfg>>4)&0xF]); putc(hex[cfg & 0xF]);
-    if (s_mouse_evt_flash > 0) { putc(' '); putc(' '); putc('E'); putc('V'); putc('T'); }
-    buf[bi]=0;
-    uint32_t ty2 = ty + 10;
-    for (uint32_t i=0; buf[i] && i < maxChars; ++i) {
-        char ch = buf[i]; if (ch < 32 || ch > 127) ch = '?';
-        const uint8_t* glyph = kos::gfx::kFont8x8Basic[ch - 32];
-        kos::gfx::Compositor::DrawGlyph8x8(tx + i*8, ty2, glyph, 0xFFB0B0B0u, d.bg);
-    }
-}
-
 // Draw a single 8x8 glyph at integer scale using FillRect per source pixel.
 static void DrawGlyphScaled(uint32_t x, uint32_t y, const uint8_t* glyph,
                             uint32_t fg, uint32_t shadow, uint32_t scale) {
@@ -1598,13 +1662,8 @@ static void RenderClockWindowContent() {
     uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
     uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
 
-    for (uint32_t j = 0; j < ch; ++j) {
-        for (uint32_t i = 0; i < cw; ++i) {
-            uint32_t tx = (cx + i) / 2u;
-            uint32_t ty2 = (cy + j) / 2u;
-            kos::gfx::Compositor::FillRect(cx + i, cy + j, 1, 1, (((tx + ty2) & 1u) ? kBgA : kBgB));
-        }
-    }
+    // Use optimized FillCheckerRect for background instead of pixel-by-pixel loop
+    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
 
     kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderTop);
     kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderBot);
@@ -1656,13 +1715,8 @@ static void RenderSystemHudContent() {
     uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
     uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
 
-    for (uint32_t j = 0; j < ch; ++j) {
-        for (uint32_t i = 0; i < cw; ++i) {
-            uint32_t tx = (cx + i) / 2u;
-            uint32_t ty = (cy + j) / 2u;
-            kos::gfx::Compositor::FillRect(cx + i, cy + j, 1, 1, (((tx + ty) & 1u) ? kBgA : kBgB));
-        }
-    }
+    // Use optimized FillCheckerRect for background instead of pixel-by-pixel loop
+    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
 
     kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderHi);
     kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderLo);
@@ -1785,6 +1839,10 @@ static void RenderSystemHudContent() {
     drawBar(tx + 72u, cy + 27u, 96u, 6u, hasBattery ? static_cast<uint32_t>(batPct) : 0u, batColor);
 }
 
+static void RenderProcessMonitorWindowContent() {
+    kos::ui::ProcessViewer::Render();
+}
+
 static void RenderWindowContentsByZOrder() {
     uint32_t count = kos::ui::GetWindowCount();
     for (uint32_t i = 0; i < count; ++i) {
@@ -1805,6 +1863,13 @@ static void RenderWindowContentsByZOrder() {
         }
         kos::gfx::Compositor::SetClipRect(cx, cy, cw, ch);
 
+        if (kos::ui::IUIComponent* component = kos::ui::WindowRegistry::Instance().GetComponent(wid)) {
+            component->Render();
+            (void)kos::ui::ConsumeWindowNeedsRedraw(wid);
+            kos::gfx::Compositor::ClearClipRect();
+            continue;
+        }
+
         if (wid == s_process_monitor_win_id) {
             kos::ui::ProcessViewer::Render();
             kos::gfx::Compositor::ClearClipRect();
@@ -1813,12 +1878,6 @@ static void RenderWindowContentsByZOrder() {
 
         if (s_login_active && wid == s_login_win_id) {
             kos::ui::LoginScreen::Render();
-            kos::gfx::Compositor::ClearClipRect();
-            continue;
-        }
-
-        if (wid == s_mouse_win_id) {
-            RenderMouseWindowContent();
             kos::gfx::Compositor::ClearClipRect();
             continue;
         }
@@ -1999,6 +2058,13 @@ static void CreatePostLoginWindows() {
             }
         }
     }
+
+    RegisterLegacyComponent(s_process_monitor_win_id, "ProcessMonitor", &RenderProcessMonitorWindowContent);
+    RegisterMouseComponent(s_mouse_win_id);
+    RegisterClockComponent(s_clock_win_id);
+    RegisterSystemHudComponent(s_system_hud_win_id);
+    RegisterLegacyComponent(s_hardware_info_win_id, "HardwareInfo", &RenderHardwareInfoWindowContent);
+    RegisterLegacyComponent(s_file_browser_win_id, "FileBrowser", &RenderFileBrowserContent);
 }
 
 uint32_t WindowManager::SpawnTerminal() {
@@ -2266,6 +2332,10 @@ void WindowManager::Tick() {
             kos::ui::UpdateInteractions();
         }
     }
+
+    // Dispatch keyboard/mouse events that were captured by real drivers.
+    DispatchQueuedInputEvents();
+
     s_prev_left = left;
     // Ensure login keyboard handler stays active while login is shown
     // Set handler EVERY tick to ensure it stays correct even if something else changes it

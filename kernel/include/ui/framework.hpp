@@ -80,6 +80,11 @@ namespace kos {
             uint32_t flags; // WindowFlags
             // Geometry to restore from when un-maximizing
             kos::gfx::Rect restore;
+            // Dirty region tracking: set to true when window needs redraw
+            // Reset by renderer after redraw. Optimization to avoid full-screen redraws.
+            bool needs_redraw = true;
+            // Pointer to UI component (if this window is backed by one). Optional.
+            class IUIComponent* component = nullptr;
         };
 
         // Initialize UI framework
@@ -121,6 +126,11 @@ namespace kos {
 
         // Query window properties
         bool GetWindowDesc(uint32_t windowId, kos::gfx::WindowDesc& outDesc);
+        bool WindowNeedsRedraw(uint32_t windowId);
+        bool ConsumeWindowNeedsRedraw(uint32_t windowId);
+        bool InvalidateWindow(uint32_t windowId);
+        bool SetWindowComponent(uint32_t windowId, class IUIComponent* component);
+        class IUIComponent* GetWindowComponent(uint32_t windowId);
     // Enumerate windows for UI components (like taskbar)
     uint32_t GetWindowCount();
     bool GetWindowAt(uint32_t index, uint32_t& outId, kos::gfx::WindowDesc& outDesc, WindowState& outState, uint32_t& outFlags);

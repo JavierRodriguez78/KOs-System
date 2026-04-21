@@ -11,6 +11,7 @@
 #include <lib/serial.hpp>
 #include <graphics/framebuffer.hpp>
 #include <ui/input.hpp>
+#include <input/event_queue.hpp>
 
 using namespace kos::common;
 using namespace kos::console;
@@ -18,6 +19,21 @@ using namespace kos::drivers;
 using namespace kos::drivers::mouse;
 
 namespace {
+static inline void enqueue_mouse_event(kos::input::EventType type) {
+    int mx = 0, my = 0;
+    uint8_t buttons = 0;
+    kos::ui::GetMouseState(mx, my, buttons);
+
+    kos::input::InputEvent ev{};
+    ev.type = type;
+    ev.timestamp_ms = 0;
+    ev.target_window = 0;
+    ev.mouse_data.x = mx;
+    ev.mouse_data.y = my;
+    ev.mouse_data.buttons = buttons;
+    (void)kos::input::InputEventQueue::Instance().Enqueue(ev);
+}
+
 enum class MouseDecodeMode : uint8_t {
     Auto = 0,
     HeaderSign = 1,
@@ -705,16 +721,23 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp)
     UpdateOrientationCalibration(baseDx, baseDy);
     int outDx = 0, outDy = 0;
     ApplyFinalOrientation(baseDx, baseDy, outDx, outDy);
-    if (outDx != 0 || outDy != 0)
+    if (outDx != 0 || outDy != 0) {
         handler->OnMouseMove(outDx, outDy);
+        enqueue_mouse_event(kos::input::EventType::MouseMove);
+    }
 
     for (uint8_t i = 0; i < MOUSE_PACKET_SIZE; i++) {
         uint8_t mask = (1u << i);
         bool wasDown = (buttons & mask) != 0;
         bool isDown  = (buffer[0] & mask) != 0;
         if (wasDown != isDown) {
-            if (isDown) handler->OnMouseDown(i+1);
-            else        handler->OnMouseUp(i+1);
+            if (isDown) {
+                handler->OnMouseDown(i+1);
+                enqueue_mouse_event(kos::input::EventType::MousePress);
+            } else {
+                handler->OnMouseUp(i+1);
+                enqueue_mouse_event(kos::input::EventType::MouseRelease);
+            }
         }
     }
     buttons = buffer[0];
@@ -780,13 +803,22 @@ void MouseDriver::PollOnce() {
     UpdateOrientationCalibration(baseDx, baseDy);
     int outDx = 0, outDy = 0;
     ApplyFinalOrientation(baseDx, baseDy, outDx, outDy);
-    if (handler && (outDx != 0 || outDy != 0)) handler->OnMouseMove(outDx, outDy);
+    if (handler && (outDx != 0 || outDy != 0)) {
+        handler->OnMouseMove(outDx, outDy);
+        enqueue_mouse_event(kos::input::EventType::MouseMove);
+    }
     for (uint8_t i=0;i<3;++i) {
         uint8_t mask = (1u << i);
         bool wasDown = (buttons & mask) != 0;
         bool isDown  = (pbuf[0] & mask) != 0;
         if (wasDown != isDown && handler) {
-            if (isDown) handler->OnMouseDown(i+1); else handler->OnMouseUp(i+1);
+            if (isDown) {
+                handler->OnMouseDown(i+1);
+                enqueue_mouse_event(kos::input::EventType::MousePress);
+            } else {
+                handler->OnMouseUp(i+1);
+                enqueue_mouse_event(kos::input::EventType::MouseRelease);
+            }
         }
     }
     buttons = pbuf[0];

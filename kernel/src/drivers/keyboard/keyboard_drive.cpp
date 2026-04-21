@@ -5,8 +5,27 @@
 #include <kernel/globals.hpp>
 #include <kernel/input_debug.hpp>
 #include <lib/serial.hpp>
+#include <input/event_queue.hpp>
 using namespace kos::drivers::keyboard;
 using namespace kos::console;
+
+namespace {
+static inline uint32_t kbd_modifiers(bool ctrlLeft, bool ctrlRight) {
+    uint32_t mods = 0;
+    if (ctrlLeft || ctrlRight) mods |= 0x01u;
+    return mods;
+}
+
+static inline void enqueue_key_event(kos::input::EventType type, uint8_t keyCode, uint32_t modifiers) {
+    kos::input::InputEvent ev{};
+    ev.type = type;
+    ev.timestamp_ms = 0;
+    ev.target_window = 0;
+    ev.key_data.key_code = keyCode;
+    ev.key_data.modifiers = modifiers;
+    (void)kos::input::InputEventQueue::Instance().Enqueue(ev);
+}
+}
 
 // Complete PS/2 Keyboard Set 2 scancode map for make (press) codes only.
 // This is the primary input mode after keyboard reset; using full table for reliability.
@@ -273,6 +292,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                     break;
                 case 0x1C: // Numpad Enter (E0 1C)
                     activeHandler->OnKeyDown('\n');
+                    enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'\n', kbd_modifiers(ctrlLeft, ctrlRight));
                     {
                         static bool s_first_irq_logged = false;
                         if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
@@ -280,6 +300,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                     break;
                 case 0x49: // Page Up (E0 49)
                     activeHandler->OnKeyDown((char)0xF1); // internal code for PageUp
+                    enqueue_key_event(kos::input::EventType::KeyPress, 0xF1u, kbd_modifiers(ctrlLeft, ctrlRight));
                     {
                         static bool s_first_irq_logged = false;
                         if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
@@ -287,13 +308,20 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
                     break;
                 case 0x51: // Page Down (E0 51)
                     activeHandler->OnKeyDown((char)0xF2); // internal code for PageDown
+                    enqueue_key_event(kos::input::EventType::KeyPress, 0xF2u, kbd_modifiers(ctrlLeft, ctrlRight));
                     {
                         static bool s_first_irq_logged = false;
                         if (!s_first_irq_logged) { Logger::LogKV("KBD", "first-irq"); s_first_irq_logged = true; }
                     }
                     break;
-                case 0x35: activeHandler->OnKeyDown('/'); break; // Keypad '/' (E0 35)
-                case 0x4A: activeHandler->OnKeyDown('-'); break; // Keypad '-' (E0 4A) on some layouts
+                case 0x35:
+                    activeHandler->OnKeyDown('/');
+                    enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'/', kbd_modifiers(ctrlLeft, ctrlRight));
+                    break; // Keypad '/' (E0 35)
+                case 0x4A:
+                    activeHandler->OnKeyDown('-');
+                    enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'-', kbd_modifiers(ctrlLeft, ctrlRight));
+                    break; // Keypad '-' (E0 4A) on some layouts
                 default:
                     // Unhandled E0 make code; optional debug
                     // tty.Write("E0 "); tty.WriteHex(key);
@@ -408,6 +436,7 @@ uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
 #endif
             
             activeHandler->OnKeyDown(ch);
+            enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)ch, kbd_modifiers(ctrlLeft, ctrlRight));
             
             // Debug: verify handler isn't null
 #if KOS_INPUT_DEBUG
@@ -548,11 +577,26 @@ bool KeyboardDriver::PollOnce() {
         e0Prefix = false;
         switch (key) {
             case 0x1D: ctrlRight = true; break;
-            case 0x1C: activeHandler->OnKeyDown('\n'); break;
-            case 0x49: activeHandler->OnKeyDown((char)0xF1); break;
-            case 0x51: activeHandler->OnKeyDown((char)0xF2); break;
-            case 0x35: activeHandler->OnKeyDown('/'); break;
-            case 0x4A: activeHandler->OnKeyDown('-'); break;
+            case 0x1C:
+                activeHandler->OnKeyDown('\n');
+                enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'\n', kbd_modifiers(ctrlLeft, ctrlRight));
+                break;
+            case 0x49:
+                activeHandler->OnKeyDown((char)0xF1);
+                enqueue_key_event(kos::input::EventType::KeyPress, 0xF1u, kbd_modifiers(ctrlLeft, ctrlRight));
+                break;
+            case 0x51:
+                activeHandler->OnKeyDown((char)0xF2);
+                enqueue_key_event(kos::input::EventType::KeyPress, 0xF2u, kbd_modifiers(ctrlLeft, ctrlRight));
+                break;
+            case 0x35:
+                activeHandler->OnKeyDown('/');
+                enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'/', kbd_modifiers(ctrlLeft, ctrlRight));
+                break;
+            case 0x4A:
+                activeHandler->OnKeyDown('-');
+                enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)'-', kbd_modifiers(ctrlLeft, ctrlRight));
+                break;
             default: break;
         }
         static bool s_first_poll_logged = false;
@@ -576,6 +620,7 @@ bool KeyboardDriver::PollOnce() {
     if (ch) {
         if ((ctrlLeft||ctrlRight) && ch >= 'a' && ch <= 'z') ch = (int8_t)(ch - 'a' + 1);
         activeHandler->OnKeyDown(ch);
+        enqueue_key_event(kos::input::EventType::KeyPress, (uint8_t)ch, kbd_modifiers(ctrlLeft, ctrlRight));
         static bool s_first_poll_logged = false;
         if (!s_first_poll_logged) { Logger::LogKV("KBD", "first-poll"); s_first_poll_logged = true; }
     #if KOS_INPUT_DEBUG

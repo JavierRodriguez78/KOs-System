@@ -1,5 +1,6 @@
 #include <ui/framework.hpp>
 #include <ui/input.hpp>
+#include <ui/component.hpp>
 #include <lib/string.hpp>
 
 using namespace kos::ui;
@@ -301,6 +302,8 @@ uint32_t CreateWindowEx(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t
     win.role = role;
     win.parentId = parentWindowId;
     win.restore.x = d.x; win.restore.y = d.y; win.restore.w = d.w; win.restore.h = d.h;
+    win.needs_redraw = true;
+    win.component = nullptr;
     // Put at top of z-order
     // simple: ensure its index is the last in zorder
     for (uint32_t i=0;i<g_count-1;++i) g_zorder[i]=g_zorder[i];
@@ -431,6 +434,8 @@ bool BringToFront(uint32_t windowId) {
     // this raise comes from direct user interaction.
     if (g_user_focus_interaction || g_focused_window == 0 || g_focused_window == windowId) {
         g_focused_window = windowId;
+        g_windows[idx].needs_redraw = true;
+        if (g_windows[idx].component) g_windows[idx].component->OnFocusChanged(true);
         pushEvent(UIEventType::WindowFocused, windowId);
     }
     return true;
@@ -441,6 +446,7 @@ bool SetWindowPos(uint32_t windowId, uint32_t nx, uint32_t ny) {
     g_windows[idx].desc.x = nx;
     g_windows[idx].desc.y = ny;
     clampWindowToArea(g_windows[idx].desc);
+    g_windows[idx].needs_redraw = true;
     return true;
 }
 
@@ -449,12 +455,46 @@ bool SetWindowSize(uint32_t windowId, uint32_t nw, uint32_t nh) {
     g_windows[idx].desc.w = nw;
     g_windows[idx].desc.h = nh;
     clampWindowToArea(g_windows[idx].desc);
+    g_windows[idx].needs_redraw = true;
+    if (g_windows[idx].component) {
+        g_windows[idx].component->OnWindowResized(g_windows[idx].desc.w, g_windows[idx].desc.h);
+    }
     return true;
 }
 
 bool GetWindowDesc(uint32_t windowId, kos::gfx::WindowDesc& outDesc) {
     int idx = findIndexById(windowId); if (idx < 0) return false;
     outDesc = g_windows[idx].desc; return true;
+}
+
+bool WindowNeedsRedraw(uint32_t windowId) {
+    int idx = findIndexById(windowId); if (idx < 0) return false;
+    return g_windows[idx].needs_redraw;
+}
+
+bool ConsumeWindowNeedsRedraw(uint32_t windowId) {
+    int idx = findIndexById(windowId); if (idx < 0) return false;
+    bool dirty = g_windows[idx].needs_redraw;
+    g_windows[idx].needs_redraw = false;
+    return dirty;
+}
+
+bool InvalidateWindow(uint32_t windowId) {
+    int idx = findIndexById(windowId); if (idx < 0) return false;
+    g_windows[idx].needs_redraw = true;
+    return true;
+}
+
+bool SetWindowComponent(uint32_t windowId, class IUIComponent* component) {
+    int idx = findIndexById(windowId); if (idx < 0) return false;
+    g_windows[idx].component = component;
+    g_windows[idx].needs_redraw = true;
+    return true;
+}
+
+class IUIComponent* GetWindowComponent(uint32_t windowId) {
+    int idx = findIndexById(windowId); if (idx < 0) return nullptr;
+    return g_windows[idx].component;
 }
 
 void SetFocusedWindow(uint32_t windowId) {
@@ -501,6 +541,8 @@ bool MinimizeWindow(uint32_t windowId) {
     int idx = findIndexById(windowId); if (idx < 0) return false;
     if (!(g_windows[idx].flags & WF_Minimizable)) return false;
     g_windows[idx].state = WindowState::Minimized;
+    g_windows[idx].needs_redraw = true;
+    if (g_windows[idx].component) g_windows[idx].component->OnVisibilityChanged(false);
     if (g_focused_window == windowId) g_focused_window = 0;
     pushEvent(UIEventType::WindowMinimized, windowId);
     return true;
@@ -515,6 +557,7 @@ bool ToggleMaximize(uint32_t windowId) {
         w.desc.x = w.restore.x; w.desc.y = w.restore.y; w.desc.w = w.restore.w; w.desc.h = w.restore.h;
         clampWindowToArea(w.desc);
         w.state = WindowState::Normal;
+        w.needs_redraw = true;
         pushEvent(UIEventType::WindowRestored, windowId);
     } else if (w.state == WindowState::Normal) {
         // Save and maximize to full screen (keeping title bar visible)
@@ -522,6 +565,7 @@ bool ToggleMaximize(uint32_t windowId) {
         Rect a = effectiveWorkArea();
         w.desc.x = a.x; w.desc.y = a.y; w.desc.w = a.w; w.desc.h = a.h;
         w.state = WindowState::Maximized;
+        w.needs_redraw = true;
         pushEvent(UIEventType::WindowMaximized, windowId);
     } else if (w.state == WindowState::Minimized) {
         // From minimized to maximized: treat as restore+maximize
@@ -545,6 +589,8 @@ bool RestoreWindow(uint32_t windowId) {
     int idx = findIndexById(windowId); if (idx < 0) return false;
     if (g_windows[idx].state == WindowState::Minimized) {
         g_windows[idx].state = WindowState::Normal;
+        g_windows[idx].needs_redraw = true;
+        if (g_windows[idx].component) g_windows[idx].component->OnVisibilityChanged(true);
         pushEvent(UIEventType::WindowRestored, windowId);
         return true;
     }
