@@ -10,7 +10,7 @@
       "name": "base",
       "hidden": true,
       "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build"
+      "binaryDir": "$env{HOME}/.cache/kos-system/build"
     },
     {
       "name": "debug-input-on",
