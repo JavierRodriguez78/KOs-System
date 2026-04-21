@@ -241,7 +241,8 @@ public:
     void OnWindowResized(uint32_t width, uint32_t height) override;
     
 private:
-    // Component state
+    bool initialized_ = false;
+    uint32_t refresh_counter_ = 0;
 };
 
 /**

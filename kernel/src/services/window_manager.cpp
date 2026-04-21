@@ -52,60 +52,16 @@ static bool s_shell_started = false;
 static uint32_t s_clock_win_id = 0; // desktop clock/date widget
 static uint32_t s_system_hud_win_id = 0; // desktop CPU/MEM/BAT widget
 static uint32_t s_hardware_info_win_id = 0; // desktop hardware information window
-static uint32_t s_prev_total_runtime = 0;
-static uint32_t s_prev_idle_runtime = 0;
-static uint8_t  s_last_cpu_pct = 0;
 static constexpr uint32_t kDesktopClockTopInset = 56u; // reserved top strip to avoid overlap with top widgets
 
 // ========== File Browser window state ==========
 static uint32_t s_file_browser_win_id = 0;
-
-static void RenderClockWindowContent();
-static void RenderSystemHudContent();
-
-class LegacyRenderComponent : public kos::ui::IUIComponent {
-public:
-    using RenderFn = void (*)();
-
-    LegacyRenderComponent() : m_window_id(0), m_name("Legacy"), m_render_fn(nullptr) {}
-
-    void Bind(uint32_t windowId, const char* name, RenderFn renderFn) {
-        m_window_id = windowId;
-        m_name = name;
-        m_render_fn = renderFn;
-    }
-
-    virtual uint32_t GetWindowId() const override { return m_window_id; }
-    virtual void Render() override { if (m_render_fn) m_render_fn(); }
-    virtual bool OnInputEvent(const kos::input::InputEvent&) override { return false; }
-    virtual const char* GetName() const override { return m_name; }
-
-private:
-    uint32_t m_window_id;
-    const char* m_name;
-    RenderFn m_render_fn;
-};
-
-static LegacyRenderComponent s_legacy_components[8];
-static uint32_t s_legacy_component_count = 0;
 static kos::ui::ProcessMonitorComponent s_process_monitor_component;
 static kos::ui::ClockComponent s_clock_component;
 static kos::ui::SystemHudComponent s_system_hud_component;
 static kos::ui::MouseDiagnosticComponent s_mouse_component;
 static kos::ui::HardwareInfoComponent s_hardware_info_component;
 static kos::ui::FileBrowserComponent s_file_browser_component;
-
-static void RegisterLegacyComponent(uint32_t windowId, const char* name, LegacyRenderComponent::RenderFn renderFn) {
-    if (windowId == 0 || renderFn == nullptr) return;
-    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
-    if (reg.GetComponent(windowId) != nullptr) return;
-    if (s_legacy_component_count >= 8u) return;
-
-    LegacyRenderComponent& c = s_legacy_components[s_legacy_component_count++];
-    c.Bind(windowId, name, renderFn);
-    (void)reg.RegisterComponent(&c, windowId);
-    (void)kos::ui::SetWindowComponent(windowId, &c);
-}
 
 static void RegisterClockComponent(uint32_t windowId) {
     if (windowId == 0) return;
@@ -225,19 +181,16 @@ static void FillCheckerRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h,
             uint32_t tx = (x + i) / cell;
             uint32_t ty = (y + j) / cell;
             uint32_t color = ((tx + ty) & 1u) ? cA : cB;
-            
-            // Find how many consecutive pixels have the same color
-            uint32_t segLen = 1;
-            while (i + segLen < w) {
-                uint32_t nextTx = (x + i + segLen) / cell;
-                uint32_t nextColor = ((nextTx + ty) & 1u) ? cA : cB;
-                if (nextColor != color) break;
-                ++segLen;
+            uint32_t seg_len = 1;
+            while (i + seg_len < w) {
+                uint32_t next_tx = (x + i + seg_len) / cell;
+                uint32_t next_color = ((next_tx + ty) & 1u) ? cA : cB;
+                if (next_color != color) break;
+                ++seg_len;
             }
-            
-            // Draw the segment
-            kos::gfx::Compositor::FillRect(x + i, y + j, segLen, 1, color);
-            i += segLen;
+
+            kos::gfx::Compositor::FillRect(x + i, y + j, seg_len, 1, color);
+            i += seg_len;
         }
     }
 }
@@ -255,7 +208,6 @@ static void RenderLoginBackdrop() {
         uint8_t r = blend8(static_cast<uint8_t>((kTop >> 16) & 0xFFu), static_cast<uint8_t>((kBottom >> 16) & 0xFFu), y, fb.height - 1);
         uint8_t g = blend8(static_cast<uint8_t>((kTop >> 8) & 0xFFu), static_cast<uint8_t>((kBottom >> 8) & 0xFFu), y, fb.height - 1);
         uint8_t b = blend8(static_cast<uint8_t>(kTop & 0xFFu), static_cast<uint8_t>(kBottom & 0xFFu), y, fb.height - 1);
-        // Posterize channels to evoke a limited 8-bit palette.
         r = static_cast<uint8_t>(r & 0xE0u);
         g = static_cast<uint8_t>(g & 0xE0u);
         b = static_cast<uint8_t>(b & 0xC0u);
@@ -288,37 +240,35 @@ static void RenderLoginBackdrop() {
 static void deferred_shell_thread_entry() {
     kos::console::ThreadedShellAPI::StartShell();
 }
-// File-scope keyboard handler that forwards keys to LoginScreen
+
 class LoginKeyboardHandler : public kos::drivers::keyboard::KeyboardEventHandler {
 public:
-    virtual void OnKeyDown(int8_t c) override { 
-        kos::ui::LoginScreen::OnKeyDown(c); 
+    virtual void OnKeyDown(int8_t c) override {
+        kos::ui::LoginScreen::OnKeyDown(c);
     }
+
     virtual void OnKeyUp(int8_t) override {}
 };
+
 static LoginKeyboardHandler s_login_handler;
 
-// Special taskbar hit ids
-static constexpr uint32_t kTaskbarSpawnBtnId = 0xFFFFFFFFu; // sentinel for "+" button
-static constexpr uint32_t kTaskbarRebootBtnId = 0xFFFFFFFEu; // sentinel for reboot button
+static constexpr uint32_t kTaskbarSpawnBtnId = 0xFFFFFFFFu;
+static constexpr uint32_t kTaskbarRebootBtnId = 0xFFFFFFFEu;
 
 extern "C" void app_reboot() __attribute__((weak));
 extern "C" void app_shutdown() __attribute__((weak));
 
-// Taskbar layout constants
-static constexpr uint32_t kTaskbarHeight = 22; // bottom panel height
+static constexpr uint32_t kTaskbarHeight = 22;
 static constexpr uint32_t kTaskbarPad = 4;
-static constexpr uint32_t kTaskButtonW = 120; // fixed width per window button
-static constexpr uint32_t kTaskButtonH = 18;  // inside bar
+static constexpr uint32_t kTaskButtonW = 120;
+static constexpr uint32_t kTaskButtonH = 18;
 
 static void TaskbarRebootSystem() {
-    // Prefer the registered reboot app entrypoint used by the text shell.
     if (app_reboot) {
         app_reboot();
         return;
     }
 
-    // Fallback: keyboard controller reset + triple-fault if needed.
     auto io_outb = [](uint16_t port, uint8_t val) {
         __asm__ __volatile__("outb %0, %1" : : "a"(val), "Nd"(port));
     };
@@ -351,28 +301,32 @@ static void BuildTaskbarButtons() {
     s_taskButtonCount = 0;
     if (!s_taskbar_enabled) return;
     const auto& fb = kos::gfx::GetInfo();
-    // Leave space for a small "+" spawn button at the far left and reboot button at the far right.
     const uint32_t spawnW = 20;
     const uint32_t rebootW = 28;
     uint32_t x = kTaskbarPad + spawnW + 4;
     uint32_t y = fb.height - kTaskbarHeight + (kTaskbarHeight - kTaskButtonH)/2;
-    for (uint32_t i=0;i<kos::ui::GetWindowCount() && s_taskButtonCount < 16; ++i) {
+    for (uint32_t i = 0; i < kos::ui::GetWindowCount() && s_taskButtonCount < 16; ++i) {
         uint32_t wid; kos::gfx::WindowDesc d; kos::ui::WindowState st; uint32_t fl;
         if (!kos::ui::GetWindowAt(i, wid, d, st, fl)) continue;
-        // Skip non-closable utility windows (Mouse diag, Clock widget, System HUD)
-        if (wid == s_mouse_win_id || wid == s_clock_win_id || wid == s_system_hud_win_id) { continue; }
+        if (wid == s_mouse_win_id || wid == s_clock_win_id || wid == s_system_hud_win_id) continue;
         TaskbarButtonGeom& b = s_taskButtons[s_taskButtonCount++];
-        b.x = x; b.y = y; b.w = kTaskButtonW; b.h = kTaskButtonH; b.winId = wid; b.minimized = (st == kos::ui::WindowState::Minimized); b.focused = (wid == kos::ui::GetFocusedWindow());
+        b.x = x;
+        b.y = y;
+        b.w = kTaskButtonW;
+        b.h = kTaskButtonH;
+        b.winId = wid;
+        b.minimized = (st == kos::ui::WindowState::Minimized);
+        b.focused = (wid == kos::ui::GetFocusedWindow());
         x += kTaskButtonW + 4;
-        if (x + kTaskButtonW + kTaskbarPad + rebootW + 4 > fb.width) break; // no more space
+        if (x + kTaskButtonW + kTaskbarPad + rebootW + 4 > fb.width) break;
     }
 }
 
 static uint32_t TaskbarHitTest(int mx, int my) {
     if (!s_taskbar_enabled) return 0;
     const auto& fb = kos::gfx::GetInfo();
-    if ((uint32_t)my < fb.height - kTaskbarHeight) return 0; // outside bar
-    // Check spawn '+' button at far left
+    if ((uint32_t)my < fb.height - kTaskbarHeight) return 0;
+
     const uint32_t spawnX = kTaskbarPad;
     const uint32_t spawnY = fb.height - kTaskbarHeight + (kTaskbarHeight - kTaskButtonH)/2;
     const uint32_t spawnW = 20;
@@ -380,258 +334,21 @@ static uint32_t TaskbarHitTest(int mx, int my) {
     if ((uint32_t)mx >= spawnX && (uint32_t)mx < spawnX + spawnW && (uint32_t)my >= spawnY && (uint32_t)my < spawnY + spawnH) {
         return kTaskbarSpawnBtnId;
     }
-    // Reboot button at far right
+
     const uint32_t rebootW = 28;
     const uint32_t rebootX = fb.width - kTaskbarPad - rebootW;
     const uint32_t rebootY = spawnY;
     if ((uint32_t)mx >= rebootX && (uint32_t)mx < rebootX + rebootW && (uint32_t)my >= rebootY && (uint32_t)my < rebootY + spawnH) {
         return kTaskbarRebootBtnId;
     }
-    for (uint32_t i=0;i<s_taskButtonCount;++i) {
+
+    for (uint32_t i = 0; i < s_taskButtonCount; ++i) {
         const auto& b = s_taskButtons[i];
         if ((uint32_t)mx >= b.x && (uint32_t)mx < b.x + b.w && (uint32_t)my >= b.y && (uint32_t)my < b.y + b.h) {
             return b.winId;
         }
     }
     return 0;
-}
-
-// Draw a single 8x8 glyph at integer scale using FillRect per source pixel.
-static void DrawGlyphScaled(uint32_t x, uint32_t y, const uint8_t* glyph,
-                            uint32_t fg, uint32_t shadow, uint32_t scale) {
-    if (scale == 0) scale = 1;
-    for (uint32_t row = 0; row < 8u; ++row) {
-        uint8_t bits = glyph[row];
-        for (uint32_t col = 0; col < 8u; ++col) {
-            if (bits & (1u << col)) {
-                uint32_t px = x + col * scale;
-                uint32_t py = y + row * scale;
-                if (shadow) kos::gfx::Compositor::FillRect(px + 1, py + 1, scale, scale, shadow);
-                kos::gfx::Compositor::FillRect(px, py, scale, scale, fg);
-            }
-        }
-    }
-}
-
-static void RenderClockWindowContent() {
-    if (!s_clock_win_id) return;
-    kos::gfx::WindowDesc d;
-    if (!kos::ui::GetWindowDesc(s_clock_win_id, d)) return;
-
-    uint16_t year = 0; uint8_t month = 0, day = 0, hour = 0, minute = 0, second = 0;
-    kos::sys::get_datetime(&year, &month, &day, &hour, &minute, &second);
-
-    auto w2 = [](char* buf, int& p, uint8_t v) {
-        buf[p++] = char('0' + (v / 10u));
-        buf[p++] = char('0' + (v % 10u));
-    };
-    auto w4 = [](char* buf, int& p, uint16_t v) {
-        buf[p++] = char('0' + ((v / 1000u) % 10u));
-        buf[p++] = char('0' + ((v / 100u)  % 10u));
-        buf[p++] = char('0' + ((v / 10u)   % 10u));
-        buf[p++] = char('0' + (v % 10u));
-    };
-
-    const char sep = ((second & 1u) == 0u) ? ':' : ' ';
-    char timeBuf[12]; int tp = 0;
-    w2(timeBuf, tp, hour); timeBuf[tp++] = sep;
-    w2(timeBuf, tp, minute); timeBuf[tp++] = sep;
-    w2(timeBuf, tp, second); timeBuf[tp] = 0;
-
-    char dateBuf[16]; int dp = 0;
-    w4(dateBuf, dp, year); dateBuf[dp++] = '-';
-    w2(dateBuf, dp, month); dateBuf[dp++] = '-';
-    w2(dateBuf, dp, day); dateBuf[dp] = 0;
-
-    constexpr uint32_t kPhosphor       = 0xFF39FF14u;
-    constexpr uint32_t kPhosphorDim    = 0xFF1A7A08u;
-    constexpr uint32_t kPhosphorShadow = 0xFF041400u;
-    constexpr uint32_t kBgA = 0xFF020A02u;
-    constexpr uint32_t kBgB = 0xFF030C03u;
-    constexpr uint32_t kBorderTop = 0xFF22AA22u;
-    constexpr uint32_t kBorderBot = 0xFF001000u;
-    constexpr uint32_t kScale = 2u;
-    constexpr uint32_t kGlyphW2 = 8u * kScale;
-
-    uint32_t cx = d.x + 1, cy = d.y + 1;
-    uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
-    uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
-
-    // Use optimized FillCheckerRect for background instead of pixel-by-pixel loop
-    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
-
-    kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderTop);
-    kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderBot);
-    kos::gfx::Compositor::FillRect(cx, cy, 1, ch, kBorderTop);
-    kos::gfx::Compositor::FillRect(cx + cw - 1, cy, 1, ch, kBorderBot);
-
-    const uint32_t padY = 4u;
-    uint32_t timeLen = static_cast<uint32_t>(tp);
-    uint32_t timeRowW = timeLen * kGlyphW2;
-    uint32_t timeX = (cw > timeRowW) ? cx + (cw - timeRowW) / 2u : cx + 4u;
-    uint32_t timeY = cy + padY;
-    for (uint32_t i = 0; i < timeLen; ++i) {
-        char c = timeBuf[i];
-        if (c < 32 || c > 127) c = '?';
-        const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
-        DrawGlyphScaled(timeX + i * kGlyphW2, timeY, glyph, kPhosphor, kPhosphorShadow, kScale);
-    }
-
-    uint32_t dateLen = static_cast<uint32_t>(dp);
-    uint32_t dateRowW = dateLen * 8u;
-    uint32_t dateX = (cw > dateRowW) ? cx + (cw - dateRowW) / 2u : cx + 4u;
-    uint32_t dateY = timeY + kScale * 8u + 4u;
-    for (uint32_t i = 0; i < dateLen; ++i) {
-        char c = dateBuf[i];
-        if (c < 32 || c > 127) c = '?';
-        const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
-        kos::gfx::Compositor::DrawGlyph8x8(dateX + i*8 + 1, dateY + 1, glyph, kPhosphorShadow, 0);
-        kos::gfx::Compositor::DrawGlyph8x8(dateX + i*8, dateY, glyph, kPhosphorDim, 0);
-    }
-}
-
-static void RenderSystemHudContent() {
-    if (!s_system_hud_win_id) return;
-    kos::gfx::WindowDesc d;
-    if (!kos::ui::GetWindowDesc(s_system_hud_win_id, d)) return;
-
-    constexpr uint32_t kGreen    = 0xFF39FF14u;
-    constexpr uint32_t kYellow   = 0xFFF2E85Cu;
-    constexpr uint32_t kRed      = 0xFFFF5C5Cu;
-    constexpr uint32_t kFgDim    = 0xFF1A7A08u;
-    constexpr uint32_t kShadow   = 0xFF041400u;
-    constexpr uint32_t kBgA      = 0xFF020A02u;
-    constexpr uint32_t kBgB      = 0xFF030C03u;
-    constexpr uint32_t kBorderHi = 0xFF22AA22u;
-    constexpr uint32_t kBorderLo = 0xFF001000u;
-    constexpr uint32_t kBarBg    = 0xFF0A170Au;
-
-    uint32_t cx = d.x + 1, cy = d.y + 1;
-    uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
-    uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
-
-    // Use optimized FillCheckerRect for background instead of pixel-by-pixel loop
-    FillCheckerRect(cx, cy, cw, ch, kBgA, kBgB, 2);
-
-    kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorderHi);
-    kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorderLo);
-    kos::gfx::Compositor::FillRect(cx, cy, 1, ch, kBorderHi);
-    kos::gfx::Compositor::FillRect(cx + cw - 1, cy, 1, ch, kBorderLo);
-
-    uint32_t totalRuntime = 0;
-    uint32_t idleRuntime = 0;
-    if (kos::process::g_scheduler) {
-        for (uint32_t tid = 1; tid <= 128; ++tid) {
-            kos::process::Thread* task = kos::process::g_scheduler->FindTask(tid);
-            if (!task || task->state == kos::process::TASK_TERMINATED) continue;
-            totalRuntime += task->total_runtime;
-            if (task->priority == kos::process::PRIORITY_IDLE) {
-                idleRuntime += task->total_runtime;
-            } else if (task->name && task->name[0] == 'i' && task->name[1] == 'd') {
-                idleRuntime += task->total_runtime;
-            }
-        }
-    }
-
-    uint32_t dTotal = totalRuntime - s_prev_total_runtime;
-    uint32_t dIdle = idleRuntime - s_prev_idle_runtime;
-    if (dTotal > 0) {
-        uint32_t busy = (dIdle <= dTotal) ? (dTotal - dIdle) : 0u;
-        uint32_t pct = (busy * 100u) / dTotal;
-        if (pct > 100u) pct = 100u;
-        s_last_cpu_pct = static_cast<uint8_t>(pct);
-    }
-    s_prev_total_runtime = totalRuntime;
-    s_prev_idle_runtime = idleRuntime;
-
-    uint32_t totalFrames = 0;
-    uint32_t freeFrames = 0;
-    uint32_t heapSize = 0;
-    uint32_t heapUsed = 0;
-    if (kos::sys::table()) {
-        if (kos::sys::table()->get_total_frames) totalFrames = kos::sys::table()->get_total_frames();
-        if (kos::sys::table()->get_free_frames) freeFrames = kos::sys::table()->get_free_frames();
-        if (kos::sys::table()->get_heap_size) heapSize = kos::sys::table()->get_heap_size();
-        if (kos::sys::table()->get_heap_used) heapUsed = kos::sys::table()->get_heap_used();
-    }
-    uint32_t usedFrames = (totalFrames >= freeFrames) ? (totalFrames - freeFrames) : 0u;
-    uint32_t memPct = (totalFrames > 0) ? ((usedFrames * 100u) / totalFrames) : 0u;
-
-    auto colorByLoad = [&](uint32_t pct) -> uint32_t {
-        if (pct >= 80u) return kRed;
-        if (pct >= 50u) return kYellow;
-        return kGreen;
-    };
-
-    uint8_t batPct = 0;
-    bool hasBattery = TryReadBatteryPercent(batPct);
-    if (batPct > 100u) batPct = 100u;
-
-    auto drawText = [&](uint32_t x, uint32_t y, const char* text, uint32_t fg) {
-        for (uint32_t i = 0; text[i]; ++i) {
-            char c = text[i];
-            if (c < 32 || c > 127) c = '?';
-            const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
-            kos::gfx::Compositor::DrawGlyph8x8(x + i*8 + 1, y + 1, glyph, kShadow, 0);
-            kos::gfx::Compositor::DrawGlyph8x8(x + i*8, y, glyph, fg, 0);
-        }
-    };
-
-    auto drawBar = [&](uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t pct, uint32_t fg) {
-        if (w < 2u || h < 2u) return;
-        if (pct > 100u) pct = 100u;
-        kos::gfx::Compositor::FillRect(x, y, w, h, kBarBg);
-        kos::gfx::Compositor::FillRect(x, y, w, 1, kBorderHi);
-        kos::gfx::Compositor::FillRect(x, y + h - 1, w, 1, kBorderLo);
-        kos::gfx::Compositor::FillRect(x, y, 1, h, kBorderHi);
-        kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, kBorderLo);
-        uint32_t fillW = (w > 2u) ? ((w - 2u) * pct) / 100u : 0u;
-        if (fillW > 0u) {
-            kos::gfx::Compositor::FillRect(x + 1u, y + 1u, fillW, h - 2u, fg);
-        }
-    };
-
-    auto appendDec = [](char* out, int& p, uint32_t v) {
-        char rev[12];
-        int ri = 0;
-        if (v == 0) rev[ri++] = '0';
-        while (v && ri < 12) { rev[ri++] = char('0' + (v % 10u)); v /= 10u; }
-        while (ri) out[p++] = rev[--ri];
-    };
-
-    char line1[40]; int p1 = 0;
-    line1[p1++] = 'C'; line1[p1++] = 'P'; line1[p1++] = 'U'; line1[p1++] = ':'; line1[p1++] = ' ';
-    appendDec(line1, p1, s_last_cpu_pct); line1[p1++] = '%'; line1[p1] = 0;
-
-    char line2[64]; int p2 = 0;
-    line2[p2++] = 'M'; line2[p2++] = 'E'; line2[p2++] = 'M'; line2[p2++] = ':'; line2[p2++] = ' ';
-    appendDec(line2, p2, memPct); line2[p2++] = '%';
-    line2[p2++] = ' '; line2[p2++] = 'H'; line2[p2++] = ':';
-    appendDec(line2, p2, heapUsed / 1024u); line2[p2++] = '/'; appendDec(line2, p2, heapSize / 1024u); line2[p2++] = 'K';
-    line2[p2] = 0;
-
-    char line3[24]; int p3 = 0;
-    line3[p3++] = 'B'; line3[p3++] = 'A'; line3[p3++] = 'T'; line3[p3++] = ':'; line3[p3++] = ' ';
-    if (hasBattery) {
-        appendDec(line3, p3, batPct); line3[p3++] = '%';
-    } else {
-        line3[p3++] = 'N'; line3[p3++] = '/'; line3[p3++] = 'A';
-    }
-    line3[p3] = 0;
-
-    uint32_t tx = cx + 4u;
-    uint32_t cpuColor = colorByLoad(s_last_cpu_pct);
-    uint32_t memColor = colorByLoad(memPct);
-    uint32_t batColor = hasBattery ? colorByLoad(batPct) : kFgDim;
-
-    drawText(tx, cy + 2u, line1, cpuColor);
-    drawBar(tx + 72u, cy + 3u, 96u, 6u, s_last_cpu_pct, cpuColor);
-
-    drawText(tx, cy + 14u, line2, memColor);
-    drawBar(tx + 72u, cy + 15u, 96u, 6u, memPct, memColor);
-
-    drawText(tx, cy + 26u, line3, batColor);
-    drawBar(tx + 72u, cy + 27u, 96u, 6u, hasBattery ? static_cast<uint32_t>(batPct) : 0u, batColor);
 }
 
 static void RenderWindowContentsByZOrder() {
@@ -663,18 +380,6 @@ static void RenderWindowContentsByZOrder() {
 
         if (s_login_active && wid == s_login_win_id) {
             kos::ui::LoginScreen::Render();
-            kos::gfx::Compositor::ClearClipRect();
-            continue;
-        }
-
-        if (wid == s_clock_win_id) {
-            RenderClockWindowContent();
-            kos::gfx::Compositor::ClearClipRect();
-            continue;
-        }
-
-        if (wid == s_system_hud_win_id) {
-            RenderSystemHudContent();
             kos::gfx::Compositor::ClearClipRect();
             continue;
         }
@@ -766,8 +471,6 @@ static void CreatePostLoginWindows() {
                                  kos::ui::WF_Resizable | kos::ui::WF_Minimizable |
                                  kos::ui::WF_Maximizable | kos::ui::WF_Closable);
         if (s_process_monitor_win_id) {
-            kos::ui::ProcessViewer::Initialize(s_process_monitor_win_id);
-            kos::ui::ProcessViewer::RefreshProcessList();
             if (smallDesktop) {
                 kos::ui::MinimizeWindow(s_process_monitor_win_id);
             }
@@ -963,6 +666,7 @@ bool WindowManager::Start() {
     s_clock_win_id = 0;
     s_system_hud_win_id = 0;
     s_hardware_info_win_id = 0;
+    s_file_browser_win_id = 0;
 
     // Draw an initial frame immediately so the window is visible even before the service ticker runs
     const uint32_t wallpaper = 0xFF1E1E20u; // dark gray background
@@ -1253,15 +957,6 @@ void WindowManager::Tick() {
                     break;
                 }
             }
-        }
-    }
-
-    // Refresh process list every ~30 ticks (for smooth updates)
-    if (s_process_monitor_win_id) {
-        static uint32_t refresh_counter = 0;
-        if (++refresh_counter >= 30) {
-            kos::ui::ProcessViewer::RefreshProcessList();
-            refresh_counter = 0;
         }
     }
 

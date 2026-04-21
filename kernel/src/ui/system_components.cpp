@@ -1251,6 +1251,18 @@ void FileBrowserComponent::OnWindowResized(uint32_t width, uint32_t height) {
 // ============================================================================
 
 void ProcessMonitorComponent::Render() {
+    if (!initialized_) {
+        const uint32_t window_id = GetWindowId();
+        if (window_id != 0) {
+            kos::ui::ProcessViewer::Initialize(window_id);
+            initialized_ = true;
+            refresh_counter_ = 0;
+        }
+    } else if (++refresh_counter_ >= 30u) {
+        kos::ui::ProcessViewer::RefreshProcessList();
+        refresh_counter_ = 0;
+    }
+
     kos::ui::ProcessViewer::Render();
 }
 
@@ -1264,7 +1276,8 @@ bool ProcessMonitorComponent::OnInputEvent(const input::InputEvent& event) {
 }
 
 void ProcessMonitorComponent::OnWindowResized(uint32_t width, uint32_t height) {
-    // Mark for redraw on resize
+    (void)width;
+    (void)height;
     InvalidateContent();
 }
 
