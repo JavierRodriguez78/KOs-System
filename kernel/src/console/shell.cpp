@@ -17,6 +17,7 @@
 #include <process/scheduler.hpp>
 // Pipe management
 #include <process/pipe.hpp>
+#include <process/message_queue.hpp>
 #include <services/user_service.hpp>
 #include <services/service_manager.hpp>
 
@@ -722,6 +723,183 @@ void Shell::ExecuteCommand(const int8_t* command) {
         return;
     }
 
+    // Built-in: mqueues command (show all active message queues)
+    if (String::strcmp(prog, (const int8_t*)"mqueues", 7) == 0 &&
+        (prog[7] == 0)) {
+        if (g_message_queue_manager) {
+            g_message_queue_manager->PrintAllQueues();
+        } else {
+            tty.Write("Message queue manager not initialized\n");
+        }
+        return;
+    }
+
+    // Built-in: mkmq <name> [max_messages] [max_message_size]
+    if (String::strcmp(prog, (const int8_t*)"mkmq", 4) == 0 &&
+        (prog[4] == 0)) {
+        if (argc < 2) {
+            tty.Write("Usage: mkmq <name> [max_messages] [max_message_size]\n");
+            return;
+        }
+
+        uint32_t max_messages = 64;
+        uint32_t max_message_size = 256;
+
+        if (argc >= 3) {
+            const int8_t* s = argv[2];
+            uint32_t v = 0;
+            for (int i = 0; s[i]; ++i) {
+                if (s[i] < '0' || s[i] > '9') break;
+                v = v * 10u + (uint32_t)(s[i] - '0');
+            }
+            if (v > 0) max_messages = v;
+        }
+        if (argc >= 4) {
+            const int8_t* s = argv[3];
+            uint32_t v = 0;
+            for (int i = 0; s[i]; ++i) {
+                if (s[i] < '0' || s[i] > '9') break;
+                v = v * 10u + (uint32_t)(s[i] - '0');
+            }
+            if (v > 0) max_message_size = v;
+        }
+
+        uint32_t qid = MessageQueueAPI::CreateQueue((const char*)argv[1], max_messages, max_message_size);
+        if (qid) {
+            tty.Write("Created message queue: ");
+            tty.Write(argv[1]);
+            tty.Write(" (ID: ");
+            tty.WriteHex(qid);
+            tty.Write(")\n");
+        } else {
+            tty.Write("Failed to create message queue\n");
+        }
+        return;
+    }
+
+    // Built-in: rmmq <name>
+    if (String::strcmp(prog, (const int8_t*)"rmmq", 4) == 0 &&
+        (prog[4] == 0)) {
+        if (argc < 2) {
+            tty.Write("Usage: rmmq <name>\n");
+            return;
+        }
+
+        if (MessageQueueAPI::DestroyQueue((const char*)argv[1])) {
+            tty.Write("Removed message queue: ");
+            tty.Write(argv[1]);
+            tty.Write("\n");
+        } else {
+            tty.Write("Failed to remove message queue or queue not found\n");
+        }
+        return;
+    }
+
+    // Built-in: mqsend <queue> <receiver_id> <payload>
+    if (String::strcmp(prog, (const int8_t*)"mqsend", 6) == 0 &&
+        (prog[6] == 0)) {
+        if (argc < 4) {
+            tty.Write("Usage: mqsend <queue> <receiver_id> <payload>\n");
+            return;
+        }
+
+        uint32_t receiver_id = 0;
+        const int8_t* rid = argv[2];
+        int rid_start = 0;
+        int rid_base = 10;
+        if (rid[0] == '0' && (rid[1] == 'x' || rid[1] == 'X')) {
+            rid_start = 2;
+            rid_base = 16;
+        }
+        for (int i = rid_start; rid[i]; ++i) {
+            char c = (char)rid[i];
+            if (rid_base == 10) {
+                if (c < '0' || c > '9') break;
+                receiver_id = receiver_id * 10u + (uint32_t)(c - '0');
+            } else {
+                receiver_id <<= 4;
+                if (c >= '0' && c <= '9') receiver_id += (uint32_t)(c - '0');
+                else if (c >= 'a' && c <= 'f') receiver_id += (uint32_t)(c - 'a' + 10);
+                else if (c >= 'A' && c <= 'F') receiver_id += (uint32_t)(c - 'A' + 10);
+                else break;
+            }
+        }
+
+        char payload[256];
+        int pos = 0;
+        for (int i = 3; i < argc && pos < (int)sizeof(payload) - 1; ++i) {
+            const int8_t* part = argv[i];
+            for (int j = 0; part[j] && pos < (int)sizeof(payload) - 1; ++j) {
+                payload[pos++] = (char)part[j];
+            }
+            if (i + 1 < argc && pos < (int)sizeof(payload) - 1) payload[pos++] = ' ';
+        }
+        payload[pos] = 0;
+
+        bool ok = MessageQueueAPI::Send((const char*)argv[1], receiver_id, MSG_TYPE_COMMAND,
+                                        payload, (uint32_t)(pos + 1), true);
+        if (ok) {
+            tty.Write("Message sent\n");
+        } else {
+            tty.Write("Failed to send message\n");
+        }
+        return;
+    }
+
+    // Built-in: mqrecv <queue> [max_bytes]
+    if (String::strcmp(prog, (const int8_t*)"mqrecv", 6) == 0 &&
+        (prog[6] == 0)) {
+        if (argc < 2) {
+            tty.Write("Usage: mqrecv <queue> [max_bytes]\n");
+            return;
+        }
+
+        uint32_t max_bytes = 255;
+        if (argc >= 3) {
+            const int8_t* s = argv[2];
+            uint32_t v = 0;
+            for (int i = 0; s[i]; ++i) {
+                if (s[i] < '0' || s[i] > '9') break;
+                v = v * 10u + (uint32_t)(s[i] - '0');
+            }
+            if (v > 0 && v < 1024) max_bytes = v;
+        }
+
+        uint8_t msg_buf[1024];
+        MessageType msg_type = MSG_TYPE_GENERIC;
+        uint32_t bytes_read = 0;
+        uint32_t sender_id = 0;
+        uint32_t message_id = 0;
+        bool ok = MessageQueueAPI::Receive((const char*)argv[1], &msg_type,
+                                           msg_buf, max_bytes,
+                                           &bytes_read, &sender_id,
+                                           &message_id, false);
+        if (!ok) {
+            tty.Write("No message available\n");
+            return;
+        }
+
+        tty.Write("Received message id=");
+        tty.WriteHex(message_id);
+        tty.Write(" from=");
+        tty.WriteHex(sender_id);
+        tty.Write(" type=");
+        tty.WriteHex((uint32_t)msg_type);
+        tty.Write(" bytes=");
+        tty.WriteHex(bytes_read);
+        tty.Write("\n");
+
+        tty.Write("Payload: ");
+        for (uint32_t i = 0; i < bytes_read; ++i) {
+            char c = (char)msg_buf[i];
+            if (c == 0) break;
+            if (c < 32 || c > 126) c = '.';
+            tty.PutChar(c);
+        }
+        tty.Write("\n");
+        return;
+    }
+
     // Built-in: help command
     if (String::strcmp(prog, (const int8_t*)"help", 4) == 0 &&
         (prog[4] == 0)) {
@@ -752,6 +930,11 @@ void Shell::ExecuteCommand(const int8_t* command) {
         tty.Write("  pipes          - Show all active pipes\n");
         tty.Write("  mkpipe <name>  - Create a new pipe\n");
         tty.Write("  rmpipe <name>  - Remove a pipe\n");
+        tty.Write("  mqueues        - Show all active message queues\n");
+        tty.Write("  mkmq <n> [m] [s]- Create message queue\n");
+        tty.Write("  rmmq <name>    - Remove message queue\n");
+        tty.Write("  mqsend <q> <r> <msg> - Send IPC message\n");
+        tty.Write("  mqrecv <q> [n] - Receive IPC message\n");
         tty.Write("  <cmd>          - Execute /bin/<cmd>.elf from filesystem\n");
         tty.Write("  whoami         - Print current user\n");
         tty.Write("  su <u> <p>     - Switch user (login)\n");

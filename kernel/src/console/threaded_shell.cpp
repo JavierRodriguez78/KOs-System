@@ -3,6 +3,7 @@
 #include <process/thread_manager.hpp>
 #include <process/scheduler.hpp>
 #include <process/pipe.hpp>
+#include <process/message_queue.hpp>
 #include <process/sync.hpp>
 #include <console/logger.hpp>
 #include <console/tty.hpp>
@@ -221,6 +222,12 @@ void ThreadedShell::ExecuteCommand() {
         TTY::Write("  pipes          - Show all active pipes (threaded)\n");
         TTY::Write("  mkpipe <name>  - Create a new pipe (threaded)\n");
         TTY::Write("  rmpipe <name>  - Remove a pipe (threaded)\n");
+        TTY::Write("\nMessage Queue Commands:\n");
+        TTY::Write("  mqueues        - Show all active message queues\n");
+        TTY::Write("  mkmq <n> [m] [s]- Create message queue\n");
+        TTY::Write("  rmmq <name>    - Remove message queue\n");
+        TTY::Write("  mqsend <q> <r> <msg> - Send IPC message\n");
+        TTY::Write("  mqrecv <q> [n] - Receive IPC message\n");
         
         TTY::Write("\nDemo Commands:\n");
         TTY::Write("  tasks          - Start scheduler demo tasks (threaded)\n");
@@ -266,6 +273,224 @@ void ThreadedShell::ExecuteCommand() {
         TTY::Write("Capturing E1000 RX snapshot...\n");
         e1000_rx_snapshot();
         TTY::Write("Snapshot logged to kernel logger\n");
+        input_buffer_pos = 0;
+        return;
+    }
+
+    // Fast-path: message queue commands (need argument parsing)
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"mqueues", 7) == 0 && command[7] == '\0') {
+        if (g_message_queue_manager) {
+            g_message_queue_manager->PrintAllQueues();
+        } else {
+            TTY::Write("Message queue manager not available\n");
+        }
+        input_buffer_pos = 0;
+        return;
+    }
+
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"mkmq", 4) == 0 && command[4] == '\0') {
+        char argsCopy[256];
+        int cp = 0;
+        while (args[cp] && cp < (int)sizeof(argsCopy) - 1) { argsCopy[cp] = args[cp]; ++cp; }
+        argsCopy[cp] = 0;
+
+        const int kMaxArgs = 4;
+        char* argv[kMaxArgs];
+        int argc = 0;
+        char* p = argsCopy;
+        while (*p && argc < kMaxArgs) {
+            while (*p == ' ') ++p;
+            if (!*p) break;
+            argv[argc++] = p;
+            while (*p && *p != ' ') ++p;
+            if (*p) { *p = 0; ++p; }
+        }
+
+        if (argc < 1) {
+            TTY::Write("Usage: mkmq <name> [max_messages] [max_message_size]\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        uint32_t max_messages = 64;
+        uint32_t max_message_size = 256;
+        if (argc >= 2) {
+            uint32_t v = 0;
+            for (int i = 0; argv[1][i]; ++i) {
+                if (argv[1][i] < '0' || argv[1][i] > '9') break;
+                v = v * 10u + (uint32_t)(argv[1][i] - '0');
+            }
+            if (v > 0) max_messages = v;
+        }
+        if (argc >= 3) {
+            uint32_t v = 0;
+            for (int i = 0; argv[2][i]; ++i) {
+                if (argv[2][i] < '0' || argv[2][i] > '9') break;
+                v = v * 10u + (uint32_t)(argv[2][i] - '0');
+            }
+            if (v > 0) max_message_size = v;
+        }
+
+        uint32_t qid = MessageQueueAPI::CreateQueue(argv[0], max_messages, max_message_size);
+        if (qid) {
+            TTY::Write("Created message queue: ");
+            TTY::Write(argv[0]);
+            TTY::Write(" (ID: ");
+            TTY::WriteHex(qid);
+            TTY::Write(")\n");
+        } else {
+            TTY::Write("Failed to create message queue\n");
+        }
+        input_buffer_pos = 0;
+        return;
+    }
+
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"rmmq", 4) == 0 && command[4] == '\0') {
+        if (!args[0]) {
+            TTY::Write("Usage: rmmq <name>\n");
+            input_buffer_pos = 0;
+            return;
+        }
+        if (MessageQueueAPI::DestroyQueue(args)) {
+            TTY::Write("Removed message queue: ");
+            TTY::Write(args);
+            TTY::Write("\n");
+        } else {
+            TTY::Write("Failed to remove message queue or queue not found\n");
+        }
+        input_buffer_pos = 0;
+        return;
+    }
+
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"mqsend", 6) == 0 && command[6] == '\0') {
+        char argsCopy[256];
+        int cp = 0;
+        while (args[cp] && cp < (int)sizeof(argsCopy) - 1) { argsCopy[cp] = args[cp]; ++cp; }
+        argsCopy[cp] = 0;
+
+        const int kMaxArgs = 16;
+        char* argv[kMaxArgs];
+        int argc = 0;
+        char* p = argsCopy;
+        while (*p && argc < kMaxArgs) {
+            while (*p == ' ') ++p;
+            if (!*p) break;
+            argv[argc++] = p;
+            while (*p && *p != ' ') ++p;
+            if (*p) { *p = 0; ++p; }
+        }
+
+        if (argc < 3) {
+            TTY::Write("Usage: mqsend <queue> <receiver_id> <payload>\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        uint32_t receiver_id = 0;
+        const char* rid = argv[1];
+        int rid_start = 0;
+        int rid_base = 10;
+        if (rid[0] == '0' && (rid[1] == 'x' || rid[1] == 'X')) {
+            rid_start = 2;
+            rid_base = 16;
+        }
+        for (int i = rid_start; rid[i]; ++i) {
+            char c = rid[i];
+            if (rid_base == 10) {
+                if (c < '0' || c > '9') break;
+                receiver_id = receiver_id * 10u + (uint32_t)(c - '0');
+            } else {
+                receiver_id <<= 4;
+                if (c >= '0' && c <= '9') receiver_id += (uint32_t)(c - '0');
+                else if (c >= 'a' && c <= 'f') receiver_id += (uint32_t)(c - 'a' + 10);
+                else if (c >= 'A' && c <= 'F') receiver_id += (uint32_t)(c - 'A' + 10);
+                else break;
+            }
+        }
+
+        char payload[256];
+        int pos = 0;
+        for (int i = 2; i < argc && pos < (int)sizeof(payload) - 1; ++i) {
+            const char* part = argv[i];
+            for (int j = 0; part[j] && pos < (int)sizeof(payload) - 1; ++j) {
+                payload[pos++] = part[j];
+            }
+            if (i + 1 < argc && pos < (int)sizeof(payload) - 1) payload[pos++] = ' ';
+        }
+        payload[pos] = 0;
+
+        bool ok = MessageQueueAPI::Send(argv[0], receiver_id, MSG_TYPE_COMMAND,
+                                        payload, (uint32_t)(pos + 1), true);
+        TTY::Write(ok ? "Message sent\n" : "Failed to send message\n");
+        input_buffer_pos = 0;
+        return;
+    }
+
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"mqrecv", 6) == 0 && command[6] == '\0') {
+        char argsCopy[256];
+        int cp = 0;
+        while (args[cp] && cp < (int)sizeof(argsCopy) - 1) { argsCopy[cp] = args[cp]; ++cp; }
+        argsCopy[cp] = 0;
+
+        const int kMaxArgs = 3;
+        char* argv[kMaxArgs];
+        int argc = 0;
+        char* p = argsCopy;
+        while (*p && argc < kMaxArgs) {
+            while (*p == ' ') ++p;
+            if (!*p) break;
+            argv[argc++] = p;
+            while (*p && *p != ' ') ++p;
+            if (*p) { *p = 0; ++p; }
+        }
+
+        if (argc < 1) {
+            TTY::Write("Usage: mqrecv <queue> [max_bytes]\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        uint32_t max_bytes = 255;
+        if (argc >= 2) {
+            uint32_t v = 0;
+            for (int i = 0; argv[1][i]; ++i) {
+                if (argv[1][i] < '0' || argv[1][i] > '9') break;
+                v = v * 10u + (uint32_t)(argv[1][i] - '0');
+            }
+            if (v > 0 && v < 1024) max_bytes = v;
+        }
+
+        uint8_t msg_buf[1024];
+        MessageType msg_type = MSG_TYPE_GENERIC;
+        uint32_t bytes_read = 0;
+        uint32_t sender_id = 0;
+        uint32_t message_id = 0;
+        bool ok = MessageQueueAPI::Receive(argv[0], &msg_type,
+                                           msg_buf, max_bytes,
+                                           &bytes_read, &sender_id,
+                                           &message_id, false);
+        if (!ok) {
+            TTY::Write("No message available\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        TTY::Write("Received message id=");
+        TTY::WriteHex(message_id);
+        TTY::Write(" from=");
+        TTY::WriteHex(sender_id);
+        TTY::Write(" type=");
+        TTY::WriteHex((uint32_t)msg_type);
+        TTY::Write(" bytes=");
+        TTY::WriteHex(bytes_read);
+        TTY::Write("\nPayload: ");
+        for (uint32_t i = 0; i < bytes_read; ++i) {
+            char c = (char)msg_buf[i];
+            if (c == 0) break;
+            if (c < 32 || c > 126) c = '.';
+            TTY::PutChar(c);
+        }
+        TTY::Write("\n");
         input_buffer_pos = 0;
         return;
     }
@@ -465,6 +690,12 @@ extern "C" void cmd_help_thread() {
     TTY::Write("  pipes          - Show all active pipes (threaded)\n");
     TTY::Write("  mkpipe <name>  - Create a new pipe (threaded)\n");
     TTY::Write("  rmpipe <name>  - Remove a pipe (threaded)\n");
+    TTY::Write("\nMessage Queue Commands:\n");
+    TTY::Write("  mqueues        - Show all active message queues\n");
+    TTY::Write("  mkmq <n> [m] [s]- Create message queue\n");
+    TTY::Write("  rmmq <name>    - Remove message queue\n");
+    TTY::Write("  mqsend <q> <r> <msg> - Send IPC message\n");
+    TTY::Write("  mqrecv <q> [n] - Receive IPC message\n");
     TTY::Write("\nDemo Commands:\n");
     TTY::Write("  logo           - Show KOS logo (threaded)\n");
     TTY::Write("  logo32         - Show KOS logo on framebuffer (threaded)\n");

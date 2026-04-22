@@ -6,6 +6,7 @@
 #include <process/scheduler.hpp>
 #include <process/timer.hpp>
 #include <process/pipe.hpp>
+#include <process/message_queue.hpp>
 #include <process/thread_manager.hpp>
 #include <console/logger.hpp>
 
@@ -50,6 +51,10 @@ namespace kos {
             // Initialize pipe manager for inter-task communication
             kos::process::g_pipe_manager = new kos::process::PipeManager();
             Logger::LogStatus("Pipe manager initialized", true);
+
+            // Initialize message queue manager for structured IPC
+            kos::process::g_message_queue_manager = new kos::process::MessageQueueManager();
+            Logger::LogStatus("Message queue manager initialized", true);
 
             // Temporary VBox-safe path: defer thread manager bootstrap.
             // Early threading init is currently a boot blocker on some VBox runs
