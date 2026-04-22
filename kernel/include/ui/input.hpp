@@ -23,6 +23,18 @@ void SetCursorPos(int x, int y);
 // Set sensitivity scaling: applied as dx * num / den, dy * num / den (defaults 1/1)
 void SetMouseSensitivity(int num, int den);
 
+// Configure logical desktop space used to project mouse movement onto framebuffer.
+// Set to framebuffer size for 1:1 mapping.
+void SetMouseDesktopSpace(int width, int height);
+void GetMouseDesktopSpace(int& width, int& height);
+
+// Auto-select a desktop-space profile based on current framebuffer aspect/size.
+void AutoCalibrateMouseDesktopSpace();
+
+// Persistent configuration helpers. They read/write /etc mouse calibration data.
+bool LoadMouseDesktopSpaceConfig();
+bool SaveMouseDesktopSpaceConfig();
+
 }}
 
 #endif // KOS_UI_INPUT_HPP

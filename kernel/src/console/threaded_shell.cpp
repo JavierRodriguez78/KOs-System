@@ -16,6 +16,7 @@
 #include <memory/heap.hpp>
 #include <services/user_service.hpp>
 #include <drivers/net/e1000/e1000_poll.h>
+#include <ui/input.hpp>
 
 using namespace kos::console;
 using namespace kos::process;
@@ -213,6 +214,8 @@ void ThreadedShell::ExecuteCommand() {
         TTY::Write("  threads        - Show all threads (threaded)\n");
         TTY::Write("  yield          - Yield CPU to other threads\n");
         TTY::Write("  rxsnap         - One-shot E1000 RX register snapshot\n");
+        TTY::Write("  mousespace [w h]- Calibrate mouse to desktop resolution\n");
+        TTY::Write("  mousespace auto - Auto calibrate mouse desktop space\n");
         TTY::Write("\nThread Management:\n");
         TTY::Write("  kill <id>      - Kill thread by ID (hex)\n");
         TTY::Write("  suspend <id>   - Suspend thread by ID (hex)\n");
@@ -273,6 +276,83 @@ void ThreadedShell::ExecuteCommand() {
         TTY::Write("Capturing E1000 RX snapshot...\n");
         e1000_rx_snapshot();
         TTY::Write("Snapshot logged to kernel logger\n");
+        input_buffer_pos = 0;
+        return;
+    }
+
+    if (String::strcmp((const int8_t*)command, (const int8_t*)"mousespace", 10) == 0 && command[10] == '\0') {
+        if (!kos::gfx::IsAvailable()) {
+            TTY::Write("Graphics mode not active\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        if (!args[0]) {
+            int w = 0, h = 0;
+            kos::ui::GetMouseDesktopSpace(w, h);
+            TTY::Write("Mouse desktop space: ");
+            TTY::WriteHex((uint32_t)w);
+            TTY::Write("x");
+            TTY::WriteHex((uint32_t)h);
+            TTY::Write(" (hex)\nUsage: mousespace <desktop_w> <desktop_h>\n");
+            TTY::Write("       mousespace auto\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        char argsCopy[256];
+        int cp = 0;
+        while (args[cp] && cp < (int)sizeof(argsCopy) - 1) { argsCopy[cp] = args[cp]; ++cp; }
+        argsCopy[cp] = 0;
+
+        char* argv[3];
+        int argc = 0;
+        char* p = argsCopy;
+        while (*p && argc < 3) {
+            while (*p == ' ') ++p;
+            if (!*p) break;
+            argv[argc++] = p;
+            while (*p && *p != ' ') ++p;
+            if (*p) { *p = 0; ++p; }
+        }
+
+        if (argc == 1 && String::strcmp((const int8_t*)argv[0], (const int8_t*)"auto", 4) == 0 && argv[0][4] == 0) {
+            kos::ui::AutoCalibrateMouseDesktopSpace();
+            bool saved = kos::ui::SaveMouseDesktopSpaceConfig();
+            TTY::Write(saved ? "Mouse desktop space auto-calibrated and saved\n"
+                             : "Mouse desktop space auto-calibrated (save failed)\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        if (argc < 2) {
+            TTY::Write("Usage: mousespace <desktop_w> <desktop_h>\n");
+            TTY::Write("       mousespace auto\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        uint32_t w = 0;
+        uint32_t h = 0;
+        for (int i = 0; argv[0][i]; ++i) {
+            if (argv[0][i] < '0' || argv[0][i] > '9') break;
+            w = w * 10u + (uint32_t)(argv[0][i] - '0');
+        }
+        for (int i = 0; argv[1][i]; ++i) {
+            if (argv[1][i] < '0' || argv[1][i] > '9') break;
+            h = h * 10u + (uint32_t)(argv[1][i] - '0');
+        }
+
+        if (w == 0 || h == 0) {
+            TTY::Write("Invalid dimensions\n");
+            input_buffer_pos = 0;
+            return;
+        }
+
+        kos::ui::SetMouseDesktopSpace((int)w, (int)h);
+        bool saved = kos::ui::SaveMouseDesktopSpaceConfig();
+        TTY::Write(saved ? "Mouse desktop space updated and saved\n"
+                         : "Mouse desktop space updated (save failed)\n");
         input_buffer_pos = 0;
         return;
     }
@@ -681,6 +761,8 @@ extern "C" void cmd_help_thread() {
     TTY::Write("  ps             - Show scheduler statistics (threaded)\n");
     TTY::Write("  threads        - Show all threads (threaded)\n");
     TTY::Write("  yield          - Yield CPU to other threads\n");
+    TTY::Write("  mousespace [w h]- Calibrate mouse to desktop resolution\n");
+    TTY::Write("  mousespace auto - Auto calibrate mouse desktop space\n");
     TTY::Write("\nThread Management:\n");
     TTY::Write("  kill <id>      - Kill thread by ID (hex)\n");
     TTY::Write("  suspend <id>   - Suspend thread by ID (hex)\n");

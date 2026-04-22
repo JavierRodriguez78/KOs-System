@@ -11,6 +11,7 @@
 #include <console/logo.hpp>
 #include <graphics/framebuffer.hpp>
 #include <ui/cursor.hpp>
+#include <ui/input.hpp>
 #include <kernel/globals.hpp>
 #include <drivers/mouse/mouse_driver.hpp>
 // Scheduler / threads
@@ -418,6 +419,63 @@ void Shell::ExecuteCommand(const int8_t* command) {
         }
         gfx::Clear32(rgba);
         tty.Write("Framebuffer cleared.\n");
+        return;
+    }
+
+    // Built-in: mousespace [desktop_w desktop_h]
+    if (String::strcmp(prog, (const int8_t*)"mousespace", 10) == 0 && (prog[10] == 0)) {
+        if (!kos::gfx::IsAvailable()) {
+            tty.Write("Graphics mode not active\n");
+            return;
+        }
+
+        if (argc == 1) {
+            int w = 0, h = 0;
+            kos::ui::GetMouseDesktopSpace(w, h);
+            tty.Write("Mouse desktop space: ");
+            tty.WriteHex((uint32_t)w);
+            tty.Write("x");
+            tty.WriteHex((uint32_t)h);
+            tty.Write(" (hex)\n");
+            tty.Write("Usage: mousespace <desktop_w> <desktop_h>\n");
+            tty.Write("       mousespace auto\n");
+            return;
+        }
+
+        if (argc == 2 && String::strcmp(argv[1], (const int8_t*)"auto", 4) == 0 && argv[1][4] == 0) {
+            kos::ui::AutoCalibrateMouseDesktopSpace();
+            bool saved = kos::ui::SaveMouseDesktopSpaceConfig();
+            tty.Write(saved ? "Mouse desktop space auto-calibrated and saved\n"
+                            : "Mouse desktop space auto-calibrated (save failed)\n");
+            return;
+        }
+
+        if (argc < 3) {
+            tty.Write("Usage: mousespace <desktop_w> <desktop_h>\n");
+            tty.Write("       mousespace auto\n");
+            return;
+        }
+
+        uint32_t w = 0;
+        uint32_t h = 0;
+        for (int i = 0; argv[1][i]; ++i) {
+            if (argv[1][i] < '0' || argv[1][i] > '9') break;
+            w = w * 10u + (uint32_t)(argv[1][i] - '0');
+        }
+        for (int i = 0; argv[2][i]; ++i) {
+            if (argv[2][i] < '0' || argv[2][i] > '9') break;
+            h = h * 10u + (uint32_t)(argv[2][i] - '0');
+        }
+
+        if (w == 0 || h == 0) {
+            tty.Write("Invalid dimensions\n");
+            return;
+        }
+
+        kos::ui::SetMouseDesktopSpace((int)w, (int)h);
+        bool saved = kos::ui::SaveMouseDesktopSpaceConfig();
+        tty.Write(saved ? "Mouse desktop space updated and saved\n"
+                        : "Mouse desktop space updated (save failed)\n");
         return;
     }
 
@@ -913,6 +971,8 @@ void Shell::ExecuteCommand(const int8_t* command) {
     tty.Write("  gfxinit        - Initialize graphics: clear and draw logo\n");
     tty.Write("  gfxclear [hex] - Clear framebuffer to RRGGBB (default black)\n");
     tty.Write("  cursor [style] - Show or set cursor style (crosshair|triangle)\n");
+    tty.Write("  mousespace [w h]- Calibrate mouse to desktop resolution\n");
+    tty.Write("  mousespace auto - Auto calibrate mouse desktop space\n");
     tty.Write("  mousedbg on/off- Dump raw mouse bytes (IRQ/POLL)\n");
     tty.Write("  cursor [style] - Show or set cursor style (crosshair|triangle)\n");
         tty.Write("  lshw           - Hardware info: CPU, memory, PCI\n");
