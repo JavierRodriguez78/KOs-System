@@ -260,6 +260,70 @@ private:
     uint8_t event_flash_frames_ = 0;
 };
 
+/**
+ * Wrapper component for Application Menu.
+ * Displays discovered desktop applications in a graphical menu.
+ */
+class AppMenuComponent : public BaseSystemComponent {
+public:
+    struct DesktopAppEntry {
+        char name[48];
+        char exec[96];
+        bool autostart;
+        uint32_t priority;
+    };
+    
+    AppMenuComponent() : BaseSystemComponent("AppMenu") {}
+    
+    void Render() override;
+    bool OnInputEvent(const input::InputEvent& event) override;
+    
+    // Set the app list from window manager
+    void SetAppList(const DesktopAppEntry* apps, uint32_t count) {
+        if (!apps || count > kMaxApps) return;
+        for (uint32_t i = 0; i < count; ++i) {
+            apps_[i] = apps[i];
+        }
+        app_count_ = count;
+        highlighted_index_ = 0;
+        selection_pending_ = false;
+    }
+    
+    // Get selected app for launching
+    const DesktopAppEntry* GetSelectedApp() const {
+        if (highlighted_index_ < app_count_) {
+            return &apps_[highlighted_index_];
+        }
+        return nullptr;
+    }
+    
+    // Check if app was selected for launching (double-click or Enter)
+    bool IsSelectionPending() const {
+        return selection_pending_;
+    }
+    
+    // Clear the selection pending flag
+    void ClearSelectionPending() {
+        selection_pending_ = false;
+    }
+    
+private:
+    static constexpr uint32_t kMaxApps = 16u;
+    static constexpr uint32_t kItemHeight = 24u;
+    static constexpr uint32_t kPadding = 8u;
+    static constexpr uint32_t kItemNameMaxLen = 32u;
+    
+    DesktopAppEntry apps_[kMaxApps]{};
+    uint32_t app_count_ = 0;
+    uint32_t highlighted_index_ = 0;
+    bool selection_pending_ = false;
+    uint32_t last_click_time_ = 0;
+    
+    uint32_t GetItemY(uint32_t index) const {
+        return kPadding + index * kItemHeight;
+    }
+};
+
 }}  // namespace kos::ui
 
 #endif

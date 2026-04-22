@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Process Monitor
+Comment=Process monitoring tool
+Exec=/bin/process_monitor_app.elf
+Icon=process.png
+Type=Application
+Categories=System;
+
+X-KOS-Position=Center
+X-KOS-Autostart=false
+X-KOS-Category=System
+X-KOS-Priority=20

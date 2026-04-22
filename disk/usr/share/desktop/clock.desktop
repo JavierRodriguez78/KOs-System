@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Clock
+Comment=System clock displaying date and time
+Exec=/bin/date.elf
+Icon=clock.png
+Type=Application
+Categories=System;
+
+# KOS-specific extensions
+X-KOS-Position=TopCenter
+X-KOS-Autostart=true
+X-KOS-Category=System
+X-KOS-Priority=10

@@ -54,6 +54,12 @@ list(REMOVE_ITEM KERNEL_CPP_SOURCES
     ${KOS_SRC_DIR}/lib/syscall_stubs.cpp
 )
 
+# Exclude future app/service system files that require stdlib (not yet integrated)
+list(REMOVE_ITEM KERNEL_CPP_SOURCES
+    ${KOS_SRC_DIR}/services/desktop_entry.cpp
+    ${KOS_SRC_DIR}/services/message_queue.cpp
+)
+
 # Arch-specific sources (not under src/)
 set(ARCH_X86_SOURCES
     ${KOS_ROOT_DIR}/arch/x86/hardware/interrupts/interrupt_manager.cpp
@@ -203,6 +209,8 @@ add_app(date)
 add_app(shutdown)
 add_app(mv)
 add_app(tree)
+add_app(process_monitor_app)
+add_app(hardware_info_app)
 add_app_cpp(lscpu)
 add_app_cpp(kcursers_demo)
 add_app_cpp(ifconfig)
@@ -212,7 +220,7 @@ add_app(ss)
 add_app(sshd)
 
 # Convenience aggregate
-add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf tree.elf lscpu.elf kcursers_demo.elf ifconfig.elf ss.elf sshd.elf)
+add_custom_target(apps DEPENDS hello.elf echo.elf ls.elf mkdir.elf memtest.elf pwd.elf cd.elf free.elf lshw.elf clear.elf init.elf cat.elf top.elf ping.elf reboot.elf date.elf shutdown.elf mv.elf tree.elf process_monitor_app.elf hardware_info_app.elf lscpu.elf kcursers_demo.elf ifconfig.elf ss.elf sshd.elf)
 
 # Ensure apps are built before kernel
 add_dependencies(kernel_bin apps)
@@ -351,6 +359,10 @@ add_custom_command(
                 if [ -d ${KOS_ROOT_DIR}/../disk/etc/init.d ]; then \
                     MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/../disk/etc/init.d/* ::/ETC/INIT.D/ 2>/dev/null || true; \
                 fi; \
+                MTOOLS_NO_VFAT=1 mmd -i ${DISK_IMG} ::/USR/SHARE/DESKTOP || true; \
+                if [ -d ${KOS_ROOT_DIR}/../disk/usr/share/desktop ]; then \
+                    MTOOLS_NO_VFAT=1 mcopy -i ${DISK_IMG} ${KOS_ROOT_DIR}/../disk/usr/share/desktop/* ::/USR/SHARE/DESKTOP/ 2>/dev/null || true; \
+                fi; \
             else \
                 echo 'mtools unavailable; using loop-mount (sudo)'; \
                 mkdir -p ${KOS_ROOT_DIR}/.diskmnt; \
@@ -363,6 +375,10 @@ add_custom_command(
                 sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D; \
                 if [ -d ${KOS_ROOT_DIR}/../disk/etc/init.d ]; then \
                     sudo cp ${KOS_ROOT_DIR}/../disk/etc/init.d/* ${KOS_ROOT_DIR}/.diskmnt/ETC/INIT.D/ 2>/dev/null || true; \
+                fi; \
+                sudo mkdir -p ${KOS_ROOT_DIR}/.diskmnt/USR/SHARE/DESKTOP; \
+                if [ -d ${KOS_ROOT_DIR}/../disk/usr/share/desktop ]; then \
+                    sudo cp ${KOS_ROOT_DIR}/../disk/usr/share/desktop/* ${KOS_ROOT_DIR}/.diskmnt/USR/SHARE/DESKTOP/ 2>/dev/null || true; \
                 fi; \
                 sync; \
                 sudo umount ${KOS_ROOT_DIR}/.diskmnt; \

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Hardware Info
+Comment=Hardware information tool
+Exec=/bin/hardware_info_app.elf
+Icon=hardware.png
+Type=Application
+Categories=System;
+
+X-KOS-Position=Center
+X-KOS-Autostart=false
+X-KOS-Category=System
+X-KOS-Priority=30

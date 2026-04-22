@@ -24,6 +24,7 @@
 #include <drivers/gpu/vmsvga.hpp>
 #include <process/thread_manager.hpp>
 #include <process/scheduler.hpp>
+#include <fs/filesystem.hpp>
 
 // Use the canonical kernel global mouse driver pointer declared in `kernel/globals.hpp`.
 // Access it as `kos::g_mouse_driver_ptr`.
@@ -62,6 +63,274 @@ static kos::ui::SystemHudComponent s_system_hud_component;
 static kos::ui::MouseDiagnosticComponent s_mouse_component;
 static kos::ui::HardwareInfoComponent s_hardware_info_component;
 static kos::ui::FileBrowserComponent s_file_browser_component;
+static kos::ui::AppMenuComponent s_app_menu_component;
+
+struct DesktopAppEntry {
+    char name[48];
+    char exec[96];
+    bool autostart;
+    uint32_t priority;
+};
+
+static DesktopAppEntry s_desktop_apps[16];
+static uint32_t s_desktop_app_count = 0;
+static uint32_t s_app_menu_win_id = 0;
+
+static uint32_t StrLen(const char* s) {
+    if (!s) return 0;
+    uint32_t n = 0;
+    while (s[n]) ++n;
+    return n;
+}
+
+static bool StrEq(const char* a, const char* b) {
+    if (!a || !b) return false;
+    uint32_t i = 0;
+    while (a[i] && b[i]) {
+        if (a[i] != b[i]) return false;
+        ++i;
+    }
+    return a[i] == 0 && b[i] == 0;
+}
+
+static void StrCopy(char* dst, uint32_t dstSize, const char* src) {
+    if (!dst || dstSize == 0) return;
+    if (!src) { dst[0] = 0; return; }
+    uint32_t i = 0;
+    while (src[i] && i + 1u < dstSize) {
+        dst[i] = src[i];
+        ++i;
+    }
+    dst[i] = 0;
+}
+
+static void StrTrim(char* s) {
+    if (!s) return;
+    uint32_t len = StrLen(s);
+    uint32_t start = 0;
+    while (start < len && (s[start] == ' ' || s[start] == '\t' || s[start] == '\r' || s[start] == '\n')) ++start;
+    uint32_t end = len;
+    while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t' || s[end - 1] == '\r' || s[end - 1] == '\n')) --end;
+    if (start > 0) {
+        uint32_t i = 0;
+        while (start + i < end) { s[i] = s[start + i]; ++i; }
+        s[i] = 0;
+    } else {
+        s[end] = 0;
+    }
+}
+
+static uint32_t ParseU32(const char* s, uint32_t fallback) {
+    if (!s || !*s) return fallback;
+    uint32_t v = 0;
+    bool any = false;
+    for (uint32_t i = 0; s[i]; ++i) {
+        if (s[i] < '0' || s[i] > '9') break;
+        any = true;
+        v = v * 10u + static_cast<uint32_t>(s[i] - '0');
+    }
+    return any ? v : fallback;
+}
+
+static bool ParseDesktopEntryBuffer(const char* text, uint32_t len, DesktopAppEntry& out) {
+    out.name[0] = 0;
+    out.exec[0] = 0;
+    out.autostart = false;
+    out.priority = 100u;
+    if (!text || len == 0) return false;
+
+    bool inDesktopSection = false;
+    uint32_t pos = 0;
+    while (pos < len) {
+        char line[192];
+        uint32_t li = 0;
+        while (pos < len && text[pos] != '\n' && li + 1u < sizeof(line)) {
+            line[li++] = text[pos++];
+        }
+        line[li] = 0;
+        if (pos < len && text[pos] == '\n') ++pos;
+
+        StrTrim(line);
+        if (!line[0] || line[0] == '#') continue;
+        if (StrEq(line, "[Desktop Entry]")) {
+            inDesktopSection = true;
+            continue;
+        }
+        if (line[0] == '[') {
+            inDesktopSection = false;
+            continue;
+        }
+        if (!inDesktopSection) continue;
+
+        char* eq = nullptr;
+        for (uint32_t i = 0; line[i]; ++i) {
+            if (line[i] == '=') { eq = &line[i]; break; }
+        }
+        if (!eq) continue;
+        *eq = 0;
+        char* key = line;
+        char* value = eq + 1;
+        StrTrim(key);
+        StrTrim(value);
+
+        if (StrEq(key, "Name")) {
+            StrCopy(out.name, sizeof(out.name), value);
+        } else if (StrEq(key, "Exec")) {
+            StrCopy(out.exec, sizeof(out.exec), value);
+        } else if (StrEq(key, "X-KOS-Autostart")) {
+            out.autostart = StrEq(value, "true") || StrEq(value, "1") || StrEq(value, "yes");
+        } else if (StrEq(key, "X-KOS-Priority")) {
+            out.priority = ParseU32(value, 100u);
+        }
+    }
+
+    return (out.name[0] != 0 && out.exec[0] != 0);
+}
+
+static bool DiscoverDesktopEntryCallback(const kos::fs::DirEntry* entry, void* userdata) {
+    (void)userdata;
+    if (!entry || entry->isDir || s_desktop_app_count >= 16u) return true;
+
+    char fullPath[160];
+    const char* base = "/USR/SHARE/DESKTOP/";
+    StrCopy(fullPath, sizeof(fullPath), base);
+    uint32_t p = StrLen(fullPath);
+    for (uint32_t i = 0; entry->name[i] && p + 1u < sizeof(fullPath); ++i) {
+        fullPath[p++] = static_cast<char>(entry->name[i]);
+    }
+    fullPath[p] = 0;
+
+    uint8_t buf[2048];
+    int32_t n = kos::fs::g_fs_ptr ? kos::fs::g_fs_ptr->ReadFile(reinterpret_cast<const int8_t*>(fullPath), buf, sizeof(buf) - 1u) : -1;
+    if (n <= 0) return true;
+    buf[n] = 0;
+
+    DesktopAppEntry parsed{};
+    if (!ParseDesktopEntryBuffer(reinterpret_cast<const char*>(buf), static_cast<uint32_t>(n), parsed)) {
+        return true;
+    }
+
+    s_desktop_apps[s_desktop_app_count++] = parsed;
+    return true;
+}
+
+static bool LaunchDesktopApp(const DesktopAppEntry& app) {
+    uint32_t pid = 0;
+    uint32_t tid = kos::process::ThreadManagerAPI::SpawnProcess(
+        app.exec,
+        app.name,
+        &pid,
+        8192,
+        kos::process::PRIORITY_NORMAL,
+        0);
+
+    if (!tid) {
+        kos::lib::serial_write("[WM] app launch failed: ");
+        kos::lib::serial_write(app.exec);
+        kos::lib::serial_write("\n");
+        return false;
+    }
+
+    kos::lib::serial_write("[WM] app launched: ");
+    kos::lib::serial_write(app.name);
+    kos::lib::serial_write(" -> ");
+    kos::lib::serial_write(app.exec);
+    kos::lib::serial_write("\n");
+    return true;
+}
+
+static void DiscoverDesktopApplications() {
+    s_desktop_app_count = 0;
+    if (!kos::fs::g_fs_ptr) return;
+    (void)kos::fs::g_fs_ptr->EnumDir(reinterpret_cast<const int8_t*>("/USR/SHARE/DESKTOP"), DiscoverDesktopEntryCallback, nullptr);
+}
+
+static void LaunchAutostartDesktopApplications() {
+    if (s_desktop_app_count == 0u) return;
+
+    // Stable insertion sort by priority (lower number starts first).
+    DesktopAppEntry ordered[16];
+    uint32_t count = s_desktop_app_count;
+    for (uint32_t i = 0; i < count; ++i) ordered[i] = s_desktop_apps[i];
+    for (uint32_t i = 1; i < count; ++i) {
+        DesktopAppEntry key = ordered[i];
+        int32_t j = static_cast<int32_t>(i) - 1;
+        while (j >= 0 && ordered[j].priority > key.priority) {
+            ordered[j + 1] = ordered[j];
+            --j;
+        }
+        ordered[j + 1] = key;
+    }
+
+    for (uint32_t i = 0; i < count; ++i) {
+        if (ordered[i].autostart) {
+            (void)LaunchDesktopApp(ordered[i]);
+        }
+    }
+}
+
+static void ShowAppMenuWindow() {
+    if (s_desktop_app_count == 0u) return;
+    
+    // If menu window already exists, just toggle visibility/focus
+    if (s_app_menu_win_id != 0) {
+        kos::gfx::WindowDesc d;
+        if (kos::ui::GetWindowDesc(s_app_menu_win_id, d)) {
+            // Window exists, restore and focus it
+            if (kos::ui::GetWindowState(s_app_menu_win_id) == kos::ui::WindowState::Minimized) {
+                kos::ui::RestoreWindow(s_app_menu_win_id);
+            }
+            kos::ui::BringToFront(s_app_menu_win_id);
+            kos::ui::SetFocusedWindow(s_app_menu_win_id);
+            return;
+        }
+    }
+    
+    // Create new menu window
+    uint32_t menuWin = kos::ui::CreateDialogWindow(0, 280, 180, 0xFF1A1A20u, "Applications");
+    if (menuWin == 0) return;
+    
+    s_app_menu_win_id = menuWin;
+    
+    // Update component with current app list
+    kos::ui::AppMenuComponent::DesktopAppEntry appsCopy[16];
+    for (uint32_t i = 0; i < s_desktop_app_count; ++i) {
+        appsCopy[i].autostart = s_desktop_apps[i].autostart;
+        appsCopy[i].priority = s_desktop_apps[i].priority;
+        StrCopy(appsCopy[i].name, sizeof(appsCopy[i].name), s_desktop_apps[i].name);
+        StrCopy(appsCopy[i].exec, sizeof(appsCopy[i].exec), s_desktop_apps[i].exec);
+    }
+    s_app_menu_component.SetAppList(appsCopy, s_desktop_app_count);
+    s_app_menu_component.BindWindow(menuWin);
+    
+    // Register component
+    kos::ui::WindowRegistry& reg = kos::ui::WindowRegistry::Instance();
+    (void)reg.RegisterComponent(&s_app_menu_component, menuWin);
+    (void)kos::ui::SetWindowComponent(menuWin, &s_app_menu_component);
+}
+
+static void CloseAppMenuWindow() {
+    if (s_app_menu_win_id != 0) {
+        kos::ui::MinimizeWindow(s_app_menu_win_id);
+        s_app_menu_win_id = 0;
+    }
+}
+
+static void ProcessAppMenuSelection() {
+    if (s_app_menu_win_id == 0) return;
+    
+    const kos::ui::AppMenuComponent::DesktopAppEntry* selected = s_app_menu_component.GetSelectedApp();
+    if (selected && selected->name[0] != 0) {
+        DesktopAppEntry appToLaunch;
+        appToLaunch.autostart = selected->autostart;
+        appToLaunch.priority = selected->priority;
+        StrCopy(appToLaunch.name, sizeof(appToLaunch.name), selected->name);
+        StrCopy(appToLaunch.exec, sizeof(appToLaunch.exec), selected->exec);
+        
+        (void)LaunchDesktopApp(appToLaunch);
+        CloseAppMenuWindow();
+    }
+}
 
 static void RegisterClockComponent(uint32_t windowId) {
     if (windowId == 0) return;
@@ -253,6 +522,7 @@ public:
 static LoginKeyboardHandler s_login_handler;
 
 static constexpr uint32_t kTaskbarSpawnBtnId = 0xFFFFFFFFu;
+static constexpr uint32_t kTaskbarAppBtnId = 0xFFFFFFFDu;
 static constexpr uint32_t kTaskbarRebootBtnId = 0xFFFFFFFEu;
 
 extern "C" void app_reboot() __attribute__((weak));
@@ -302,8 +572,9 @@ static void BuildTaskbarButtons() {
     if (!s_taskbar_enabled) return;
     const auto& fb = kos::gfx::GetInfo();
     const uint32_t spawnW = 20;
+    const uint32_t appW = 20;
     const uint32_t rebootW = 28;
-    uint32_t x = kTaskbarPad + spawnW + 4;
+    uint32_t x = kTaskbarPad + spawnW + 4 + appW + 4;
     uint32_t y = fb.height - kTaskbarHeight + (kTaskbarHeight - kTaskButtonH)/2;
     for (uint32_t i = 0; i < kos::ui::GetWindowCount() && s_taskButtonCount < 16; ++i) {
         uint32_t wid; kos::gfx::WindowDesc d; kos::ui::WindowState st; uint32_t fl;
@@ -333,6 +604,12 @@ static uint32_t TaskbarHitTest(int mx, int my) {
     const uint32_t spawnH = kTaskButtonH;
     if ((uint32_t)mx >= spawnX && (uint32_t)mx < spawnX + spawnW && (uint32_t)my >= spawnY && (uint32_t)my < spawnY + spawnH) {
         return kTaskbarSpawnBtnId;
+    }
+
+    const uint32_t appX = spawnX + spawnW + 4;
+    const uint32_t appW = 20;
+    if ((uint32_t)mx >= appX && (uint32_t)mx < appX + appW && (uint32_t)my >= spawnY && (uint32_t)my < spawnY + spawnH) {
+        return kTaskbarAppBtnId;
     }
 
     const uint32_t rebootW = 28;
@@ -533,6 +810,9 @@ static void CreatePostLoginWindows() {
     RegisterSystemHudComponent(s_system_hud_win_id);
     RegisterHardwareInfoComponent(s_hardware_info_win_id);
     RegisterFileBrowserComponent(s_file_browser_win_id);
+
+    DiscoverDesktopApplications();
+    LaunchAutostartDesktopApplications();
 }
 
 uint32_t WindowManager::SpawnTerminal() {
@@ -774,6 +1054,8 @@ void WindowManager::Tick() {
             uint32_t tbWin = TaskbarHitTest(mx, my);
             if (tbWin == kTaskbarSpawnBtnId) {
                 WindowManager::SpawnTerminal();
+            } else if (tbWin == kTaskbarAppBtnId) {
+                ShowAppMenuWindow();
             } else if (tbWin == kTaskbarRebootBtnId) {
                 TaskbarRebootSystem();
             } else if (tbWin) {
@@ -799,6 +1081,12 @@ void WindowManager::Tick() {
 
     // Dispatch keyboard/mouse events that were captured by real drivers.
     DispatchQueuedInputEvents();
+    
+    // Check if app menu selection was made
+    if (s_app_menu_component.IsSelectionPending()) {
+        ProcessAppMenuSelection();
+        s_app_menu_component.ClearSelectionPending();
+    }
 
     s_prev_left = left;
     // Ensure login keyboard handler stays active while login is shown
@@ -1020,6 +1308,23 @@ void WindowManager::Tick() {
             kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, 0xFF00183Cu);
             // Draw '+' centered using 8x8 glyphs: '+' is ASCII 0x2B
             const uint8_t* glyph = kos::gfx::kFont8x8Basic['+' - 32];
+            uint32_t gx = x + (w/2) - 4;
+            uint32_t gy = y + (h/2) - 4;
+            kos::gfx::Compositor::DrawGlyph8x8(gx + 1, gy + 1, glyph, 0xFF0A1020u, base);
+            kos::gfx::Compositor::DrawGlyph8x8(gx, gy, glyph, 0xFFFFE26Fu, base);
+        }
+        // App launcher button ('A') next to '+'
+        {
+            uint32_t x = kTaskbarPad + 20 + 4;
+            uint32_t y = barY + (kTaskbarHeight - kTaskButtonH)/2;
+            uint32_t w = 20, h = kTaskButtonH;
+            uint32_t base = 0xFF1E3E78u;
+            FillCheckerRect(x, y, w, h, base, 0xFF22488Au, 2);
+            kos::gfx::Compositor::FillRect(x, y, w, 1, 0xFF8FC2FFu);
+            kos::gfx::Compositor::FillRect(x, y + h - 1, w, 1, 0xFF00183Cu);
+            kos::gfx::Compositor::FillRect(x, y, 1, h, 0xFF8FC2FFu);
+            kos::gfx::Compositor::FillRect(x + w - 1, y, 1, h, 0xFF00183Cu);
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic['A' - 32];
             uint32_t gx = x + (w/2) - 4;
             uint32_t gy = y + (h/2) - 4;
             kos::gfx::Compositor::DrawGlyph8x8(gx + 1, gy + 1, glyph, 0xFF0A1020u, base);

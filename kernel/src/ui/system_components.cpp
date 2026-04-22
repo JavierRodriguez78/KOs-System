@@ -1371,4 +1371,142 @@ bool MouseDiagnosticComponent::OnInputEvent(const input::InputEvent& event) {
     return false;
 }
 
+// ============================================================================
+// App Menu Component
+// ============================================================================
+
+void AppMenuComponent::Render() {
+    const uint32_t wid = GetWindowId();
+    if (!wid) return;
+
+    kos::gfx::WindowDesc d;
+    if (!kos::ui::GetWindowDesc(wid, d)) return;
+
+    constexpr uint32_t kBgMain = 0xFF1A1A20u;
+    constexpr uint32_t kBgHi = 0xFF2E3E50u;
+    constexpr uint32_t kTextNormal = 0xFFE0E0E0u;
+    constexpr uint32_t kTextHi = 0xFFFFFFFFu;
+    constexpr uint32_t kBorder = 0xFF4A4A50u;
+
+    // Draw background
+    FillCheckerRect(d.x + 1, d.y + 1, d.w > 2 ? d.w - 2 : d.w, d.h > 2 ? d.h - 2 : d.h,
+                    0xFF1A1A20u, 0xFF0F0F15u, 2);
+
+    // Draw border
+    uint32_t cx = d.x + 1;
+    uint32_t cy = d.y + 1;
+    uint32_t cw = d.w > 2 ? d.w - 2 : d.w;
+    uint32_t ch = d.h > 2 ? d.h - 2 : d.h;
+    
+    kos::gfx::Compositor::FillRect(cx, cy, cw, 1, kBorder);
+    kos::gfx::Compositor::FillRect(cx, cy + ch - 1, cw, 1, kBorder);
+    kos::gfx::Compositor::FillRect(cx, cy, 1, ch, kBorder);
+    kos::gfx::Compositor::FillRect(cx + cw - 1, cy, 1, ch, kBorder);
+
+    // Draw app items
+    uint32_t y = cy + kPadding;
+    for (uint32_t i = 0; i < app_count_ && y + kItemHeight <= cy + ch; ++i) {
+        uint32_t itemX = cx + kPadding;
+        uint32_t itemW = cw > 2 * kPadding ? cw - 2 * kPadding : 4;
+        uint32_t itemY = y;
+
+        // Highlight selected item
+        if (i == highlighted_index_) {
+            kos::gfx::Compositor::FillRect(itemX - 2, itemY, itemW + 4, kItemHeight, kBgHi);
+        }
+
+        // Draw app name
+        uint32_t textColor = (i == highlighted_index_) ? kTextHi : kTextNormal;
+        uint32_t textX = itemX + 4;
+        uint32_t textY = itemY + 6;
+
+        const char* appName = apps_[i].name;
+        for (uint32_t j = 0; appName[j] && j < kItemNameMaxLen; ++j) {
+            char c = appName[j];
+            if (c < 32 || c > 127) c = '?';
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
+            kos::gfx::Compositor::DrawGlyph8x8(textX + j * 8, textY, glyph, textColor, kBgMain);
+        }
+
+        y += kItemHeight;
+    }
+
+    // Draw hint at bottom
+    if (app_count_ > 0 && y + 16 <= cy + ch) {
+        const char* hint = "Click to launch";
+        uint32_t hintX = cx + kPadding;
+        uint32_t hintY = cy + ch - 14;
+        for (uint32_t j = 0; hint[j]; ++j) {
+            char c = hint[j];
+            if (c < 32 || c > 127) c = '?';
+            const uint8_t* glyph = kos::gfx::kFont8x8Basic[c - 32];
+            kos::gfx::Compositor::DrawGlyph8x8(hintX + j * 8, hintY, glyph, 0xFF888888u, kBgMain);
+        }
+    }
+
+    ClearRedrawFlag();
+}
+
+bool AppMenuComponent::OnInputEvent(const input::InputEvent& event) {
+    const uint32_t wid = GetWindowId();
+    if (wid == 0) return false;
+
+    kos::gfx::WindowDesc d;
+    if (!kos::ui::GetWindowDesc(wid, d)) return false;
+
+    uint32_t cy = d.y + 1;
+    uint32_t itemStartY = cy + kPadding;
+
+    if (event.type == input::EventType::MousePress && (event.mouse_data.buttons & 1u)) {
+        // Check which app item was clicked (left button = bit 0)
+        if (event.mouse_data.y >= itemStartY && event.mouse_data.y < itemStartY + app_count_ * kItemHeight) {
+            uint32_t relativeY = event.mouse_data.y - itemStartY;
+            uint32_t clickedIndex = relativeY / kItemHeight;
+            if (clickedIndex < app_count_) {
+                // Check for double-click
+                uint32_t now = event.timestamp_ms;
+                if (clickedIndex == highlighted_index_ && last_click_time_ > 0 && (now - last_click_time_) < 500) {
+                    // Double-click detected
+                    selection_pending_ = true;
+                    last_click_time_ = 0;
+                    InvalidateContent();
+                    return true;
+                }
+                
+                // Single click - just highlight
+                highlighted_index_ = clickedIndex;
+                last_click_time_ = now;
+                InvalidateContent();
+                return true;
+            }
+        }
+    } else if (event.type == input::EventType::KeyPress) {
+        // Keyboard navigation: Up/Down arrows and Enter
+        uint32_t keyCode = event.key_data.key_code & 0xFFu;  // Mask to 8-bit scancode
+        uint32_t newIndex = highlighted_index_;
+        
+        if (keyCode == 0x48 && highlighted_index_ > 0) {
+            // Up arrow (scancode 0x48)
+            newIndex = highlighted_index_ - 1;
+        } else if (keyCode == 0x50 && highlighted_index_ + 1 < app_count_) {
+            // Down arrow (scancode 0x50)
+            newIndex = highlighted_index_ + 1;
+        } else if (keyCode == 0x1C) {
+            // Enter key (scancode 0x1C)
+            selection_pending_ = true;
+            InvalidateContent();
+            return true;
+        }
+        
+        if (newIndex != highlighted_index_) {
+            highlighted_index_ = newIndex;
+            last_click_time_ = 0;  // Reset double-click timer on navigation
+            InvalidateContent();
+            return true;
+        }
+    }
+
+    return false;
+}
+
 }}  // namespace kos::ui
